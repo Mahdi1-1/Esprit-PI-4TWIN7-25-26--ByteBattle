@@ -1,0 +1,406 @@
+@import "tailwindcss";
+
+/* ===================================================================
+   BYTEBATTLE DESIGN SYSTEM - FOUNDATIONS
+   Grid: 8pt, Radii: 8/12/16, Typography: Inter + JetBrains Mono
+   =================================================================== */
+
+/* ==================== TYPOGRAPHY ==================== */
+@layer base {
+  :root {
+    /* Font families */
+    --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-code: 'JetBrains Mono', 'Fira Code', monospace;
+    
+    /* Typography scale */
+    --text-h1: 2rem; /* 32px */
+    --text-h1-lh: 2.5rem; /* 40px */
+    --text-h2: 1.5rem; /* 24px */
+    --text-h2-lh: 2rem; /* 32px */
+    --text-h3: 1.125rem; /* 18px */
+    --text-h3-lh: 1.625rem; /* 26px */
+    --text-body: 0.875rem; /* 14px */
+    --text-body-lh: 1.375rem; /* 22px */
+    --text-caption: 0.75rem; /* 12px */
+    --text-caption-lh: 1rem; /* 16px */
+    
+    /* Spacing scale (8pt grid) */
+    --space-1: 0.25rem; /* 4px */
+    --space-2: 0.5rem; /* 8px */
+    --space-3: 0.75rem; /* 12px */
+    --space-4: 1rem; /* 16px */
+    --space-5: 1.25rem; /* 20px */
+    --space-6: 1.5rem; /* 24px */
+    --space-8: 2rem; /* 32px */
+    --space-10: 2.5rem; /* 40px */
+    --space-12: 3rem; /* 48px */
+    
+    /* Radii */
+    --radius-sm: 0.5rem; /* 8px */
+    --radius-md: 0.75rem; /* 12px */
+    --radius-lg: 1rem; /* 16px */
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+
+  html {
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    line-height: var(--text-body-lh);
+  }
+
+  h1 {
+    font-size: var(--text-h1);
+    line-height: var(--text-h1-lh);
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: var(--text-h2);
+    line-height: var(--text-h2-lh);
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: var(--text-h3);
+    line-height: var(--text-h3-lh);
+    font-weight: 600;
+  }
+
+  code, pre {
+    font-family: var(--font-code);
+  }
+}
+
+/* ==================== COLOR TOKENS - SEMANTIC VARIABLES ==================== */
+
+/* CYBER ARENA THEME - Dark Mode */
+[data-theme="cyber_dark"] {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1420;
+  --surface-1: #151b2e;
+  --surface-2: #1a2338;
+  --surface-3: #1f2945;
+  --text-primary: #e0e7ff;
+  --text-secondary: #a5b4fc;
+  --text-muted: #6366f1;
+  --border-default: #2d3a5f;
+  --border-strong: #4c5a8f;
+  --brand-primary: #00ffff;
+  --brand-secondary: #8b5cf6;
+  --state-success: #10b981;
+  --state-warning: #f59e0b;
+  --state-error: #ef4444;
+  --state-info: #3b82f6;
+  --score-accepted: #10b981;
+  --score-wrong: #ef4444;
+  --score-tle: #f59e0b;
+  --score-re: #f97316;
+  --score-ce: #6366f1;
+  --fx-glow: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
+}
+
+/* CYBER ARENA THEME - Light Mode */
+[data-theme="cyber_light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --surface-1: #ffffff;
+  --surface-2: #e2e8f0;
+  --surface-3: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  --brand-primary: #0891b2;
+  --brand-secondary: #7c3aed;
+  --state-success: #059669;
+  --state-warning: #d97706;
+  --state-error: #dc2626;
+  --state-info: #2563eb;
+  --score-accepted: #059669;
+  --score-wrong: #dc2626;
+  --score-tle: #d97706;
+  --score-re: #ea580c;
+  --score-ce: #4f46e5;
+  --fx-glow: 0 0 10px rgba(8, 145, 178, 0.2);
+}
+
+/* SPACE OPS THEME - Dark Mode */
+[data-theme="space_dark"] {
+  --bg-primary: #020617;
+  --bg-secondary: #0c1326;
+  --surface-1: #0f172a;
+  --surface-2: #1e293b;
+  --surface-3: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-default: #1e293b;
+  --border-strong: #334155;
+  --brand-primary: #06b6d4;
+  --brand-secondary: #3b82f6;
+  --state-success: #14b8a6;
+  --state-warning: #f59e0b;
+  --state-error: #f43f5e;
+  --state-info: #0ea5e9;
+  --score-accepted: #14b8a6;
+  --score-wrong: #f43f5e;
+  --score-tle: #f59e0b;
+  --score-re: #fb7185;
+  --score-ce: #60a5fa;
+  --fx-glow: 0 0 15px rgba(6, 182, 212, 0.4);
+}
+
+/* SPACE OPS THEME - Light Mode */
+[data-theme="space_light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --surface-1: #f1f5f9;
+  --surface-2: #e2e8f0;
+  --surface-3: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  --brand-primary: #0891b2;
+  --brand-secondary: #2563eb;
+  --state-success: #0d9488;
+  --state-warning: #d97706;
+  --state-error: #e11d48;
+  --state-info: #0284c7;
+  --score-accepted: #0d9488;
+  --score-wrong: #e11d48;
+  --score-tle: #d97706;
+  --score-re: #f43f5e;
+  --score-ce: #3b82f6;
+  --fx-glow: 0 0 8px rgba(8, 145, 178, 0.15);
+}
+
+/* SAMURAI DOJO THEME - Dark Mode */
+[data-theme="samurai_dark"] {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #121212;
+  --surface-1: #1a1a1a;
+  --surface-2: #262626;
+  --surface-3: #333333;
+  --text-primary: #fafafa;
+  --text-secondary: #e5e5e5;
+  --text-muted: #a3a3a3;
+  --border-default: #262626;
+  --border-strong: #404040;
+  --brand-primary: #dc2626;
+  --brand-secondary: #f59e0b;
+  --state-success: #22c55e;
+  --state-warning: #f59e0b;
+  --state-error: #dc2626;
+  --state-info: #737373;
+  --score-accepted: #22c55e;
+  --score-wrong: #dc2626;
+  --score-tle: #f59e0b;
+  --score-re: #ef4444;
+  --score-ce: #525252;
+  --fx-glow: 0 0 10px rgba(220, 38, 38, 0.3);
+}
+
+/* SAMURAI DOJO THEME - Light Mode */
+[data-theme="samurai_light"] {
+  --bg-primary: #fafafa;
+  --bg-secondary: #f5f5f5;
+  --surface-1: #ffffff;
+  --surface-2: #e5e5e5;
+  --surface-3: #d4d4d4;
+  --text-primary: #0a0a0a;
+  --text-secondary: #404040;
+  --text-muted: #737373;
+  --border-default: #e5e5e5;
+  --border-strong: #a3a3a3;
+  --brand-primary: #b91c1c;
+  --brand-secondary: #d97706;
+  --state-success: #16a34a;
+  --state-warning: #d97706;
+  --state-error: #b91c1c;
+  --state-info: #525252;
+  --score-accepted: #16a34a;
+  --score-wrong: #b91c1c;
+  --score-tle: #d97706;
+  --score-re: #dc2626;
+  --score-ce: #404040;
+  --fx-glow: 0 0 5px rgba(185, 28, 28, 0.15);
+}
+
+/* PIXEL ARCADE THEME - Dark Mode */
+[data-theme="pixel_dark"] {
+  --bg-primary: #1a0033;
+  --bg-secondary: #2d0052;
+  --surface-1: #3d0066;
+  --surface-2: #4d007a;
+  --surface-3: #6600a3;
+  --text-primary: #ffff00;
+  --text-secondary: #00ffff;
+  --text-muted: #ff00ff;
+  --border-default: #6600a3;
+  --border-strong: #8800cc;
+  --brand-primary: #00ff00;
+  --brand-secondary: #ff00ff;
+  --state-success: #00ff00;
+  --state-warning: #ffaa00;
+  --state-error: #ff0055;
+  --state-info: #00ffff;
+  --score-accepted: #00ff00;
+  --score-wrong: #ff0055;
+  --score-tle: #ffaa00;
+  --score-re: #ff5500;
+  --score-ce: #aa00ff;
+  --fx-glow: 0 0 8px rgba(255, 0, 255, 0.6), 0 0 16px rgba(0, 255, 255, 0.4);
+}
+
+/* PIXEL ARCADE THEME - Light Mode */
+[data-theme="pixel_light"] {
+  --bg-primary: #ffe6f7;
+  --bg-secondary: #ffd6ee;
+  --surface-1: #ffffff;
+  --surface-2: #ffb3dd;
+  --surface-3: #ff99cc;
+  --text-primary: #330066;
+  --text-secondary: #660099;
+  --text-muted: #9933cc;
+  --border-default: #ff99cc;
+  --border-strong: #ff66bb;
+  --brand-primary: #00aa00;
+  --brand-secondary: #cc00cc;
+  --state-success: #00cc00;
+  --state-warning: #ff9900;
+  --state-error: #ff0044;
+  --state-info: #0099cc;
+  --score-accepted: #00cc00;
+  --score-wrong: #ff0044;
+  --score-tle: #ff9900;
+  --score-re: #ff4400;
+  --score-ce: #9900cc;
+  --fx-glow: 0 0 4px rgba(204, 0, 204, 0.3);
+}
+
+/* MYTHIC RPG THEME - Dark Mode */
+[data-theme="mythic_dark"] {
+  --bg-primary: #0f0a1a;
+  --bg-secondary: #1a1228;
+  --surface-1: #251a35;
+  --surface-2: #2f2442;
+  --surface-3: #3d2f54;
+  --text-primary: #f5e6ff;
+  --text-secondary: #d4b3ff;
+  --text-muted: #a380d6;
+  --border-default: #3d2f54;
+  --border-strong: #5a4570;
+  --brand-primary: #a855f7;
+  --brand-secondary: #f59e0b;
+  --state-success: #10b981;
+  --state-warning: #fbbf24;
+  --state-error: #f87171;
+  --state-info: #60a5fa;
+  --score-accepted: #10b981;
+  --score-wrong: #f87171;
+  --score-tle: #fbbf24;
+  --score-re: #fb923c;
+  --score-ce: #c084fc;
+  --fx-glow: 0 0 20px rgba(168, 85, 247, 0.5), 0 0 30px rgba(245, 158, 11, 0.3);
+}
+
+/* MYTHIC RPG THEME - Light Mode */
+[data-theme="mythic_light"] {
+  --bg-primary: #faf5ff;
+  --bg-secondary: #f3e8ff;
+  --surface-1: #ffffff;
+  --surface-2: #e9d5ff;
+  --surface-3: #d8b4fe;
+  --text-primary: #3b0764;
+  --text-secondary: #581c87;
+  --text-muted: #7e22ce;
+  --border-default: #e9d5ff;
+  --border-strong: #c084fc;
+  --brand-primary: #9333ea;
+  --brand-secondary: #f59e0b;
+  --state-success: #059669;
+  --state-warning: #f59e0b;
+  --state-error: #ef4444;
+  --state-info: #3b82f6;
+  --score-accepted: #059669;
+  --score-wrong: #ef4444;
+  --score-tle: #f59e0b;
+  --score-re: #f97316;
+  --score-ce: #a855f7;
+  --fx-glow: 0 0 10px rgba(147, 51, 234, 0.2);
+}
+
+/* SPORTS ARENA THEME - Dark Mode */
+[data-theme="sports_dark"] {
+  --bg-primary: #0c1618;
+  --bg-secondary: #162329;
+  --surface-1: #1f2d35;
+  --surface-2: #2a3942;
+  --surface-3: #374551;
+  --text-primary: #f0f9ff;
+  --text-secondary: #bae6fd;
+  --text-muted: #7dd3fc;
+  --border-default: #2a3942;
+  --border-strong: #475569;
+  --brand-primary: #0ea5e9;
+  --brand-secondary: #fb923c;
+  --state-success: #22c55e;
+  --state-warning: #facc15;
+  --state-error: #ef4444;
+  --state-info: #38bdf8;
+  --score-accepted: #22c55e;
+  --score-wrong: #ef4444;
+  --score-tle: #facc15;
+  --score-re: #f97316;
+  --score-ce: #0ea5e9;
+  --fx-glow: 0 0 12px rgba(14, 165, 233, 0.4);
+}
+
+/* SPORTS ARENA THEME - Light Mode */
+[data-theme="sports_light"] {
+  --bg-primary: #f0f9ff;
+  --bg-secondary: #e0f2fe;
+  --surface-1: #ffffff;
+  --surface-2: #bae6fd;
+  --surface-3: #7dd3fc;
+  --text-primary: #0c4a6e;
+  --text-secondary: #075985;
+  --text-muted: #0369a1;
+  --border-default: #bae6fd;
+  --border-strong: #38bdf8;
+  --brand-primary: #0284c7;
+  --brand-secondary: #f97316;
+  --state-success: #16a34a;
+  --state-warning: #eab308;
+  --state-error: #dc2626;
+  --state-info: #0284c7;
+  --score-accepted: #16a34a;
+  --score-wrong: #dc2626;
+  --score-tle: #eab308;
+  --score-re: #ea580c;
+  --score-ce: #0284c7;
+  --fx-glow: 0 0 6px rgba(2, 132, 199, 0.15);
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+@layer utilities {
+  .text-caption {
+    font-size: var(--text-caption);
+    line-height: var(--text-caption-lh);
+  }
+  
+  .font-code {
+    font-family: var(--font-code);
+  }
+  
+  .glow {
+    box-shadow: var(--fx-glow);
+  }
+}
