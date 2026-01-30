@@ -131,6 +131,19 @@
   --fx-glow: 0 0 30px rgba(0, 229, 255, 0.5);
   --fx-glow-hover: 0 0 50px rgba(0, 229, 255, 0.5);
   --gradient-brand: linear-gradient(135deg, #00E5FF, #8B5CF6);
+  
+  /* Shape & Style Variables */
+  --btn-radius: 8px;
+  --card-radius: 12px;
+  --border-width: 2px;
+  --border-style: solid;
+  --shadow-style: 0px 0px 30px rgba(0, 229, 255, 0.3);
+  --shadow-hover: 0px 0px 50px rgba(0, 229, 255, 0.5);
+  --transition-speed: 0.2s;
+  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --corner-clip: 0px;
+  --btn-text-transform: uppercase;
+  --btn-letter-spacing: 2px;
 }
 
 /* ==================== CYBER ARENA THEME - Light Mode ==================== */
@@ -205,6 +218,19 @@
   --fx-glow: 0 0 15px rgba(34, 211, 238, 0.4);
   --fx-glow-hover: 0 0 30px rgba(34, 211, 238, 0.5);
   --gradient-brand: linear-gradient(135deg, #22D3EE, #E879F9);
+  
+  /* Shape & Style Variables - Technical/Mission Control */
+  --btn-radius: 6px;
+  --card-radius: 12px;
+  --border-width: 1px;
+  --border-style: solid;
+  --shadow-style: 0px 8px 24px rgba(34, 211, 238, 0.3);
+  --shadow-hover: 0px 12px 32px rgba(34, 211, 238, 0.4);
+  --transition-speed: 0.25s;
+  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --corner-clip: 0px;
+  --btn-text-transform: uppercase;
+  --btn-letter-spacing: 2px;
 }
 
 /* ==================== SPACE OPS THEME - Light Mode ==================== */
@@ -279,6 +305,19 @@
   --fx-glow: 0 0 10px rgba(220, 38, 38, 0.3);
   --fx-glow-hover: 0 0 20px rgba(220, 38, 38, 0.4);
   --gradient-brand: linear-gradient(135deg, #DC2626, #D4AF37);
+  
+  /* Shape & Style Variables - Zen Minimalism */
+  --btn-radius: 0px;
+  --card-radius: 0px;
+  --border-width: 2px;
+  --border-style: solid;
+  --shadow-style: none;
+  --shadow-hover: none;
+  --transition-speed: 0.4s;
+  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --corner-clip: 0px;
+  --btn-text-transform: uppercase;
+  --btn-letter-spacing: 2px;
 }
 
 /* ==================== SAMURAI DOJO THEME - Light Mode ==================== */
@@ -353,6 +392,19 @@
   --fx-glow: 0 0 8px rgba(255, 0, 255, 0.6), 0 0 16px rgba(0, 255, 255, 0.4);
   --fx-glow-hover: 0 0 12px rgba(255, 0, 255, 0.8), 0 0 24px rgba(0, 255, 255, 0.6);
   --gradient-brand: linear-gradient(135deg, #FF006E, #3A86FF);
+  
+  /* Shape & Style Variables - 8-bit Retro */
+  --btn-radius: 0px;
+  --card-radius: 0px;
+  --border-width: 4px;
+  --border-style: solid;
+  --shadow-style: 0px 4px 0px rgba(0, 0, 0, 1);
+  --shadow-hover: 0px 2px 0px rgba(0, 0, 0, 1);
+  --transition-speed: 0s;
+  --transition-ease: steps(1);
+  --corner-clip: 4px;
+  --btn-text-transform: uppercase;
+  --btn-letter-spacing: 1px;
 }
 
 [data-theme="pixel_dark"] * {
@@ -439,6 +491,19 @@
   --fx-glow: 0 0 20px rgba(109, 40, 217, 0.5), 0 0 30px rgba(245, 158, 11, 0.3);
   --fx-glow-hover: 0 0 40px rgba(109, 40, 217, 0.6), 0 0 50px rgba(245, 158, 11, 0.4);
   --gradient-brand: linear-gradient(135deg, #6D28D9, #F59E0B);
+  
+  /* Shape & Style Variables - Epic Fantasy */
+  --btn-radius: 0px;
+  --card-radius: 12px;
+  --border-width: 2px;
+  --border-style: solid;
+  --shadow-style: 0px 8px 24px rgba(109, 40, 217, 0.4);
+  --shadow-hover: 0px 20px 60px rgba(109, 40, 217, 0.3);
+  --transition-speed: 0.4s;
+  --transition-ease: ease-out;
+  --corner-clip: 8px;
+  --btn-text-transform: uppercase;
+  --btn-letter-spacing: 2px;
 }
 
 /* ==================== MYTHIC RPG THEME - Light Mode ==================== */
@@ -513,6 +578,19 @@
   --fx-glow: 0 0 12px rgba(37, 99, 235, 0.4);
   --fx-glow-hover: 0 0 30px rgba(37, 99, 235, 0.6);
   --gradient-brand: linear-gradient(135deg, #2563EB, #FBBF24);
+  
+  /* Shape & Style Variables - Dynamic Sports */
+  --btn-radius: 0px;
+  --card-radius: 0px;
+  --border-width: 3px;
+  --border-style: solid;
+  --shadow-style: 0px 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0px 8px 16px rgba(37, 99, 235, 0.4);
+  --transition-speed: 0.3s;
+  --transition-ease: ease;
+  --corner-clip: 8px;
+  --btn-text-transform: uppercase;
+  --btn-letter-spacing: 2px;
 }
 
 /* ==================== SPORTS ARENA THEME - Light Mode ==================== */
@@ -599,6 +677,47 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
+/* ==================== CANVAS CHALLENGE SPECIFIC STYLES ==================== */
+.bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(var(--border-default-rgb, 100, 100, 100), 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(var(--border-default-rgb, 100, 100, 100), 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Drawing canvas grid animation */
+[data-theme^="cyber"] .bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 229, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 229, 255, 0.1) 1px, transparent 1px);
+}
+
+[data-theme^="space"] .bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(34, 211, 238, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(34, 211, 238, 0.08) 1px, transparent 1px);
+}
+
+[data-theme^="pixel"] .bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(6, 255, 165, 0.15) 2px, transparent 2px),
+    linear-gradient(to bottom, rgba(6, 255, 165, 0.15) 2px, transparent 2px);
+  background-size: 16px 16px;
+}
+
+/* Canvas tool tooltips */
+.canvas-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.canvas-tooltip.show {
+  opacity: 1;
+}
+
 /* ==================== UTILITY CLASSES ==================== */
 @layer utilities {
   .text-caption {
@@ -683,5 +802,120 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+  
+  /* ==================== THEME-ADAPTIVE BUTTON STYLES ==================== */
+  .theme-btn {
+    border-radius: var(--btn-radius);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    box-shadow: var(--shadow-style);
+    transition-duration: var(--transition-speed);
+    transition-timing-function: var(--transition-ease);
+    text-transform: var(--btn-text-transform);
+    letter-spacing: var(--btn-letter-spacing);
+  }
+  
+  .theme-btn:hover:not(:disabled) {
+    box-shadow: var(--shadow-hover);
+  }
+  
+  /* ==================== THEME-ADAPTIVE CARD STYLES ==================== */
+  .theme-card {
+    border-radius: var(--card-radius);
+    border-width: var(--border-width);
+    border-style: var(--border-style);
+    box-shadow: var(--shadow-style);
+    transition-duration: var(--transition-speed);
+    transition-timing-function: var(--transition-ease);
+  }
+  
+  .theme-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+  
+  /* ==================== CORNER BRACKETS (Cyber/Space) ==================== */
+  [data-theme^="cyber"] .corner-brackets::before,
+  [data-theme^="cyber"] .corner-brackets::after,
+  [data-theme^="space"] .corner-brackets::before,
+  [data-theme^="space"] .corner-brackets::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: var(--brand-primary);
+    opacity: 0.4;
+    transition: opacity var(--transition-speed);
+  }
+  
+  [data-theme^="cyber"] .corner-brackets::before,
+  [data-theme^="space"] .corner-brackets::before {
+    top: 0;
+    left: 0;
+    border-top: 2px solid;
+    border-left: 2px solid;
+  }
+  
+  [data-theme^="cyber"] .corner-brackets::after,
+  [data-theme^="space"] .corner-brackets::after {
+    bottom: 0;
+    right: 0;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+  }
+  
+  [data-theme^="cyber"] .corner-brackets:hover::before,
+  [data-theme^="cyber"] .corner-brackets:hover::after,
+  [data-theme^="space"] .corner-brackets:hover::before,
+  [data-theme^="space"] .corner-brackets:hover::after {
+    opacity: 1;
+  }
+  
+  /* ==================== CLIPPED CORNERS (Mythic/Sports) ==================== */
+  [data-theme="mythic_dark"] .theme-btn,
+  [data-theme="mythic_light"] .theme-btn {
+    clip-path: polygon(
+      8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%,
+      0 100%, 0 8px
+    );
+  }
+  
+  [data-theme^="sports"] .theme-btn,
+  [data-theme^="sports"] .theme-card {
+    clip-path: polygon(
+      8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%,
+      0 100%, 0 8px
+    );
+  }
+  
+  /* ==================== PIXEL CORNER NOTCHES ==================== */
+  [data-theme^="pixel"] .theme-btn,
+  [data-theme^="pixel"] .theme-card {
+    clip-path: polygon(
+      4px 0, calc(100% - 4px) 0, 100% 4px,
+      100% calc(100% - 4px), calc(100% - 4px) 100%,
+      4px 100%, 0 calc(100% - 4px), 0 4px
+    );
+  }
+  
+  /* ==================== SAMURAI ORNAMENTS ==================== */
+  [data-theme^="samurai"] .theme-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+      transparent, 
+      var(--brand-secondary) 50%, 
+      transparent
+    );
+    opacity: 0.3;
+  }
+  
+  [data-theme^="samurai"] .theme-card:hover::before {
+    opacity: 0.6;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }

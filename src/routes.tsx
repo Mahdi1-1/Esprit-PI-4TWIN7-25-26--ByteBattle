@@ -10,6 +10,12 @@ import { HackathonScoreboard } from './pages/HackathonScoreboard';
 import { Leaderboard } from './pages/Leaderboard';
 import { Themes } from './pages/Themes';
 import { ThemeShowcase } from './pages/ThemeShowcase';
+import { ThemeShowcaseComponents } from './pages/ThemeShowcaseComponents';
+import { CanvasCatalog } from './pages/CanvasCatalog';
+import { CanvasChallengeBrief } from './pages/CanvasChallengeBrief';
+import { CanvasEditor } from './pages/CanvasEditor';
+import { CanvasSubmissionResult } from './pages/CanvasSubmissionResult';
+import { CanvasGallery } from './pages/CanvasGallery';
 
 export const router = createBrowserRouter([
   {
@@ -63,6 +69,30 @@ export const router = createBrowserRouter([
   {
     path: '/theme-showcase',
     Component: ThemeShowcase,
+  },
+  {
+    path: '/theme-components',
+    Component: ThemeShowcaseComponents,
+  },
+  {
+    path: '/canvas',
+    Component: CanvasCatalog,
+  },
+  {
+    path: '/canvas/:id/brief',
+    Component: CanvasChallengeBrief,
+  },
+  {
+    path: '/canvas/:id/editor',
+    Component: CanvasEditor,
+  },
+  {
+    path: '/canvas/:id/result',
+    Component: CanvasSubmissionResult,
+  },
+  {
+    path: '/canvas/gallery',
+    Component: CanvasGallery,
   },
   {
     path: '*',

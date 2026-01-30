@@ -15,30 +15,27 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary: `
     bg-[var(--brand-primary)] 
     text-[var(--bg-primary)] 
-    border border-transparent
+    border-[var(--brand-primary)]
+    theme-btn
     hover:opacity-90
-    hover:glow-hover
     active:scale-[0.98]
     disabled:opacity-50 disabled:cursor-not-allowed
-    transition-all duration-150
     font-[var(--font-title)]
-    uppercase
-    tracking-wide
   `,
   secondary: `
-    bg-[var(--surface-2)] 
+    bg-transparent
     text-[var(--text-primary)] 
-    border border-[var(--border-default)]
-    hover:bg-[var(--surface-3)]
-    hover:border-[var(--brand-primary)]
+    border-[var(--brand-primary)]
+    theme-btn
+    hover:bg-[var(--brand-primary)]
+    hover:text-[var(--bg-primary)]
     active:scale-[0.98]
     disabled:opacity-50 disabled:cursor-not-allowed
-    transition-all duration-150
   `,
   ghost: `
     bg-transparent 
     text-[var(--text-secondary)] 
-    border border-transparent
+    border-transparent
     hover:bg-[var(--surface-1)]
     hover:text-[var(--brand-primary)]
     active:scale-[0.98]
@@ -48,11 +45,11 @@ const variantStyles: Record<ButtonVariant, string> = {
   destructive: `
     bg-[var(--state-error)] 
     text-white 
-    border border-transparent
+    border-[var(--state-error)]
+    theme-btn
     hover:opacity-90
     active:scale-[0.98]
     disabled:opacity-50 disabled:cursor-not-allowed
-    transition-all duration-150
   `,
 };
 

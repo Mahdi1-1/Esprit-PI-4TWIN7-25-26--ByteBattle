@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Menu, Moon, Sun, Swords, Trophy, Code2, Users, Palette } from 'lucide-react';
+import { Menu, Moon, Sun, Swords, Trophy, Code2, Users, Palette, PenTool } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from './Button';
 import { useState } from 'react';
@@ -38,6 +38,13 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
                 >
                   <Code2 className="w-4 h-4" />
                   <span>Problems</span>
+                </Link>
+                <Link
+                  to="/canvas"
+                  className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+                >
+                  <PenTool className="w-4 h-4" />
+                  <span>Canvas</span>
                 </Link>
                 <Link
                   to="/duel"
@@ -149,6 +156,14 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
               >
                 <Code2 className="w-4 h-4" />
                 <span>Problems</span>
+              </Link>
+              <Link
+                to="/canvas"
+                className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <PenTool className="w-4 h-4" />
+                <span>Canvas</span>
               </Link>
               <Link
                 to="/duel"
