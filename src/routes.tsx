@@ -17,6 +17,14 @@ import { CanvasEditor } from './pages/CanvasEditor';
 import { CanvasSubmissionResult } from './pages/CanvasSubmissionResult';
 import { CanvasGallery } from './pages/CanvasGallery';
 
+// Admin Pages
+import { AdminLogin } from './pages/admin/AdminLogin';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminProblems } from './pages/admin/AdminProblems';
+import { AdminMonitoring } from './pages/admin/AdminMonitoring';
+import { AdminSubmissions } from './pages/admin/AdminSubmissions';
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -93,6 +101,30 @@ export const router = createBrowserRouter([
   {
     path: '/canvas/gallery',
     Component: CanvasGallery,
+  },
+  {
+    path: '/admin/login',
+    Component: AdminLogin,
+  },
+  {
+    path: '/admin/dashboard',
+    Component: AdminDashboard,
+  },
+  {
+    path: '/admin/users',
+    Component: AdminUsers,
+  },
+  {
+    path: '/admin/problems',
+    Component: AdminProblems,
+  },
+  {
+    path: '/admin/monitoring',
+    Component: AdminMonitoring,
+  },
+  {
+    path: '/admin/submissions',
+    Component: AdminSubmissions,
   },
   {
     path: '*',
