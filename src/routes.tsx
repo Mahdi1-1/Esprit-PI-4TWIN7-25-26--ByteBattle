@@ -9,6 +9,7 @@ import { Hackathon } from './pages/Hackathon';
 import { HackathonScoreboard } from './pages/HackathonScoreboard';
 import { Leaderboard } from './pages/Leaderboard';
 import { Themes } from './pages/Themes';
+import { ThemeShowcase } from './pages/ThemeShowcase';
 
 export const router = createBrowserRouter([
   {
@@ -58,6 +59,10 @@ export const router = createBrowserRouter([
   {
     path: '/themes',
     Component: Themes,
+  },
+  {
+    path: '/theme-showcase',
+    Component: ThemeShowcase,
   },
   {
     path: '*',

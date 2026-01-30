@@ -1,10 +1,11 @@
 import { Link } from 'react-router';
 import { Code2, Swords, Users, Brain, Shield, Zap, ArrowRight, Github } from 'lucide-react';
 import { Button } from '../components/Button';
+import { Layout } from '../components/Layout';
 
 export function Landing() {
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <Layout>
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-20 lg:py-32">
@@ -16,7 +17,7 @@ export function Landing() {
               </span>
             </div>
             
-            <h1 className="mb-6 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] bg-clip-text text-transparent">
+            <h1 className="mb-6 gradient-brand-text">
               Code. Battle. Level Up.
             </h1>
             
@@ -203,7 +204,7 @@ export function Landing() {
           </div>
         </div>
       </footer>
-    </div>
+    </Layout>
   );
 }
 

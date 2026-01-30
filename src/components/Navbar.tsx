@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Menu, Moon, Sun, Swords, Trophy, Code2, Users } from 'lucide-react';
+import { Menu, Moon, Sun, Swords, Trophy, Code2, Users, Palette } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from './Button';
 import { useState } from 'react';
@@ -23,7 +23,7 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
             <div className="w-8 h-8 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] rounded-[var(--radius-sm)] flex items-center justify-center glow">
               <Code2 className="w-5 h-5 text-[var(--bg-primary)]" />
             </div>
-            <span className="font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
+            <span className="font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors font-title">
               ByteBattle
             </span>
           </Link>
@@ -60,6 +60,13 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
                   <Trophy className="w-4 h-4" />
                   <span>Leaderboard</span>
                 </Link>
+                <Link
+                  to="/themes"
+                  className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+                >
+                  <Palette className="w-4 h-4" />
+                  <span>Thèmes</span>
+                </Link>
               </>
             ) : null}
           </div>
@@ -75,6 +82,7 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
                 rounded-[var(--radius-md)]
                 text-[var(--text-secondary)]
                 hover:bg-[var(--surface-2)]
+                hover:text-[var(--brand-primary)]
                 transition-colors
               "
               aria-label="Toggle theme"
@@ -87,11 +95,11 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
             </button>
 
             {isLoggedIn ? (
-              <Link to="/profile" className="flex items-center gap-2">
+              <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <img
                   src={userAvatar}
                   alt={username}
-                  className="w-10 h-10 rounded-full border-2 border-[var(--brand-primary)]"
+                  className="w-10 h-10 rounded-full border-2 border-[var(--brand-primary)] glow"
                 />
                 <span className="hidden lg:block text-[var(--text-primary)] font-medium">
                   {username}
@@ -165,6 +173,14 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
               >
                 <Trophy className="w-4 h-4" />
                 <span>Leaderboard</span>
+              </Link>
+              <Link
+                to="/themes"
+                className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Palette className="w-4 h-4" />
+                <span>Thèmes</span>
               </Link>
             </div>
           </div>

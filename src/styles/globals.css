@@ -1,14 +1,22 @@
 @import "tailwindcss";
 
 /* ===================================================================
-   BYTEBATTLE DESIGN SYSTEM - FOUNDATIONS
-   Grid: 8pt, Radii: 8/12/16, Typography: Inter + JetBrains Mono
+   BYTEBATTLE DESIGN SYSTEM - 6 THEMES WITH DETAILED DESIGN CHARTS
+   Thèmes: Cyber Arena, Space Ops, Samurai Dojo, Pixel Arcade, Mythic RPG, Sports Arena
    =================================================================== */
 
-/* ==================== TYPOGRAPHY ==================== */
+/* ==================== GOOGLE FONTS IMPORTS ==================== */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Barlow:wght@400;600;700&display=swap');
+
+/* ==================== BASE TYPOGRAPHY ==================== */
 @layer base {
   :root {
-    /* Font families */
+    /* Font families - Default */
     --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-code: 'JetBrains Mono', 'Fira Code', monospace;
     
@@ -52,22 +60,30 @@
     line-height: var(--text-body-lh);
   }
 
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
   h1 {
     font-size: var(--text-h1);
     line-height: var(--text-h1-lh);
     font-weight: 600;
+    font-family: var(--font-title);
   }
 
   h2 {
     font-size: var(--text-h2);
     line-height: var(--text-h2-lh);
     font-weight: 600;
+    font-family: var(--font-title);
   }
 
   h3 {
     font-size: var(--text-h3);
     line-height: var(--text-h3-lh);
     font-weight: 600;
+    font-family: var(--font-title);
   }
 
   code, pre {
@@ -75,36 +91,54 @@
   }
 }
 
-/* ==================== COLOR TOKENS - SEMANTIC VARIABLES ==================== */
-
-/* CYBER ARENA THEME - Dark Mode */
+/* ==================== CYBER ARENA THEME - Dark Mode ==================== */
 [data-theme="cyber_dark"] {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #0f1420;
+  /* Typography */
+  --font-title: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
+  /* Colors - Neon Futuristic */
+  --bg-primary: #0B1020;
+  --bg-secondary: #121A2F;
   --surface-1: #151b2e;
   --surface-2: #1a2338;
   --surface-3: #1f2945;
-  --text-primary: #e0e7ff;
+  --text-primary: #E5E7EB;
   --text-secondary: #a5b4fc;
   --text-muted: #6366f1;
   --border-default: #2d3a5f;
   --border-strong: #4c5a8f;
-  --brand-primary: #00ffff;
-  --brand-secondary: #8b5cf6;
-  --state-success: #10b981;
-  --state-warning: #f59e0b;
-  --state-error: #ef4444;
+  
+  /* Brand Colors - Neon Cyan & Purple */
+  --brand-primary: #00E5FF;
+  --brand-secondary: #8B5CF6;
+  
+  /* State Colors */
+  --state-success: #22C55E;
+  --state-warning: #F59E0B;
+  --state-error: #EF4444;
   --state-info: #3b82f6;
-  --score-accepted: #10b981;
-  --score-wrong: #ef4444;
-  --score-tle: #f59e0b;
+  
+  /* Score Colors */
+  --score-accepted: #22C55E;
+  --score-wrong: #EF4444;
+  --score-tle: #F59E0B;
   --score-re: #f97316;
   --score-ce: #6366f1;
-  --fx-glow: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
+  
+  /* Effects */
+  --fx-glow: 0 0 30px rgba(0, 229, 255, 0.5);
+  --fx-glow-hover: 0 0 50px rgba(0, 229, 255, 0.5);
+  --gradient-brand: linear-gradient(135deg, #00E5FF, #8B5CF6);
 }
 
-/* CYBER ARENA THEME - Light Mode */
+/* ==================== CYBER ARENA THEME - Light Mode ==================== */
 [data-theme="cyber_light"] {
+  --font-title: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
   --bg-primary: #f8fafc;
   --bg-secondary: #f1f5f9;
   --surface-1: #ffffff;
@@ -127,36 +161,58 @@
   --score-re: #ea580c;
   --score-ce: #4f46e5;
   --fx-glow: 0 0 10px rgba(8, 145, 178, 0.2);
+  --fx-glow-hover: 0 0 20px rgba(8, 145, 178, 0.3);
+  --gradient-brand: linear-gradient(135deg, #0891b2, #7c3aed);
 }
 
-/* SPACE OPS THEME - Dark Mode */
+/* ==================== SPACE OPS THEME - Dark Mode ==================== */
 [data-theme="space_dark"] {
-  --bg-primary: #020617;
+  /* Typography */
+  --font-title: 'Chakra Petch', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
+  /* Colors - Deep Space Blue */
+  --bg-primary: #070A1A;
   --bg-secondary: #0c1326;
   --surface-1: #0f172a;
   --surface-2: #1e293b;
   --surface-3: #334155;
-  --text-primary: #f1f5f9;
+  --text-primary: #FFFFFF;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --border-default: #1e293b;
   --border-strong: #334155;
-  --brand-primary: #06b6d4;
-  --brand-secondary: #3b82f6;
+  
+  /* Brand Colors - Cyan & Magenta */
+  --brand-primary: #22D3EE;
+  --brand-secondary: #E879F9;
+  
+  /* State Colors */
   --state-success: #14b8a6;
   --state-warning: #f59e0b;
   --state-error: #f43f5e;
   --state-info: #0ea5e9;
+  
+  /* Score Colors */
   --score-accepted: #14b8a6;
   --score-wrong: #f43f5e;
   --score-tle: #f59e0b;
   --score-re: #fb7185;
   --score-ce: #60a5fa;
-  --fx-glow: 0 0 15px rgba(6, 182, 212, 0.4);
+  
+  /* Effects */
+  --fx-glow: 0 0 15px rgba(34, 211, 238, 0.4);
+  --fx-glow-hover: 0 0 30px rgba(34, 211, 238, 0.5);
+  --gradient-brand: linear-gradient(135deg, #22D3EE, #E879F9);
 }
 
-/* SPACE OPS THEME - Light Mode */
+/* ==================== SPACE OPS THEME - Light Mode ==================== */
 [data-theme="space_light"] {
+  --font-title: 'Chakra Petch', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --surface-1: #f1f5f9;
@@ -179,36 +235,58 @@
   --score-re: #f43f5e;
   --score-ce: #3b82f6;
   --fx-glow: 0 0 8px rgba(8, 145, 178, 0.15);
+  --fx-glow-hover: 0 0 16px rgba(8, 145, 178, 0.25);
+  --gradient-brand: linear-gradient(135deg, #0891b2, #2563eb);
 }
 
-/* SAMURAI DOJO THEME - Dark Mode */
+/* ==================== SAMURAI DOJO THEME - Dark Mode ==================== */
 [data-theme="samurai_dark"] {
-  --bg-primary: #0a0a0a;
+  /* Typography */
+  --font-title: 'Noto Serif JP', serif;
+  --font-ui: 'Noto Sans JP', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
+  /* Colors - Ink & Ivory */
+  --bg-primary: #0B0B0D;
   --bg-secondary: #121212;
   --surface-1: #1a1a1a;
   --surface-2: #262626;
   --surface-3: #333333;
-  --text-primary: #fafafa;
+  --text-primary: #F5F1E8;
   --text-secondary: #e5e5e5;
   --text-muted: #a3a3a3;
   --border-default: #262626;
   --border-strong: #404040;
-  --brand-primary: #dc2626;
-  --brand-secondary: #f59e0b;
+  
+  /* Brand Colors - Red & Gold */
+  --brand-primary: #DC2626;
+  --brand-secondary: #D4AF37;
+  
+  /* State Colors */
   --state-success: #22c55e;
   --state-warning: #f59e0b;
   --state-error: #dc2626;
   --state-info: #737373;
+  
+  /* Score Colors */
   --score-accepted: #22c55e;
   --score-wrong: #dc2626;
   --score-tle: #f59e0b;
   --score-re: #ef4444;
   --score-ce: #525252;
+  
+  /* Effects */
   --fx-glow: 0 0 10px rgba(220, 38, 38, 0.3);
+  --fx-glow-hover: 0 0 20px rgba(220, 38, 38, 0.4);
+  --gradient-brand: linear-gradient(135deg, #DC2626, #D4AF37);
 }
 
-/* SAMURAI DOJO THEME - Light Mode */
+/* ==================== SAMURAI DOJO THEME - Light Mode ==================== */
 [data-theme="samurai_light"] {
+  --font-title: 'Noto Serif JP', serif;
+  --font-ui: 'Noto Sans JP', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
   --bg-primary: #fafafa;
   --bg-secondary: #f5f5f5;
   --surface-1: #ffffff;
@@ -231,36 +309,64 @@
   --score-re: #dc2626;
   --score-ce: #404040;
   --fx-glow: 0 0 5px rgba(185, 28, 28, 0.15);
+  --fx-glow-hover: 0 0 10px rgba(185, 28, 28, 0.2);
+  --gradient-brand: linear-gradient(135deg, #b91c1c, #d97706);
 }
 
-/* PIXEL ARCADE THEME - Dark Mode */
+/* ==================== PIXEL ARCADE THEME - Dark Mode ==================== */
 [data-theme="pixel_dark"] {
-  --bg-primary: #1a0033;
-  --bg-secondary: #2d0052;
-  --surface-1: #3d0066;
-  --surface-2: #4d007a;
-  --surface-3: #6600a3;
-  --text-primary: #ffff00;
+  /* Typography */
+  --font-title: 'Press Start 2P', cursive;
+  --font-ui: 'Press Start 2P', cursive;
+  --font-code: 'Press Start 2P', cursive;
+  
+  /* Colors - Vibrant Arcade */
+  --bg-primary: #1A1A2E;
+  --bg-secondary: #16213E;
+  --surface-1: #252542;
+  --surface-2: #2f2f5a;
+  --surface-3: #3d3d6b;
+  --text-primary: #FFFFFF;
   --text-secondary: #00ffff;
   --text-muted: #ff00ff;
-  --border-default: #6600a3;
-  --border-strong: #8800cc;
-  --brand-primary: #00ff00;
-  --brand-secondary: #ff00ff;
-  --state-success: #00ff00;
-  --state-warning: #ffaa00;
-  --state-error: #ff0055;
-  --state-info: #00ffff;
-  --score-accepted: #00ff00;
-  --score-wrong: #ff0055;
-  --score-tle: #ffaa00;
+  --border-default: #3d3d6b;
+  --border-strong: #5a5a8f;
+  
+  /* Brand Colors - Bright & Saturated */
+  --brand-primary: #06FFA5;
+  --brand-secondary: #FF006E;
+  
+  /* State Colors */
+  --state-success: #06FFA5;
+  --state-warning: #FFBE0B;
+  --state-error: #FF006E;
+  --state-info: #3A86FF;
+  
+  /* Score Colors */
+  --score-accepted: #06FFA5;
+  --score-wrong: #FF006E;
+  --score-tle: #FFBE0B;
   --score-re: #ff5500;
-  --score-ce: #aa00ff;
+  --score-ce: #8338EC;
+  
+  /* Effects */
   --fx-glow: 0 0 8px rgba(255, 0, 255, 0.6), 0 0 16px rgba(0, 255, 255, 0.4);
+  --fx-glow-hover: 0 0 12px rgba(255, 0, 255, 0.8), 0 0 24px rgba(0, 255, 255, 0.6);
+  --gradient-brand: linear-gradient(135deg, #FF006E, #3A86FF);
 }
 
-/* PIXEL ARCADE THEME - Light Mode */
+[data-theme="pixel_dark"] * {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* ==================== PIXEL ARCADE THEME - Light Mode ==================== */
 [data-theme="pixel_light"] {
+  --font-title: 'Press Start 2P', cursive;
+  --font-ui: 'Press Start 2P', cursive;
+  --font-code: 'Press Start 2P', cursive;
+  
   --bg-primary: #ffe6f7;
   --bg-secondary: #ffd6ee;
   --surface-1: #ffffff;
@@ -283,36 +389,64 @@
   --score-re: #ff4400;
   --score-ce: #9900cc;
   --fx-glow: 0 0 4px rgba(204, 0, 204, 0.3);
+  --fx-glow-hover: 0 0 8px rgba(204, 0, 204, 0.5);
+  --gradient-brand: linear-gradient(135deg, #cc00cc, #0099cc);
 }
 
-/* MYTHIC RPG THEME - Dark Mode */
+[data-theme="pixel_light"] * {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* ==================== MYTHIC RPG THEME - Dark Mode ==================== */
 [data-theme="mythic_dark"] {
-  --bg-primary: #0f0a1a;
+  /* Typography */
+  --font-title: 'Cinzel', serif;
+  --font-ui: 'Lora', serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
+  /* Colors - Fantasy Purple & Gold */
+  --bg-primary: #0F172A;
   --bg-secondary: #1a1228;
   --surface-1: #251a35;
   --surface-2: #2f2442;
   --surface-3: #3d2f54;
-  --text-primary: #f5e6ff;
+  --text-primary: #FEF3C7;
   --text-secondary: #d4b3ff;
   --text-muted: #a380d6;
   --border-default: #3d2f54;
   --border-strong: #5a4570;
-  --brand-primary: #a855f7;
-  --brand-secondary: #f59e0b;
-  --state-success: #10b981;
+  
+  /* Brand Colors - Rune Purple & Gold */
+  --brand-primary: #6D28D9;
+  --brand-secondary: #F59E0B;
+  
+  /* State Colors */
+  --state-success: #16A34A;
   --state-warning: #fbbf24;
   --state-error: #f87171;
   --state-info: #60a5fa;
-  --score-accepted: #10b981;
+  
+  /* Score Colors */
+  --score-accepted: #16A34A;
   --score-wrong: #f87171;
   --score-tle: #fbbf24;
   --score-re: #fb923c;
   --score-ce: #c084fc;
-  --fx-glow: 0 0 20px rgba(168, 85, 247, 0.5), 0 0 30px rgba(245, 158, 11, 0.3);
+  
+  /* Effects */
+  --fx-glow: 0 0 20px rgba(109, 40, 217, 0.5), 0 0 30px rgba(245, 158, 11, 0.3);
+  --fx-glow-hover: 0 0 40px rgba(109, 40, 217, 0.6), 0 0 50px rgba(245, 158, 11, 0.4);
+  --gradient-brand: linear-gradient(135deg, #6D28D9, #F59E0B);
 }
 
-/* MYTHIC RPG THEME - Light Mode */
+/* ==================== MYTHIC RPG THEME - Light Mode ==================== */
 [data-theme="mythic_light"] {
+  --font-title: 'Cinzel', serif;
+  --font-ui: 'Lora', serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
   --bg-primary: #faf5ff;
   --bg-secondary: #f3e8ff;
   --surface-1: #ffffff;
@@ -335,36 +469,58 @@
   --score-re: #f97316;
   --score-ce: #a855f7;
   --fx-glow: 0 0 10px rgba(147, 51, 234, 0.2);
+  --fx-glow-hover: 0 0 20px rgba(147, 51, 234, 0.3);
+  --gradient-brand: linear-gradient(135deg, #9333ea, #f59e0b);
 }
 
-/* SPORTS ARENA THEME - Dark Mode */
+/* ==================== SPORTS ARENA THEME - Dark Mode ==================== */
 [data-theme="sports_dark"] {
-  --bg-primary: #0c1618;
+  /* Typography */
+  --font-title: 'Teko', sans-serif;
+  --font-ui: 'Barlow', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
+  /* Colors - Stadium Sports */
+  --bg-primary: #111827;
   --bg-secondary: #162329;
   --surface-1: #1f2d35;
   --surface-2: #2a3942;
   --surface-3: #374551;
-  --text-primary: #f0f9ff;
+  --text-primary: #FFFFFF;
   --text-secondary: #bae6fd;
   --text-muted: #7dd3fc;
   --border-default: #2a3942;
   --border-strong: #475569;
-  --brand-primary: #0ea5e9;
-  --brand-secondary: #fb923c;
+  
+  /* Brand Colors - Team Blue & Yellow */
+  --brand-primary: #2563EB;
+  --brand-secondary: #FBBF24;
+  
+  /* State Colors */
   --state-success: #22c55e;
   --state-warning: #facc15;
-  --state-error: #ef4444;
+  --state-error: #EF4444;
   --state-info: #38bdf8;
+  
+  /* Score Colors */
   --score-accepted: #22c55e;
-  --score-wrong: #ef4444;
+  --score-wrong: #EF4444;
   --score-tle: #facc15;
   --score-re: #f97316;
   --score-ce: #0ea5e9;
-  --fx-glow: 0 0 12px rgba(14, 165, 233, 0.4);
+  
+  /* Effects */
+  --fx-glow: 0 0 12px rgba(37, 99, 235, 0.4);
+  --fx-glow-hover: 0 0 30px rgba(37, 99, 235, 0.6);
+  --gradient-brand: linear-gradient(135deg, #2563EB, #FBBF24);
 }
 
-/* SPORTS ARENA THEME - Light Mode */
+/* ==================== SPORTS ARENA THEME - Light Mode ==================== */
 [data-theme="sports_light"] {
+  --font-title: 'Teko', sans-serif;
+  --font-ui: 'Barlow', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  
   --bg-primary: #f0f9ff;
   --bg-secondary: #e0f2fe;
   --surface-1: #ffffff;
@@ -387,6 +543,60 @@
   --score-re: #ea580c;
   --score-ce: #0284c7;
   --fx-glow: 0 0 6px rgba(2, 132, 199, 0.15);
+  --fx-glow-hover: 0 0 12px rgba(2, 132, 199, 0.25);
+  --gradient-brand: linear-gradient(135deg, #0284c7, #f97316);
+}
+
+/* ==================== ANIMATIONS & EFFECTS ==================== */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: var(--fx-glow); }
+  50% { box-shadow: var(--fx-glow-hover); }
+}
+
+@keyframes gridScroll {
+  0% { background-position: 0 0; }
+  100% { background-position: 50px 50px; }
+}
+
+@keyframes scanLine {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes scanHorizontal {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100vw); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes spin {
+  0%, 100% { transform: rotateY(0deg); }
+  50% { transform: rotateY(180deg); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* ==================== UTILITY CLASSES ==================== */
@@ -399,8 +609,79 @@
   .font-code {
     font-family: var(--font-code);
   }
+
+  .font-title {
+    font-family: var(--font-title);
+  }
+
+  .font-ui {
+    font-family: var(--font-ui);
+  }
   
   .glow {
     box-shadow: var(--fx-glow);
+  }
+
+  .glow-hover:hover {
+    box-shadow: var(--fx-glow-hover);
+  }
+
+  .glow-pulse {
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+
+  .gradient-brand {
+    background: var(--gradient-brand);
+  }
+
+  .gradient-brand-text {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Grid Background - Cyber/Space themes */
+  .bg-grid {
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  .bg-grid-animated {
+    animation: gridScroll 20s linear infinite;
+  }
+
+  /* Scan Line Effect */
+  .scan-line {
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--brand-primary), transparent);
+    animation: scanLine 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .scan-horizontal {
+    position: absolute;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(0deg, transparent, var(--brand-primary), transparent);
+    animation: scanHorizontal 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

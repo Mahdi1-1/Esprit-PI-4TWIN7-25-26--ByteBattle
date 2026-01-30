@@ -7,13 +7,14 @@ import { MatchCard } from '../components/MatchCard';
 import { RarityBadge } from '../components/Badge';
 import { mockUser, mockProblems, mockMatches } from '../data/mockData';
 import { Swords, Play, Users, TrendingUp } from 'lucide-react';
+import { Layout } from '../components/Layout';
 
 export function Dashboard() {
   const recommendedProblems = mockProblems.slice(0, 3);
   const recentMatches = mockMatches.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <Layout>
       <Navbar 
         isLoggedIn 
         userAvatar={mockUser.avatar} 
@@ -186,6 +187,6 @@ export function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

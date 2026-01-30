@@ -3,37 +3,44 @@ import { Button } from '../components/Button';
 import { useTheme, ThemeName, THEME_LEVEL_REQUIREMENTS } from '../context/ThemeContext';
 import { mockUser } from '../data/mockData';
 import { Lock, Check, Sparkles } from 'lucide-react';
+import { Layout } from '../components/Layout';
 
-const THEME_INFO: Record<ThemeName, { name: string; description: string; preview: string[] }> = {
+const THEME_INFO: Record<ThemeName, { name: string; description: string; preview: string[]; font: string }> = {
   cyber: {
-    name: 'Cyber Arena',
-    description: 'Interface néon futuriste avec effets lumineux. Style cyberpunk high-tech.',
-    preview: ['#00ffff', '#8b5cf6', '#0a0e1a'],
+    name: 'Cyber Arena / Neon Tournament',
+    description: 'Arène e-sport futuriste avec néons cyan/violet. Fonts: Orbitron + Rajdhani',
+    preview: ['#00E5FF', '#8B5CF6', '#0B1020'],
+    font: 'Orbitron',
   },
   space: {
-    name: 'Space Ops',
-    description: 'Mission control spatial avec tons bleus froids. Thème astronaute pro.',
-    preview: ['#06b6d4', '#3b82f6', '#020617'],
+    name: 'Space Ops / Mission Control',
+    description: 'Centre de contrôle spatial avec étoiles animées. Fonts: Chakra Petch + Rajdhani',
+    preview: ['#22D3EE', '#E879F9', '#070A1A'],
+    font: 'Chakra Petch',
   },
   samurai: {
-    name: 'Samurai Dojo',
-    description: 'Design minimaliste inspiré du Japon. Noir encre, rouge et or.',
-    preview: ['#dc2626', '#f59e0b', '#0a0a0a'],
+    name: 'Samurai Dojo / Code Kata',
+    description: 'Design zen minimaliste, noir encre et rouge sceau. Fonts: Noto Serif JP + Noto Sans JP',
+    preview: ['#DC2626', '#D4AF37', '#0B0B0D'],
+    font: 'Noto Serif JP',
   },
   pixel: {
-    name: 'Pixel Arcade',
-    description: 'Retour aux années 8-bit avec couleurs vives et motifs pixel art.',
-    preview: ['#00ff00', '#ff00ff', '#1a0033'],
+    name: 'Pixel Arcade / 8-Bit Competitive',
+    description: 'Arcade rétro avec couleurs vives saturées. Font: Press Start 2P',
+    preview: ['#06FFA5', '#FF006E', '#1A1A2E'],
+    font: 'Press Start 2P',
   },
   mythic: {
-    name: 'Mythic RPG',
-    description: 'Ambiance fantasy épique avec effets magiques et badges légendaires.',
-    preview: ['#a855f7', '#f59e0b', '#0f0a1a'],
+    name: 'Mythic RPG / Guild Quests',
+    description: 'Fantasy épique avec runes violettes et or. Fonts: Cinzel + Lora',
+    preview: ['#6D28D9', '#F59E0B', '#0F172A'],
+    font: 'Cinzel',
   },
   sports: {
     name: 'Sports Arena',
-    description: 'Style scoreboard sportif avec contrastes nets et highlights dynamiques.',
-    preview: ['#0ea5e9', '#fb923c', '#0c1618'],
+    description: 'Stade sportif dynamique avec scoreboard style. Fonts: Teko + Barlow',
+    preview: ['#2563EB', '#FBBF24', '#111827'],
+    font: 'Teko',
   },
 };
 
@@ -41,7 +48,7 @@ export function Themes() {
   const { theme: currentTheme, setTheme, userLevel, unlockedThemes } = useTheme();
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <Layout>
       <Navbar 
         isLoggedIn 
         userAvatar={mockUser.avatar} 
@@ -108,7 +115,7 @@ export function Themes() {
           )}
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }
 

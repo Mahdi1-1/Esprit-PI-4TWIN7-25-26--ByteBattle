@@ -4,6 +4,7 @@ import { SearchInput, Select } from '../components/Input';
 import { ProblemCard } from '../components/ProblemCard';
 import { mockProblems, mockUser } from '../data/mockData';
 import { Filter } from 'lucide-react';
+import { Layout } from '../components/Layout';
 
 export function Problems() {
   const [search, setSearch] = useState('');
@@ -20,7 +21,7 @@ export function Problems() {
   });
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <Layout>
       <Navbar 
         isLoggedIn 
         userAvatar={mockUser.avatar} 
@@ -142,7 +143,7 @@ export function Problems() {
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
 }
 
