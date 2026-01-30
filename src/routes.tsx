@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 import { Landing } from './pages/Landing';
-import { Login } from './pages/Login';
+import { UnifiedLogin } from './pages/UnifiedLogin';
 import { Dashboard } from './pages/Dashboard';
 import { Problems } from './pages/Problems';
 import { Problem } from './pages/Problem';
@@ -17,13 +17,37 @@ import { CanvasEditor } from './pages/CanvasEditor';
 import { CanvasSubmissionResult } from './pages/CanvasSubmissionResult';
 import { CanvasGallery } from './pages/CanvasGallery';
 
+// Front Office Pages
+import { Profile } from './pages/Profile';
+import { Settings } from './pages/Settings';
+
 // Admin Pages
-import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminProblems } from './pages/admin/AdminProblems';
 import { AdminMonitoring } from './pages/admin/AdminMonitoring';
 import { AdminSubmissions } from './pages/admin/AdminSubmissions';
+import { AdminCanvasChallenges } from './pages/admin/AdminCanvasChallenges';
+import { AdminHackathons } from './pages/admin/AdminHackathons';
+import { AdminReports } from './pages/admin/AdminReports';
+import { AdminAnticheat } from './pages/admin/AdminAnticheat';
+import { AdminAISettings } from './pages/admin/AdminAISettings';
+import { AdminFeatureFlags } from './pages/admin/AdminFeatureFlags';
+import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
+
+// Error Pages
+import { NotFound, PermissionDenied, LoadingPage, EmptyStatePage, ErrorPage } from './pages/ErrorPages';
+
+// Under Construction Pages
+import {
+  UnderConstruction,
+  DuelRoomPlaceholder,
+  AchievementsPlaceholder,
+  NotificationsPlaceholder,
+  UGCModerationPlaceholder,
+  BillingPlaceholder,
+  SettingsSecurityPlaceholder
+} from './pages/UnderConstruction';
 
 export const router = createBrowserRouter([
   {
@@ -32,15 +56,23 @@ export const router = createBrowserRouter([
   },
   {
     path: '/login',
-    Component: Login,
+    Component: UnifiedLogin,
   },
   {
     path: '/signup',
-    Component: Login, // Same component, different flow
+    Component: UnifiedLogin,
   },
   {
     path: '/dashboard',
     Component: Dashboard,
+  },
+  {
+    path: '/profile',
+    Component: Profile,
+  },
+  {
+    path: '/settings',
+    Component: Settings,
   },
   {
     path: '/problems',
@@ -102,9 +134,10 @@ export const router = createBrowserRouter([
     path: '/canvas/gallery',
     Component: CanvasGallery,
   },
+  // Admin Routes
   {
-    path: '/admin/login',
-    Component: AdminLogin,
+    path: '/admin',
+    Component: AdminDashboard,
   },
   {
     path: '/admin/dashboard',
@@ -119,28 +152,89 @@ export const router = createBrowserRouter([
     Component: AdminProblems,
   },
   {
-    path: '/admin/monitoring',
-    Component: AdminMonitoring,
+    path: '/admin/canvas-challenges',
+    Component: AdminCanvasChallenges,
   },
   {
     path: '/admin/submissions',
     Component: AdminSubmissions,
   },
   {
+    path: '/admin/hackathons',
+    Component: AdminHackathons,
+  },
+  {
+    path: '/admin/reports',
+    Component: AdminReports,
+  },
+  {
+    path: '/admin/anticheat',
+    Component: AdminAnticheat,
+  },
+  {
+    path: '/admin/monitoring',
+    Component: AdminMonitoring,
+  },
+  {
+    path: '/admin/ai-settings',
+    Component: AdminAISettings,
+  },
+  {
+    path: '/admin/feature-flags',
+    Component: AdminFeatureFlags,
+  },
+  {
+    path: '/admin/audit-logs',
+    Component: AdminAuditLogs,
+  },
+  // Error Pages
+  {
+    path: '/403',
+    Component: PermissionDenied,
+  },
+  {
+    path: '/500',
+    Component: ErrorPage,
+  },
+  {
+    path: '/loading',
+    Component: LoadingPage,
+  },
+  {
+    path: '/empty',
+    Component: EmptyStatePage,
+  },
+  {
     path: '*',
-    Component: () => (
-      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-h1 mb-4 text-[var(--text-primary)]">404</h1>
-          <p className="text-[var(--text-secondary)] mb-6">Page non trouvée</p>
-          <a
-            href="/"
-            className="inline-block px-6 py-3 bg-[var(--brand-primary)] text-[var(--bg-primary)] rounded-[var(--radius-md)] font-medium hover:opacity-90 transition-opacity"
-          >
-            Retour à l'accueil
-          </a>
-        </div>
-      </div>
-    ),
+    Component: NotFound,
+  },
+  // Under Construction Pages
+  {
+    path: '/under-construction',
+    Component: UnderConstruction,
+  },
+  {
+    path: '/duel-room',
+    Component: DuelRoomPlaceholder,
+  },
+  {
+    path: '/achievements',
+    Component: AchievementsPlaceholder,
+  },
+  {
+    path: '/notifications',
+    Component: NotificationsPlaceholder,
+  },
+  {
+    path: '/ugc-moderation',
+    Component: UGCModerationPlaceholder,
+  },
+  {
+    path: '/billing',
+    Component: BillingPlaceholder,
+  },
+  {
+    path: '/settings-security',
+    Component: SettingsSecurityPlaceholder,
   },
 ]);
