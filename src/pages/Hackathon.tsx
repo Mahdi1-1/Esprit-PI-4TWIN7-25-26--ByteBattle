@@ -13,7 +13,7 @@ export function Hackathon() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <Navbar 
+      <Navbar s
         isLoggedIn 
         userAvatar={mockUser.avatar} 
         username={mockUser.username} 

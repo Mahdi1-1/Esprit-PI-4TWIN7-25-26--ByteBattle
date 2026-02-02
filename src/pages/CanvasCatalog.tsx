@@ -4,6 +4,8 @@ import { Layout } from '../components/Layout';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { canvasChallenges, CanvasChallenge } from '../data/canvasChallengeData';
+import { Navbar } from '../components/Navbar';
+import { mockUser } from '../data/mockData';
 
 export function CanvasCatalog() {
   const navigate = useNavigate();
@@ -37,6 +39,11 @@ export function CanvasCatalog() {
 
   return (
     <Layout>
+      <Navbar 
+              isLoggedIn 
+              userAvatar={mockUser.avatar} 
+              username={mockUser.username} 
+            />
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}
