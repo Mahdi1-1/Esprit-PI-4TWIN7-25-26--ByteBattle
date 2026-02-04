@@ -138,7 +138,7 @@ Password: admin123
 - Status (all, active, banned, suspended, locked)
 - Level range (slider)
 - Elo range (slider)
-ط
+
 **Actions par utilisateur :**
 ```
 Actions menu (⋮)

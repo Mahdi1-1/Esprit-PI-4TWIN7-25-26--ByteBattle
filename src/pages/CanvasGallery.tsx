@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Layout } from '../components/Layout';
+import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { communityDesigns, canvasChallenges } from '../data/canvasChallengeData';
+import { mockUser } from '../data/mockData';
 import { Eye, Heart, TrendingUp, Calendar, Award, Share2, Bookmark } from 'lucide-react';
 
 export function CanvasGallery() {
@@ -42,6 +44,11 @@ export function CanvasGallery() {
 
   return (
     <Layout>
+      <Navbar 
+        isLoggedIn 
+        userAvatar={mockUser.avatar} 
+        username={mockUser.username} 
+      />
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}

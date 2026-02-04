@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
+import { Navbar } from '../components/Navbar';
+import { mockUser } from '../data/mockData';
 import { User, Bell, Shield, Palette, Globe, Mail, Lock, Trash2, Save } from 'lucide-react';
 
 export function Settings() {
@@ -15,6 +17,11 @@ export function Settings() {
 
   return (
     <Layout>
+      <Navbar 
+        isLoggedIn 
+        userAvatar={mockUser.avatar} 
+        username={mockUser.username} 
+      />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-6">Settings</h1>
 

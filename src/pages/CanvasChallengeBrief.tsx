@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Layout } from '../components/Layout';
+import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { canvasChallenges } from '../data/canvasChallengeData';
+import { mockUser } from '../data/mockData';
 import { ArrowLeft, Clock, Target, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export function CanvasChallengeBrief() {
@@ -16,6 +18,11 @@ export function CanvasChallengeBrief() {
   if (!challenge) {
     return (
       <Layout>
+        <Navbar 
+          isLoggedIn 
+          userAvatar={mockUser.avatar} 
+          username={mockUser.username} 
+        />
         <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
@@ -46,6 +53,11 @@ export function CanvasChallengeBrief() {
 
   return (
     <Layout>
+      <Navbar 
+        isLoggedIn 
+        userAvatar={mockUser.avatar} 
+        username={mockUser.username} 
+      />
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto space-y-8">
           {/* Back Button */}

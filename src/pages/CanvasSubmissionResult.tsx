@@ -1,8 +1,10 @@
 import { useNavigate, useParams } from 'react-router';
 import { Layout } from '../components/Layout';
+import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { canvasChallenges, mockSubmissions } from '../data/canvasChallengeData';
+import { mockUser } from '../data/mockData';
 import { CheckCircle2, AlertTriangle, Lightbulb, Download, Share2, BookmarkPlus, ArrowRight } from 'lucide-react';
 
 export function CanvasSubmissionResult() {
@@ -15,6 +17,11 @@ export function CanvasSubmissionResult() {
   if (!challenge || !submission) {
     return (
       <Layout>
+        <Navbar 
+          isLoggedIn 
+          userAvatar={mockUser.avatar} 
+          username={mockUser.username} 
+        />
         <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
@@ -46,6 +53,11 @@ export function CanvasSubmissionResult() {
 
   return (
     <Layout>
+      <Navbar 
+        isLoggedIn 
+        userAvatar={mockUser.avatar} 
+        username={mockUser.username} 
+      />
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto space-y-8">
           {/* Hero - Score */}

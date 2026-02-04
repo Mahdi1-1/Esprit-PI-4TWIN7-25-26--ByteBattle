@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Layout } from '../components/Layout';
+import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { canvasChallenges, CanvasChallenge } from '../data/canvasChallengeData';
-import { Navbar } from '../components/Navbar';
 import { mockUser } from '../data/mockData';
 
 export function CanvasCatalog() {

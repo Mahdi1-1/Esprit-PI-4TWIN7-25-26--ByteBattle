@@ -1,4 +1,6 @@
 import { Layout } from '../components/Layout';
+import { Navbar } from '../components/Navbar';
+import { mockUser } from '../data/mockData';
 import { User, Mail, Calendar, Trophy, Target, Award, Edit2, Settings as SettingsIcon } from 'lucide-react';
 import { Link } from 'react-router';
 
@@ -36,6 +38,7 @@ export function Profile() {
 
   return (
     <Layout>
+      <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6">
