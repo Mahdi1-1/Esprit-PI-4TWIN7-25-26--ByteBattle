@@ -118,21 +118,19 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
                       max="150"
                       step="5"
                       value={fontSize}
-                      onChange={(e) => setFontSize(Number(e.target.value))}
-                      className="flex-1 h-2 bg-[var(--surface-2)] rounded-full appearance-none cursor-pointer
+                      readOnly
+                      className="flex-1 h-2 bg-[var(--surface-2)] rounded-full appearance-none pointer-events-none
                         [&::-webkit-slider-thumb]:appearance-none
                         [&::-webkit-slider-thumb]:w-4
                         [&::-webkit-slider-thumb]:h-4
                         [&::-webkit-slider-thumb]:rounded-full
                         [&::-webkit-slider-thumb]:bg-[var(--brand-primary)]
-                        [&::-webkit-slider-thumb]:cursor-pointer
                         [&::-webkit-slider-thumb]:glow
                         [&::-moz-range-thumb]:w-4
                         [&::-moz-range-thumb]:h-4
                         [&::-moz-range-thumb]:rounded-full
                         [&::-moz-range-thumb]:bg-[var(--brand-primary)]
-                        [&::-moz-range-thumb]:border-0
-                        [&::-moz-range-thumb]:cursor-pointer"
+                        [&::-moz-range-thumb]:border-0"
                     />
                     <span className="text-base font-medium text-[var(--text-primary)]">A</span>
                   </div>
