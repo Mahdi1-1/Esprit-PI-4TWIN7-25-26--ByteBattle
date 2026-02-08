@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
 import { Navbar } from '../components/Navbar';
-import { mockUser } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 import { User, Bell, Shield, Palette, Globe, Mail, Lock, Trash2, Save } from 'lucide-react';
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
+  const { user } = useAuth();
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -17,11 +18,7 @@ export function Settings() {
 
   return (
     <Layout>
-      <Navbar 
-        isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
-      />
+      <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-6">Settings</h1>
 

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Code2, Mail, Lock, Github, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../data/models';
 
 export function UnifiedLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,11 +18,14 @@ export function UnifiedLogin() {
     setLoading(true);
 
     // Mock login
-    setTimeout(() => {
+    setTimeout(async () => {
       // Simulate role detection
       const isAdmin = email.includes('admin') || email.includes('mod') || email.includes('mentor') || email.includes('enterprise');
       
       if (password === 'demo123' || password === 'admin123') {
+        // Use AuthContext login
+        await login(email, password);
+        
         // Redirect based on role
         if (isAdmin) {
           navigate('/admin');
@@ -34,9 +39,12 @@ export function UnifiedLogin() {
     }, 1000);
   };
 
-  const handleQuickLogin = (role: UserRole) => {
+  const handleQuickLogin = async (role: UserRole) => {
     setLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
+      // Use AuthContext login with mock credentials
+      await login('user@bytebattle.dev', 'demo123');
+      
       if (role === 'USER') {
         navigate('/dashboard');
       } else {

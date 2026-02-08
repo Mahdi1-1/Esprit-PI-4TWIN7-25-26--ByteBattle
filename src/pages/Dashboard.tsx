@@ -5,21 +5,19 @@ import { XPBar } from '../components/ProgressBar';
 import { ProblemCard } from '../components/ProblemCard';
 import { MatchCard } from '../components/MatchCard';
 import { RarityBadge } from '../components/Badge';
-import { mockUser, mockProblems, mockMatches } from '../data/mockData';
+import { mockProblems, mockMatches } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 import { Swords, Play, Users, TrendingUp } from 'lucide-react';
 import { Layout } from '../components/Layout';
 
 export function Dashboard() {
+  const { user } = useAuth();
   const recommendedProblems = mockProblems.slice(0, 3);
   const recentMatches = mockMatches.slice(0, 3);
 
   return (
     <Layout>
-      <Navbar 
-        isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
-      />
+      <Navbar />
 
       <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -27,7 +25,7 @@ export function Dashboard() {
           <div className="lg:col-span-2 space-y-6">
             {/* Welcome & Quick Actions */}
             <section>
-              <h2 className="mb-4">Welcome, {mockUser.username}! 👋</h2>
+              <h2 className="mb-4">Welcome, {user?.username}! 👋</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Link to="/duel/matchmaking" className="block">
                   <div className="p-6 bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-primary)]/5 border border-[var(--brand-primary)]/30 rounded-[var(--radius-lg)] hover:scale-[1.02] transition-transform cursor-pointer group">
@@ -102,24 +100,24 @@ export function Dashboard() {
             <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
               <div className="flex items-center gap-4 mb-4">
                 <img
-                  src={mockUser.avatar}
-                  alt={mockUser.username}
+                  src={user?.avatar}
+                  alt={user?.username}
                   className="w-16 h-16 rounded-full border-4 border-[var(--brand-primary)] glow"
                 />
                 <div className="flex-1">
-                  <h3 className="mb-1">{mockUser.username}</h3>
+                  <h3 className="mb-1">{user?.username}</h3>
                   <div className="flex items-center gap-2">
                     <span className="text-caption text-[var(--text-muted)]">
-                      Elo: <span className="font-semibold text-[var(--brand-primary)]">{mockUser.elo}</span>
+                      Elo: <span className="font-semibold text-[var(--brand-primary)]">{user?.elo}</span>
                     </span>
                   </div>
                 </div>
               </div>
 
               <XPBar 
-                current={mockUser.currentXP} 
-                max={mockUser.maxXP} 
-                level={mockUser.level} 
+                current={user?.currentXP || 0} 
+                max={user?.maxXP || 1000} 
+                level={user?.level || 1} 
               />
 
               <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
@@ -136,7 +134,7 @@ export function Dashboard() {
             <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
               <h3 className="mb-4">Skills</h3>
               <div className="space-y-3">
-                {Object.entries(mockUser.skills).map(([skill, value]) => (
+                {Object.entries(user?.skills || {}).map(([skill, value]) => (
                   <div key={skill}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-caption text-[var(--text-secondary)]">
@@ -161,7 +159,7 @@ export function Dashboard() {
             <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
               <h3 className="mb-4">Recent Badges</h3>
               <div className="space-y-3">
-                {mockUser.badges.map((badge) => (
+                {user?.badges.map((badge) => (
                   <div
                     key={badge.name}
                     className="flex items-start gap-3 p-3 bg-[var(--surface-2)] rounded-[var(--radius-md)]"

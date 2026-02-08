@@ -1,9 +1,10 @@
-import { Link } from 'react-router';
-import { Menu, Moon, Sun, Swords, Trophy, Code2, Users, Palette, PenTool, Type } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import { Menu, Moon, Sun, Swords, Trophy, Code2, Users, Palette, PenTool, Type, LogOut, Settings as SettingsIcon, User as UserIcon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useFontSize } from '../context/FontSizeContext';
+import { useAuth } from '../context/AuthContext';
 import { Button } from './Button';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -11,11 +12,45 @@ interface NavbarProps {
   username?: string;
 }
 
-export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps) {
+export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   const { colorScheme, toggleColorScheme } = useTheme();
   const { fontSize, setFontSize } = useFontSize();
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showFontSizePanel, setShowFontSizePanel] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  
+  const fontSizePanelRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Use auth context if available, otherwise use props
+  const loggedIn = isAuthenticated || isLoggedIn;
+  const displayAvatar = user?.avatar || userAvatar;
+  const displayUsername = user?.username || username;
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (fontSizePanelRef.current && !fontSizePanelRef.current.contains(event.target as Node)) {
+        setShowFontSizePanel(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setShowUserMenu(false);
+    navigate('/');
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-default)] backdrop-blur-sm bg-opacity-95">
@@ -33,7 +68,7 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            {isLoggedIn ? (
+            {loggedIn ? (
               <>
                 <Link
                   to="/problems"
@@ -84,7 +119,7 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
           {/* Right Actions */}
           <div className="flex items-center gap-3">
             {/* Font Size Toggle */}
-            <div className="relative">
+            <div className="relative" ref={fontSizePanelRef}>
               <button
                 onClick={() => setShowFontSizePanel(!showFontSizePanel)}
                 className={`
@@ -182,17 +217,60 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
               )}
             </button>
 
-            {isLoggedIn ? (
-              <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <img
-                  src={userAvatar}
-                  alt={username}
-                  className="w-10 h-10 rounded-full border-2 border-[var(--brand-primary)] glow"
-                />
-                <span className="hidden lg:block text-[var(--text-primary)] font-medium">
-                  {username}
-                </span>
-              </Link>
+            {loggedIn ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
+                  <img
+                    src={displayAvatar}
+                    alt={displayUsername}
+                    className="w-10 h-10 rounded-full border-2 border-[var(--brand-primary)] glow"
+                  />
+                  <span className="hidden lg:block text-[var(--text-primary)] font-medium">
+                    {displayUsername}
+                  </span>
+                </button>
+
+                {/* User Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] shadow-lg py-2 z-50">
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center gap-3 px-4 py-2.5 text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <UserIcon className="w-4 h-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                    <Link
+                      to="/profile"
+                      className="flex items-center gap-3 px-4 py-2.5 text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <UserIcon className="w-4 h-4" />
+                      <span>Profile</span>
+                    </Link>
+                    <Link
+                      to="/settings"
+                      className="flex items-center gap-3 px-4 py-2.5 text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <SettingsIcon className="w-4 h-4" />
+                      <span>Settings</span>
+                    </Link>
+                    <div className="h-px bg-[var(--border-default)] my-2" />
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-[var(--state-error)] hover:bg-[var(--surface-2)] transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Link to="/login">
@@ -227,7 +305,7 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
         </div>
 
         {/* Mobile Menu */}
-        {mobileMenuOpen && isLoggedIn && (
+        {mobileMenuOpen && loggedIn && (
           <div className="md:hidden py-4 border-t border-[var(--border-default)]">
             <div className="flex flex-col gap-3">
               <Link
