@@ -3,7 +3,9 @@ import { Menu, Moon, Sun, Swords, Trophy, Code2, Users, Palette, PenTool, Type, 
 import { useTheme } from '../context/ThemeContext';
 import { useFontSize } from '../context/FontSizeContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Button } from './Button';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { useState, useEffect, useRef } from 'react';
 
 interface NavbarProps {
@@ -16,6 +18,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   const { colorScheme, toggleColorScheme } = useTheme();
   const { fontSize, setFontSize } = useFontSize();
   const { isAuthenticated, user, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showFontSizePanel, setShowFontSizePanel] = useState(false);
@@ -75,42 +78,42 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                   className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   <Code2 className="w-4 h-4" />
-                  <span>Problems</span>
+                  <span>{t('nav.problems')}</span>
                 </Link>
                 <Link
                   to="/canvas"
                   className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   <PenTool className="w-4 h-4" />
-                  <span>Canvas</span>
+                  <span>{t('nav.canvas')}</span>
                 </Link>
                 <Link
                   to="/duel"
                   className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   <Swords className="w-4 h-4" />
-                  <span>Duel</span>
+                  <span>{t('nav.duel')}</span>
                 </Link>
                 <Link
                   to="/hackathon"
                   className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   <Users className="w-4 h-4" />
-                  <span>Hackathon</span>
+                  <span>{t('nav.hackathon')}</span>
                 </Link>
                 <Link
                   to="/leaderboard"
                   className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   <Trophy className="w-4 h-4" />
-                  <span>Leaderboard</span>
+                  <span>{t('nav.leaderboard')}</span>
                 </Link>
                 <Link
                   to="/themes"
                   className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   <Palette className="w-4 h-4" />
-                  <span>Themes</span>
+                  <span>{t('nav.themes')}</span>
                 </Link>
               </>
             ) : null}
@@ -118,6 +121,9 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Font Size Toggle */}
             <div className="relative" ref={fontSizePanelRef}>
               <button
@@ -242,7 +248,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <UserIcon className="w-4 h-4" />
-                      <span>Dashboard</span>
+                      <span>{t('nav.dashboard')}</span>
                     </Link>
                     <Link
                       to="/profile"
@@ -250,7 +256,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <UserIcon className="w-4 h-4" />
-                      <span>Profile</span>
+                      <span>{t('nav.profile')}</span>
                     </Link>
                     <Link
                       to="/settings"
@@ -258,7 +264,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <SettingsIcon className="w-4 h-4" />
-                      <span>Settings</span>
+                      <span>{t('nav.settings')}</span>
                     </Link>
                     <div className="h-px bg-[var(--border-default)] my-2" />
                     <button
@@ -266,7 +272,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-[var(--state-error)] hover:bg-[var(--surface-2)] transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span>Logout</span>
+                      <span>{t('nav.logout')}</span>
                     </button>
                   </div>
                 )}
@@ -275,12 +281,12 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
               <div className="flex items-center gap-2">
                 <Link to="/login">
                   <Button variant="ghost" size="md">
-                    Login
+                    {t('nav.login')}
                   </Button>
                 </Link>
                 <Link to="/signup">
                   <Button variant="primary" size="md">
-                    Sign Up
+                    {t('nav.signup')}
                   </Button>
                 </Link>
               </div>
@@ -314,7 +320,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Code2 className="w-4 h-4" />
-                <span>Problems</span>
+                <span>{t('nav.problems')}</span>
               </Link>
               <Link
                 to="/canvas"
@@ -322,7 +328,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <PenTool className="w-4 h-4" />
-                <span>Canvas</span>
+                <span>{t('nav.canvas')}</span>
               </Link>
               <Link
                 to="/duel"
@@ -330,7 +336,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Swords className="w-4 h-4" />
-                <span>Duel</span>
+                <span>{t('nav.duel')}</span>
               </Link>
               <Link
                 to="/hackathon"
@@ -338,7 +344,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Users className="w-4 h-4" />
-                <span>Hackathon</span>
+                <span>{t('nav.hackathon')}</span>
               </Link>
               <Link
                 to="/leaderboard"
@@ -346,7 +352,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Trophy className="w-4 h-4" />
-                <span>Leaderboard</span>
+                <span>{t('nav.leaderboard')}</span>
               </Link>
               <Link
                 to="/themes"
@@ -354,7 +360,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Palette className="w-4 h-4" />
-                <span>Themes</span>
+                <span>{t('nav.themes')}</span>
               </Link>
             </div>
           </div>

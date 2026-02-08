@@ -2,31 +2,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import { Button } from '../components/Button';
 import { canvasChallenges } from '../data/canvasChallengeData';
-import { canvasTools, canvasAssets, canvasTemplates } from '../data/canvasChallengeData';
+import { ExcalidrawCanvas } from '../components/canvas/ExcalidrawCanvas';
+import type { ExcalidrawElement } from '@excalidraw/excalidraw/types/types';
 import {
-  CanvasToolButton,
-  ColorSwatch,
-  LayerItem,
-  MiniMap,
-  CanvasTimer,
-  HintPanel
+  CanvasTimer
 } from '../components/canvas/CanvasComponents';
 import {
   Save,
   Download,
   Send,
-  HelpCircle,
   Undo2,
   Redo2,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Grid3x3,
-  Layers,
-  Package,
   X,
   Menu,
-  CheckSquare
+  CheckSquare,
+  FileJson
 } from 'lucide-react';
 
 export function CanvasEditor() {
@@ -36,19 +26,12 @@ export function CanvasEditor() {
   const mode = (location.state as any)?.mode || 'solo';
 
   const challenge = canvasChallenges.find((c) => c.id === id);
-  const [activeTool, setActiveTool] = useState('select');
-  const [activeColor, setActiveColor] = useState('#00E5FF');
   const [showBrief, setShowBrief] = useState(true);
-  const [showLayers, setShowLayers] = useState(true);
-  const [showAssets, setShowAssets] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showGrid, setShowGrid] = useState(true);
-  const [showHint, setShowHint] = useState(false);
-  const [currentHint, setCurrentHint] = useState(1);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submissionBlob, setSubmissionBlob] = useState<Blob | null>(null);
+  const [submissionElements, setSubmissionElements] = useState<readonly ExcalidrawElement[]>([]);
   const [timeRemaining, setTimeRemaining] = useState(challenge?.duration ? challenge.duration * 60 : 0);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState<Date>(new Date());
 
   // Timer
   useEffect(() => {
@@ -78,29 +61,75 @@ export function CanvasEditor() {
   const isWarning = timeRemaining < 600 && timeRemaining > 300;
   const isCritical = timeRemaining <= 300;
 
-  const colors = [
-    '#00E5FF', '#8B5CF6', '#22C55E', '#F59E0B', '#EF4444', 
-    '#3B82F6', '#EC4899', '#14B8A6', '#F97316', '#6366F1'
-  ];
-
-  const mockLayers = [
-    { id: '1', name: 'Load Balancer', visible: true, locked: false },
-    { id: '2', name: 'Backend Services', visible: true, locked: false },
-    { id: '3', name: 'Database Layer', visible: true, locked: false },
-    { id: '4', name: 'Annotations', visible: true, locked: false }
-  ];
-
-  const handleSave = () => {
-    setHasUnsavedChanges(false);
-    // Show toast
+  const handleSave = async () => {
+    if ((window as any).excalidrawAPI) {
+      try {
+        await (window as any).excalidrawAPI.save();
+        setLastSaveTime(new Date());
+      } catch (error) {
+        console.error('Failed to save:', error);
+      }
+    }
   };
 
-  const handleSubmit = () => {
-    setShowSubmitModal(true);
+  const handleExportPNG = async () => {
+    if ((window as any).excalidrawAPI) {
+      try {
+        await (window as any).excalidrawAPI.export('png');
+      } catch (error) {
+        console.error('Failed to export PNG:', error);
+      }
+    }
+  };
+
+  const handleExportJSON = async () => {
+    if ((window as any).excalidrawAPI) {
+      try {
+        await (window as any).excalidrawAPI.export('json');
+      } catch (error) {
+        console.error('Failed to export JSON:', error);
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
+    if ((window as any).excalidrawAPI) {
+      try {
+        const { elements, blob } = await (window as any).excalidrawAPI.save();
+        setSubmissionElements(elements);
+        setSubmissionBlob(blob);
+        setShowSubmitModal(true);
+      } catch (error) {
+        console.error('Failed to prepare submission:', error);
+      }
+    }
   };
 
   const confirmSubmit = () => {
-    navigate(`/canvas/${id}/result`);
+    // Save submission to localStorage
+    if (submissionBlob && submissionElements) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result as string;
+        const submission = {
+          challengeId: id,
+          timestamp: Date.now(),
+          imageData: base64data,
+          elements: submissionElements,
+          mode
+        };
+        localStorage.setItem(`canvas_submission_${id}`, JSON.stringify(submission));
+        navigate(`/canvas/${id}/result`);
+      };
+      reader.readAsDataURL(submissionBlob);
+    }
+  };
+
+  const getTimeSinceLastSave = () => {
+    const seconds = Math.floor((Date.now() - lastSaveTime.getTime()) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}m ago`;
   };
 
   return (
@@ -108,14 +137,6 @@ export function CanvasEditor() {
       {/* Top Bar */}
       <div className="flex-shrink-0 h-16 border-b border-[var(--border-default)] bg-[var(--surface-1)] px-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          {/* Mobile Menu Toggle */}
-          <button
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="lg:hidden p-2 hover:bg-[var(--surface-2)] rounded"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-
           {/* Challenge Info */}
           <div className="hidden sm:block">
             <h2 className="font-bold text-[var(--text-primary)] text-sm lg:text-base">
@@ -138,19 +159,17 @@ export function CanvasEditor() {
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => {}}>
-              <Undo2 className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => {}}>
-              <Redo2 className="w-4 h-4" />
-            </Button>
             <Button variant="secondary" size="sm" onClick={handleSave}>
               <Save className="w-4 h-4" />
               <span className="hidden lg:inline">Save</span>
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => {}}>
+            <Button variant="secondary" size="sm" onClick={handleExportPNG}>
               <Download className="w-4 h-4" />
-              <span className="hidden lg:inline">Export</span>
+              <span className="hidden lg:inline">PNG</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleExportJSON}>
+              <FileJson className="w-4 h-4" />
+              <span className="hidden lg:inline">JSON</span>
             </Button>
             <Button variant="primary" size="sm" onClick={handleSubmit}>
               <Send className="w-4 h-4" />
@@ -201,22 +220,6 @@ export function CanvasEditor() {
                 </ul>
               </div>
 
-              {/* Checklist */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-[var(--brand-primary)]">Checklist</h4>
-                <div className="space-y-2">
-                  {['Authentication', 'Scalability', 'Monitoring', 'Security'].map((item) => (
-                    <label key={item} className="flex items-center gap-2 text-xs cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="rounded border-[var(--border-default)]"
-                      />
-                      <span className="text-[var(--text-secondary)]">{item}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
               <Button
                 variant="secondary"
                 size="sm"
@@ -229,33 +232,10 @@ export function CanvasEditor() {
           )}
         </div>
 
-        {/* Center - Canvas */}
+        {/* Center - Excalidraw Canvas */}
         <div className="flex-1 flex flex-col bg-[var(--bg-secondary)] overflow-hidden relative">
-          {/* Canvas Controls */}
-          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-            <div className="flex items-center gap-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-2">
-              <Button variant="ghost" size="sm" onClick={() => {}}>
-                <ZoomIn className="w-4 h-4" />
-              </Button>
-              <span className="text-xs text-[var(--text-secondary)] min-w-[40px] text-center">100%</span>
-              <Button variant="ghost" size="sm" onClick={() => {}}>
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              <div className="w-px h-4 bg-[var(--border-default)]" />
-              <Button variant="ghost" size="sm" onClick={() => {}}>
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowGrid(!showGrid)}
-                className={showGrid ? 'text-[var(--brand-primary)]' : ''}
-              >
-                <Grid3x3 className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {!showBrief && (
+          {!showBrief && (
+            <div className="absolute top-4 left-4 z-10">
               <Button
                 variant="secondary"
                 size="sm"
@@ -265,183 +245,18 @@ export function CanvasEditor() {
                 <Menu className="w-4 h-4" />
                 Brief
               </Button>
-            )}
-          </div>
-
-          {/* Canvas Area */}
-          <div className={`
-            flex-1 m-8 border-2 border-dashed border-[var(--border-default)] rounded-lg
-            flex items-center justify-center
-            ${showGrid ? 'bg-grid' : 'bg-[var(--surface-1)]'}
-          `}>
-            <div className="text-center space-y-4">
-              <span className="text-6xl block">🎨</span>
-              <p className="text-[var(--text-secondary)]">
-                Drawing Canvas
-              </p>
-              <p className="text-xs text-[var(--text-muted)] max-w-md">
-                Use the tools on the right to draw your architecture.
-                Drag and drop elements, create connections, annotate your diagram.
-              </p>
             </div>
-          </div>
+          )}
 
-          {/* Mini Map */}
-          <div className="absolute bottom-4 right-4 w-48 hidden lg:block">
-            <MiniMap />
-          </div>
-        </div>
-
-        {/* Right Panel - Tools */}
-        <div className="w-16 lg:w-64 flex-shrink-0 border-l border-[var(--border-default)] bg-[var(--surface-1)] overflow-y-auto">
-          <div className="p-2 lg:p-4 space-y-4">
-            {/* Tools */}
-            <div className="space-y-2">
-              <h4 className="hidden lg:block text-sm font-semibold text-[var(--text-primary)]">Tools</h4>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                {canvasTools.map((tool) => (
-                  <CanvasToolButton
-                    key={tool.id}
-                    icon={tool.icon}
-                    name={tool.name}
-                    shortcut={tool.shortcut}
-                    active={activeTool === tool.id}
-                    onClick={() => setActiveTool(tool.id)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Colors */}
-            <div className="space-y-2">
-              <h4 className="hidden lg:block text-sm font-semibold text-[var(--text-primary)]">Couleurs</h4>
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
-                {colors.map((color) => (
-                  <ColorSwatch
-                    key={color}
-                    color={color}
-                    active={activeColor === color}
-                    onClick={() => setActiveColor(color)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Templates Button */}
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full justify-start gap-2"
-              onClick={() => setShowTemplates(!showTemplates)}
-            >
-              <Package className="w-4 h-4" />
-              <span className="hidden lg:inline">Templates</span>
-            </Button>
-
-            {/* Templates Panel */}
-            {showTemplates && (
-              <div className="space-y-2 hidden lg:block">
-                {canvasTemplates.map((template) => (
-                  <button
-                    key={template.id}
-                    className="w-full p-3 text-left bg-[var(--surface-2)] hover:bg-[var(--surface-3)] rounded-lg border border-[var(--border-default)] transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl">{template.icon}</span>
-                      <span className="font-semibold text-sm text-[var(--text-primary)]">
-                        {template.name}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      {template.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Assets Button */}
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full justify-start gap-2"
-              onClick={() => setShowAssets(!showAssets)}
-            >
-              <Layers className="w-4 h-4" />
-              <span className="hidden lg:inline">Assets</span>
-            </Button>
-
-            {/* Assets Panel */}
-            {showAssets && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 hidden lg:grid">
-                {canvasAssets.map((asset) => (
-                  <button
-                    key={asset.id}
-                    className="p-2 flex flex-col items-center gap-1 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] rounded border border-[var(--border-default)] transition-colors"
-                    title={asset.name}
-                  >
-                    <span className="text-2xl">{asset.icon}</span>
-                    <span className="text-xs text-[var(--text-secondary)] text-center">
-                      {asset.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Layers Toggle */}
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full justify-start gap-2"
-              onClick={() => setShowLayers(!showLayers)}
-            >
-              <Layers className="w-4 h-4" />
-              <span className="hidden lg:inline">Layers</span>
-            </Button>
-
-            {/* Layers Panel */}
-            {showLayers && (
-              <div className="space-y-1 hidden lg:block">
-                {mockLayers.map((layer) => (
-                  <LayerItem
-                    key={layer.id}
-                    name={layer.name}
-                    visible={layer.visible}
-                    locked={layer.locked}
-                    onToggleVisible={() => {}}
-                    onToggleLock={() => {}}
-                    onSelect={() => {}}
-                    onRename={() => {}}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Hint Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-2"
-              onClick={() => setShowHint(!showHint)}
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span className="hidden lg:inline">Help / Hint</span>
-            </Button>
-
-            {/* Hint Panel */}
-            {showHint && (
-              <div className="hidden lg:block">
-                <HintPanel
-                  hintNumber={currentHint}
-                  totalHints={3}
-                  hint="Think about separating read and write components to improve scalability (CQRS pattern)."
-                  onNextHint={() => setCurrentHint(currentHint + 1)}
-                  disabled={currentHint >= 3}
-                />
-              </div>
-            )}
-          </div>
+          <ExcalidrawCanvas
+            challengeId={id || 'unknown'}
+            onSave={(elements, blob) => {
+              setLastSaveTime(new Date());
+            }}
+            onExport={(blob) => {
+              console.log('Exported:', blob.size, 'bytes');
+            }}
+          />
         </div>
       </div>
 
@@ -449,14 +264,14 @@ export function CanvasEditor() {
       <div className="flex-shrink-0 h-10 border-t border-[var(--border-default)] bg-[var(--surface-1)] px-4 flex items-center justify-between text-xs">
         <div className="flex items-center gap-4">
           <span className="text-[var(--text-secondary)]">
-            <span className="text-[var(--state-success)]">●</span> Connected
+            <span className="text-[var(--state-success)]">●</span> Auto-save enabled
           </span>
           <span className="text-[var(--text-muted)]">
-            Last saved: 2 min ago
+            Last saved: {getTimeSinceLastSave()}
           </span>
         </div>
         <div className="text-[var(--text-muted)]">
-          Shortcuts: V (Select) · R (Rectangle) · A (Arrow) · T (Text)
+          Draw, connect, and annotate your architecture
         </div>
       </div>
 
@@ -472,9 +287,17 @@ export function CanvasEditor() {
               This action is final and will launch the AI analysis.
             </p>
             
-            {/* Preview Placeholder */}
-            <div className="h-48 bg-[var(--surface-2)] rounded-lg border border-[var(--border-default)] flex items-center justify-center">
-              <span className="text-4xl">🎨</span>
+            {/* Preview */}
+            <div className="h-48 bg-[var(--surface-2)] rounded-lg border border-[var(--border-default)] flex items-center justify-center overflow-hidden">
+              {submissionBlob ? (
+                <img
+                  src={URL.createObjectURL(submissionBlob)}
+                  alt="Submission preview"
+                  className="max-w-full max-h-full object-contain"
+                />
+              ) : (
+                <span className="text-4xl">🎨</span>
+              )}
             </div>
 
             <div className="flex gap-3">

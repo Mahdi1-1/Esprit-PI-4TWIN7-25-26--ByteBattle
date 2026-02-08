@@ -240,6 +240,7 @@ export function CanvasChallengeBrief() {
                   available: true
                 },
                 {
+                  id: 'duel',
                   name: 'Duel 1v1',
                   icon: '⚔️',
                   description: 'Challenge an opponent',

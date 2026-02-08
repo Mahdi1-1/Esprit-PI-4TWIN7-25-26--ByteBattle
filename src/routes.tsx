@@ -14,7 +14,7 @@ import { ThemeShowcaseComponents } from './pages/ThemeShowcaseComponents';
 import { CanvasCatalog } from './pages/CanvasCatalog';
 import { CanvasChallengeBrief } from './pages/CanvasChallengeBrief';
 import { CanvasEditor } from './pages/CanvasEditor';
-import { CanvasSubmissionResult } from './pages/CanvasSubmissionResult';
+import { CanvasResult } from './pages/CanvasResult';
 import { CanvasGallery } from './pages/CanvasGallery';
 
 // Front Office Pages
@@ -37,6 +37,10 @@ import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
 
 // Error Pages
 import { NotFound, PermissionDenied, LoadingPage, EmptyStatePage, ErrorPage } from './pages/ErrorPages';
+
+// Company Portal Pages
+import { CompanyOverview } from './pages/company/CompanyOverview';
+import { CompanyCandidatesList } from './pages/company/CompanyCandidatesList';
 
 // Under Construction Pages
 import {
@@ -128,7 +132,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/canvas/:id/result',
-    Component: CanvasSubmissionResult,
+    Component: CanvasResult,
   },
   {
     path: '/canvas/gallery',
@@ -207,6 +211,15 @@ export const router = createBrowserRouter([
   {
     path: '*',
     Component: NotFound,
+  },
+  // Company Portal Pages
+  {
+    path: '/company/overview',
+    Component: CompanyOverview,
+  },
+  {
+    path: '/company/candidates',
+    Component: CompanyCandidatesList,
   },
   // Under Construction Pages
   {
