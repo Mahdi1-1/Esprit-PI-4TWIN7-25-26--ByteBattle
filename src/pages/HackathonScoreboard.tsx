@@ -36,7 +36,7 @@ export function HackathonScoreboard() {
               <h1 className="mb-2">{hackathon.name}</h1>
               <div className="flex items-center gap-4">
                 <Badge variant={hackathon.status}>
-                  {hackathon.status === 'ongoing' ? 'EN COURS' : 'TERMINÉ'}
+                  {hackathon.status === 'ongoing' ? 'ONGOING' : 'FINISHED'}
                 </Badge>
                 {hackathon.status === 'ongoing' && (
                   <Timer endTime={hackathon.endTime} />
@@ -54,7 +54,7 @@ export function HackathonScoreboard() {
                   SCOREBOARD FROZEN
                 </p>
                 <p className="text-caption text-[var(--text-muted)]">
-                  Les résultats sont gelés jusqu'à la fin de la compétition
+                  Results are frozen until the end of the competition
                 </p>
               </div>
             </div>
@@ -72,7 +72,7 @@ export function HackathonScoreboard() {
                 }
               `}
             >
-              Toutes les équipes
+              All Teams
             </button>
             <button
               onClick={() => setFilter('top10')}
@@ -174,7 +174,7 @@ export function HackathonScoreboard() {
 
         {/* Live Feed */}
         <div className="mt-8 p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-          <h3 className="mb-4">Activité en Direct</h3>
+          <h3 className="mb-4">Live Activity</h3>
           <div className="space-y-2">
             <LiveFeedItem
               type="solve"

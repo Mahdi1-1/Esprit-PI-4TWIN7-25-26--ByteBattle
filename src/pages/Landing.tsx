@@ -13,7 +13,7 @@ export function Landing() {
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-full">
               <Zap className="w-4 h-4 text-[var(--brand-primary)]" />
               <span className="text-caption text-[var(--text-secondary)]">
-                Platform gamifiée pour développeurs
+                Gamified platform for developers
               </span>
             </div>
             
@@ -22,21 +22,21 @@ export function Landing() {
             </h1>
             
             <p className="text-[1.125rem] text-[var(--text-secondary)] mb-8 max-w-2xl mx-auto">
-              Maîtrisez l'algorithmique en solo, affrontez d'autres développeurs en temps réel, 
-              et participez à des hackathons style ICPC. Avec un IDE intégré, un juge automatisé, 
-              et une IA pour vous guider.
+              Master algorithms solo, challenge other developers in real-time, 
+              and participate in ICPC-style hackathons. With an integrated IDE, automated judge, 
+              and AI to guide you.
             </p>
 
             <div className="flex items-center justify-center gap-4 mb-12">
               <Link to="/signup">
                 <Button variant="primary" size="lg">
-                  Commencer Gratuitement
+                  Start Free
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
               <Link to="/demo">
                 <Button variant="secondary" size="lg">
-                  Voir une Démo
+                  View Demo
                 </Button>
               </Link>
             </div>
@@ -77,42 +77,42 @@ export function Landing() {
       <section className="py-20 bg-[var(--bg-secondary)]">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-20">
           <div className="text-center mb-12">
-            <h2 className="mb-4">Fonctionnalités Principales</h2>
+            <h2 className="mb-4">Key Features</h2>
             <p className="text-[var(--text-secondary)]">
-              Tout ce dont vous avez besoin pour progresser en programmation
+              Everything you need to improve your programming skills
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <FeatureCard
               icon={<Code2 className="w-6 h-6" />}
-              title="Mode Solo"
-              description="Des centaines de problèmes classés par difficulté et thématique. Progressez à votre rythme."
+              title="Solo Mode"
+              description="Hundreds of problems categorized by difficulty and topic. Progress at your own pace."
             />
             <FeatureCard
               icon={<Swords className="w-6 h-6" />}
-              title="Duel 1v1 Temps Réel"
-              description="Affrontez d'autres développeurs via WebSocket. Système Elo compétitif."
+              title="Real-Time 1v1 Duel"
+              description="Challenge other developers via WebSocket. Competitive Elo system."
             />
             <FeatureCard
               icon={<Users className="w-6 h-6" />}
-              title="Hackathon ICPC"
-              description="Compétitions en équipe avec scoreboard live, freeze, et classements officiels."
+              title="ICPC Hackathon"
+              description="Team competitions with live scoreboard, freeze, and official rankings."
             />
             <FeatureCard
               icon={<Code2 className="w-6 h-6" />}
-              title="IDE Monaco Intégré"
-              description="Éditeur professionnel avec coloration syntaxique, auto-complétion, et multi-langages."
+              title="Integrated Monaco IDE"
+              description="Professional editor with syntax highlighting, auto-completion, and multi-language support."
             />
             <FeatureCard
               icon={<Shield className="w-6 h-6" />}
-              title="Judge Sécurisé"
-              description="Sandbox isolé pour exécuter votre code en toute sécurité. Résultats instantanés."
+              title="Secure Judge"
+              description="Isolated sandbox to run your code safely. Instant results."
             />
             <FeatureCard
               icon={<Brain className="w-6 h-6" />}
-              title="IA Assistant"
-              description="Smart hints progressifs et code review automatique pour améliorer votre code."
+              title="AI Assistant"
+              description="Progressive smart hints and automatic code review to improve your code."
             />
           </div>
         </div>
@@ -122,7 +122,7 @@ export function Landing() {
       <section className="py-20">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-20 text-center">
           <p className="text-caption text-[var(--text-muted)] mb-8">
-            Utilisé par les développeurs de
+            Used by developers from
           </p>
           <div className="flex flex-wrap items-center justify-center gap-12 opacity-50">
             <div className="text-[1.5rem] font-semibold text-[var(--text-secondary)]">École 42</div>
@@ -136,13 +136,13 @@ export function Landing() {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 border-y border-[var(--border-default)]">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-20 text-center">
-          <h2 className="mb-4">Prêt à commencer votre aventure ?</h2>
+          <h2 className="mb-4">Ready to start your adventure?</h2>
           <p className="text-[var(--text-secondary)] mb-8 max-w-2xl mx-auto">
-            Rejoignez des milliers de développeurs qui améliorent leurs compétences chaque jour
+            Join thousands of developers improving their skills every day
           </p>
           <Link to="/signup">
             <Button variant="primary" size="lg">
-              Créer un Compte Gratuit
+              Create Free Account
             </Button>
           </Link>
         </div>
@@ -160,33 +160,33 @@ export function Landing() {
                 <span className="font-semibold text-[var(--text-primary)]">ByteBattle</span>
               </div>
               <p className="text-caption text-[var(--text-muted)]">
-                La plateforme gamifiée pour maîtriser l'algorithmique
+                The gamified platform to master algorithms
               </p>
             </div>
             
             <div>
-              <h3 className="text-[0.875rem] font-semibold text-[var(--text-primary)] mb-3">Produit</h3>
+              <h3 className="text-[0.875rem] font-semibold text-[var(--text-primary)] mb-3">Product</h3>
               <ul className="space-y-2 text-caption text-[var(--text-muted)]">
-                <li><a href="#" className="hover:text-[var(--brand-primary)]">Fonctionnalités</a></li>
-                <li><a href="#" className="hover:text-[var(--brand-primary)]">Prix</a></li>
-                <li><a href="#" className="hover:text-[var(--brand-primary)]">Entreprises</a></li>
+                <li><a href="#" className="hover:text-[var(--brand-primary)]">Features</a></li>
+                <li><a href="#" className="hover:text-[var(--brand-primary)]">Pricing</a></li>
+                <li><a href="#" className="hover:text-[var(--brand-primary)]">Enterprises</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-[0.875rem] font-semibold text-[var(--text-primary)] mb-3">Ressources</h3>
+              <h3 className="text-[0.875rem] font-semibold text-[var(--text-primary)] mb-3">Resources</h3>
               <ul className="space-y-2 text-caption text-[var(--text-muted)]">
                 <li><a href="#" className="hover:text-[var(--brand-primary)]">Documentation</a></li>
                 <li><a href="#" className="hover:text-[var(--brand-primary)]">Blog</a></li>
-                <li><a href="#" className="hover:text-[var(--brand-primary)]">Tutoriels</a></li>
+                <li><a href="#" className="hover:text-[var(--brand-primary)]">Tutorials</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-[0.875rem] font-semibold text-[var(--text-primary)] mb-3">Légal</h3>
+              <h3 className="text-[0.875rem] font-semibold text-[var(--text-primary)] mb-3">Legal</h3>
               <ul className="space-y-2 text-caption text-[var(--text-muted)]">
-                <li><a href="#" className="hover:text-[var(--brand-primary)]">Confidentialité</a></li>
-                <li><a href="#" className="hover:text-[var(--brand-primary)]">Conditions</a></li>
+                <li><a href="#" className="hover:text-[var(--brand-primary)]">Privacy</a></li>
+                <li><a href="#" className="hover:text-[var(--brand-primary)]">Terms</a></li>
                 <li><a href="#" className="hover:text-[var(--brand-primary)]">Contact</a></li>
               </ul>
             </div>
@@ -194,7 +194,7 @@ export function Landing() {
           
           <div className="pt-8 border-t border-[var(--border-default)] flex items-center justify-between">
             <p className="text-caption text-[var(--text-muted)]">
-              © 2026 ByteBattle. Tous droits réservés.
+              © 2026 ByteBattle. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <a href="#" className="text-[var(--text-muted)] hover:text-[var(--brand-primary)]">

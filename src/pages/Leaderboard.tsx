@@ -21,9 +21,9 @@ export function Leaderboard() {
       <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="mb-2">Classement</h1>
+          <h1 className="mb-2">Leaderboard</h1>
           <p className="text-[var(--text-secondary)]">
-            Les meilleurs développeurs de ByteBattle
+            The best developers on ByteBattle
           </p>
         </div>
 
@@ -39,20 +39,20 @@ export function Leaderboard() {
             active={activeTab === 'monthly'}
             onClick={() => setActiveTab('monthly')}
           >
-            Ce Mois
+            This Month
           </TabButton>
           <TabButton
             active={activeTab === 'language'}
             onClick={() => setActiveTab('language')}
           >
-            Par Langage
+            By Language
           </TabButton>
         </div>
 
         {/* Current User Card */}
         {currentUserEntry && (
           <div className="mb-6 p-6 bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 border border-[var(--brand-primary)]/30 rounded-[var(--radius-lg)]">
-            <p className="text-caption text-[var(--text-muted)] mb-3">Votre Position</p>
+            <p className="text-caption text-[var(--text-muted)] mb-3">Your Position</p>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center w-12 h-12 bg-[var(--brand-primary)]/20 rounded-full">

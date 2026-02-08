@@ -56,7 +56,7 @@ export function DuelMatchmaking() {
             </div>
             <h1 className="mb-2">Duel 1v1</h1>
             <p className="text-[var(--text-secondary)]">
-              Affrontez un adversaire de niveau similaire en temps réel
+              Challenge an opponent of similar level in real-time
             </p>
           </div>
 
@@ -91,12 +91,12 @@ export function DuelMatchmaking() {
                   />
                   <InfoCard
                     icon={<Users className="w-5 h-5" />}
-                    label="Joueurs en ligne"
+                    label="Players Online"
                     value="342"
                   />
                   <InfoCard
                     icon={<Zap className="w-5 h-5" />}
-                    label="Temps estimé"
+                    label="Estimated Time"
                     value={`~${estimatedTime}s`}
                   />
                 </div>
@@ -109,7 +109,7 @@ export function DuelMatchmaking() {
                   onClick={handleStartSearch}
                 >
                   <Swords className="w-5 h-5" />
-                  Commencer la Recherche
+                  Start Search
                 </Button>
               </>
             ) : (
@@ -124,14 +124,14 @@ export function DuelMatchmaking() {
                     </div>
                   </div>
 
-                  <h2 className="mb-2">Recherche d'un adversaire...</h2>
+                  <h2 className="mb-2">Searching for an opponent...</h2>
                   <p className="text-[var(--text-muted)] mb-6">
-                    Temps écoulé: {searchTime}s
+                    Time elapsed: {searchTime}s
                   </p>
 
                   <div className="mb-8 p-4 bg-[var(--surface-2)] rounded-[var(--radius-md)]">
                     <p className="text-caption text-[var(--text-secondary)]">
-                      Recherche d'un joueur avec Elo {mockUser.elo - 100} - {mockUser.elo + 100}
+                      Looking for a player with Elo {mockUser.elo - 100} - {mockUser.elo + 100}
                     </p>
                   </div>
 
@@ -140,7 +140,7 @@ export function DuelMatchmaking() {
                     size="md"
                     onClick={handleCancelSearch}
                   >
-                    Annuler
+                    Cancel
                   </Button>
                 </div>
               </>
@@ -149,23 +149,23 @@ export function DuelMatchmaking() {
 
           {/* Tips */}
           <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-            <h3 className="mb-3">Conseils pour le Duel</h3>
+            <h3 className="mb-3">Duel Tips</h3>
             <ul className="space-y-2 text-[var(--text-secondary)]">
               <li className="flex items-start gap-2">
                 <span className="text-[var(--brand-primary)]">•</span>
-                <span>Le premier à résoudre le problème gagne</span>
+                <span>First to solve the problem wins</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[var(--brand-primary)]">•</span>
-                <span>Chaque soumission incorrecte ajoute une pénalité de temps</span>
+                <span>Each wrong submission adds a time penalty</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[var(--brand-primary)]">•</span>
-                <span>Vous pouvez voir la progression de votre adversaire sans voir son code</span>
+                <span>You can see your opponent's progress without seeing their code</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[var(--brand-primary)]">•</span>
-                <span>Gagner augmente votre Elo, perdre le diminue</span>
+                <span>Winning increases your Elo, losing decreases it</span>
               </li>
             </ul>
           </div>

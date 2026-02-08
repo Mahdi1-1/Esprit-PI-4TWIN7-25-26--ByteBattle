@@ -30,9 +30,9 @@ export function CanvasCatalog() {
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
-      case 'new': return <Badge variant="info">🆕 Nouveau</Badge>;
-      case 'attempted': return <Badge variant="warning">🔄 En cours</Badge>;
-      case 'completed': return <Badge variant="success">✅ Complété</Badge>;
+      case 'new': return <Badge variant="info">🆕 New</Badge>;
+      case 'attempted': return <Badge variant="warning">🔄 In Progress</Badge>;
+      case 'completed': return <Badge variant="success">✅ Completed</Badge>;
       default: return null;
     }
   };
@@ -55,7 +55,7 @@ export function CanvasCatalog() {
                   Canvas Challenges
                 </h1>
                 <p className="text-[var(--text-secondary)] mt-1">
-                  Dessinez des architectures logicielles, concevez des systèmes complexes
+                  Draw software architectures, design complex systems
                 </p>
               </div>
             </div>
@@ -67,15 +67,15 @@ export function CanvasCatalog() {
               {/* Type Filter */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-[var(--text-secondary)]">
-                  Type de Challenge
+                  Challenge Type
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { value: 'all', label: 'Tous' },
-                    { value: 'architecture-logique', label: 'Architecture Logique' },
-                    { value: 'architecture-physique', label: 'Architecture Physique' },
+                    { value: 'all', label: 'All' },
+                    { value: 'architecture-logique', label: 'Logical Architecture' },
+                    { value: 'architecture-physique', label: 'Physical Architecture' },
                     { value: 'dataflow', label: 'Dataflow' },
-                    { value: 'securite', label: 'Sécurité' }
+                    { value: 'securite', label: 'Security' }
                   ].map((type) => (
                     <button
                       key={type.value}
@@ -98,14 +98,14 @@ export function CanvasCatalog() {
               {/* Difficulty Filter */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-[var(--text-secondary)]">
-                  Difficulté
+                  Difficulty
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { value: 'all', label: 'Toutes' },
-                    { value: 'easy', label: 'Facile' },
-                    { value: 'medium', label: 'Moyen' },
-                    { value: 'hard', label: 'Difficile' },
+                    { value: 'all', label: 'All' },
+                    { value: 'easy', label: 'Easy' },
+                    { value: 'medium', label: 'Medium' },
+                    { value: 'hard', label: 'Hard' },
                     { value: 'expert', label: 'Expert' }
                   ].map((diff) => (
                     <button
@@ -131,10 +131,10 @@ export function CanvasCatalog() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Challenges disponibles', value: canvasChallenges.length, icon: '🎯' },
-              { label: 'Complétés', value: canvasChallenges.filter(c => c.status === 'completed').length, icon: '✅' },
-              { label: 'En cours', value: canvasChallenges.filter(c => c.status === 'attempted').length, icon: '🔄' },
-              { label: 'Nouveaux', value: canvasChallenges.filter(c => c.status === 'new').length, icon: '🆕' }
+              { label: 'Available Challenges', value: canvasChallenges.length, icon: '🎯' },
+              { label: 'Completed', value: canvasChallenges.filter(c => c.status === 'completed').length, icon: '✅' },
+              { label: 'In Progress', value: canvasChallenges.filter(c => c.status === 'attempted').length, icon: '🔄' },
+              { label: 'New', value: canvasChallenges.filter(c => c.status === 'new').length, icon: '🆕' }
             ].map((stat, idx) => (
               <div key={idx} className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -164,10 +164,10 @@ export function CanvasCatalog() {
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-12 text-center">
               <span className="text-6xl mb-4 block">🔍</span>
               <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">
-                Aucun challenge trouvé
+                No challenges found
               </h3>
               <p className="text-[var(--text-secondary)] mb-4">
-                Essayez de modifier vos filtres
+                Try modifying your filters
               </p>
               <Button
                 variant="secondary"
@@ -176,7 +176,7 @@ export function CanvasCatalog() {
                   setSelectedDifficulty('all');
                 }}
               >
-                Réinitialiser les filtres
+                Reset filters
               </Button>
             </div>
           )}
@@ -249,15 +249,15 @@ function ChallengeCard({ challenge, onStart, getDifficultyColor, getStatusBadge 
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="text-center">
           <div className="font-semibold text-[var(--text-primary)]">{challenge.requirements.length}</div>
-          <div className="text-[var(--text-muted)]">Exigences</div>
+          <div className="text-[var(--text-muted)]">Requirements</div>
         </div>
         <div className="text-center">
           <div className="font-semibold text-[var(--text-primary)]">{challenge.constraints.length}</div>
-          <div className="text-[var(--text-muted)]">Contraintes</div>
+          <div className="text-[var(--text-muted)]">Constraints</div>
         </div>
         <div className="text-center">
           <div className="font-semibold text-[var(--brand-primary)]">{challenge.rubric.reduce((sum, r) => sum + r.maxPoints, 0)}</div>
-          <div className="text-[var(--text-muted)]">Points max</div>
+          <div className="text-[var(--text-muted)]">Max points</div>
         </div>
       </div>
 
@@ -268,7 +268,7 @@ function ChallengeCard({ challenge, onStart, getDifficultyColor, getStatusBadge 
         onClick={onStart}
         className="w-full"
       >
-        {challenge.status === 'completed' ? 'Refaire' : challenge.status === 'attempted' ? 'Continuer' : 'Commencer'}
+        {challenge.status === 'completed' ? 'Retry' : challenge.status === 'attempted' ? 'Continue' : 'Start'}
       </Button>
     </div>
   );

@@ -28,7 +28,7 @@ export function CanvasSubmissionResult() {
               Résultat non trouvé
             </h2>
             <Button onClick={() => navigate('/canvas')}>
-              Retour au catalogue
+              Back to Catalog
             </Button>
           </div>
         </div>
@@ -120,7 +120,7 @@ export function CanvasSubmissionResult() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-[var(--text-primary)]">
-                Votre Diagramme
+                Your Diagram
               </h2>
               <Button variant="secondary" size="sm" onClick={() => {}}>
                 Voir en plein écran
@@ -131,7 +131,7 @@ export function CanvasSubmissionResult() {
             <div className="aspect-video bg-[var(--surface-2)] rounded-lg border-2 border-dashed border-[var(--border-default)] flex items-center justify-center">
               <div className="text-center">
                 <span className="text-6xl block mb-4">🎨</span>
-                <p className="text-[var(--text-secondary)]">Votre diagramme d'architecture</p>
+                <p className="text-[var(--text-secondary)]">Your architecture diagram</p>
               </div>
             </div>
           </div>
@@ -153,7 +153,7 @@ export function CanvasSubmissionResult() {
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-6 h-6 text-[var(--state-success)]" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">Points Forts</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Strengths</h3>
               </div>
               <ul className="space-y-3">
                 {submission.feedback.strengths.map((strength, idx) => (
@@ -169,7 +169,7 @@ export function CanvasSubmissionResult() {
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-6 h-6 text-[var(--state-warning)]" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">Risques Identifiés</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Identified Risks</h3>
               </div>
               <ul className="space-y-3">
                 {submission.feedback.risks.map((risk, idx) => (
@@ -185,7 +185,7 @@ export function CanvasSubmissionResult() {
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <Lightbulb className="w-6 h-6 text-[var(--brand-primary)]" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">Suggestions d'Amélioration</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Improvement Suggestions</h3>
               </div>
               <ul className="space-y-3">
                 {submission.feedback.improvements.map((improvement, idx) => (
@@ -201,7 +201,7 @@ export function CanvasSubmissionResult() {
           {/* Rubric Breakdown */}
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <h2 className="text-xl font-bold text-[var(--text-primary)]">
-              Détail de l'Évaluation
+              Evaluation Details
             </h2>
             <div className="space-y-4">
               {challenge.rubric.map((criterion, idx) => {
@@ -248,19 +248,19 @@ export function CanvasSubmissionResult() {
               <div className="text-3xl font-bold text-[var(--brand-primary)] mb-1">
                 +250
               </div>
-              <div className="text-sm text-[var(--text-secondary)]">XP Gagnés</div>
+              <div className="text-sm text-[var(--text-secondary)]">XP Earned</div>
             </div>
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-4 text-center">
               <div className="text-3xl font-bold text-[var(--brand-primary)] mb-1">
                 #{12}
               </div>
-              <div className="text-sm text-[var(--text-secondary)]">Classement Global</div>
+              <div className="text-sm text-[var(--text-secondary)]">Global Ranking</div>
             </div>
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-4 text-center">
               <div className="text-3xl font-bold text-[var(--brand-primary)] mb-1">
                 🏆
               </div>
-              <div className="text-sm text-[var(--text-secondary)]">3 Badges Débloqués</div>
+              <div className="text-sm text-[var(--text-secondary)]">3 Badges Unlocked</div>
             </div>
           </div>
 
@@ -271,13 +271,13 @@ export function CanvasSubmissionResult() {
                 variant="secondary"
                 onClick={() => navigate(`/canvas/${id}/editor`)}
               >
-                Recommencer
+                Retry
               </Button>
               <Button
                 variant="secondary"
                 onClick={() => navigate('/canvas')}
               >
-                Catalogue
+                Catalog
               </Button>
             </div>
             <Button
@@ -290,7 +290,7 @@ export function CanvasSubmissionResult() {
               }}
               className="gap-2"
             >
-              Challenge Suivant
+              Next Challenge
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
@@ -298,7 +298,7 @@ export function CanvasSubmissionResult() {
           {/* Related Challenges */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-[var(--text-primary)]">
-              Challenges Similaires
+              Similar Challenges
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {canvasChallenges.slice(1, 4).map((relatedChallenge) => (

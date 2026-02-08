@@ -146,7 +146,7 @@ export function CanvasEditor() {
             </Button>
             <Button variant="secondary" size="sm" onClick={handleSave}>
               <Save className="w-4 h-4" />
-              <span className="hidden lg:inline">Sauvegarder</span>
+              <span className="hidden lg:inline">Save</span>
             </Button>
             <Button variant="secondary" size="sm" onClick={() => {}}>
               <Download className="w-4 h-4" />
@@ -154,7 +154,7 @@ export function CanvasEditor() {
             </Button>
             <Button variant="primary" size="sm" onClick={handleSubmit}>
               <Send className="w-4 h-4" />
-              <span className="hidden lg:inline">Soumettre</span>
+              <span className="hidden lg:inline">Submit</span>
             </Button>
           </div>
         </div>
@@ -182,7 +182,7 @@ export function CanvasEditor() {
 
               {/* Context */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-[var(--brand-primary)]">Contexte</h4>
+                <h4 className="text-sm font-semibold text-[var(--brand-primary)]">Context</h4>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                   {challenge.context}
                 </p>
@@ -190,7 +190,7 @@ export function CanvasEditor() {
 
               {/* Key Requirements */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-[var(--brand-primary)]">Exigences clés</h4>
+                <h4 className="text-sm font-semibold text-[var(--brand-primary)]">Key Requirements</h4>
                 <ul className="space-y-1">
                   {challenge.requirements.slice(0, 5).map((req, idx) => (
                     <li key={idx} className="text-xs text-[var(--text-secondary)] flex items-start gap-2">
@@ -205,7 +205,7 @@ export function CanvasEditor() {
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-[var(--brand-primary)]">Checklist</h4>
                 <div className="space-y-2">
-                  {['Authentification', 'Scalabilité', 'Monitoring', 'Sécurité'].map((item) => (
+                  {['Authentication', 'Scalability', 'Monitoring', 'Security'].map((item) => (
                     <label key={item} className="flex items-center gap-2 text-xs cursor-pointer">
                       <input
                         type="checkbox"
@@ -223,7 +223,7 @@ export function CanvasEditor() {
                 className="w-full"
                 onClick={() => navigate(`/canvas/${id}/brief`)}
               >
-                Voir brief complet
+                View Full Brief
               </Button>
             </div>
           )}
@@ -277,11 +277,11 @@ export function CanvasEditor() {
             <div className="text-center space-y-4">
               <span className="text-6xl block">🎨</span>
               <p className="text-[var(--text-secondary)]">
-                Canvas de dessin
+                Drawing Canvas
               </p>
               <p className="text-xs text-[var(--text-muted)] max-w-md">
-                Utilisez les outils de la barre de droite pour dessiner votre architecture.
-                Glissez-déposez des éléments, créez des connexions, annotez votre diagramme.
+                Use the tools on the right to draw your architecture.
+                Drag and drop elements, create connections, annotate your diagram.
               </p>
             </div>
           </div>
@@ -297,7 +297,7 @@ export function CanvasEditor() {
           <div className="p-2 lg:p-4 space-y-4">
             {/* Tools */}
             <div className="space-y-2">
-              <h4 className="hidden lg:block text-sm font-semibold text-[var(--text-primary)]">Outils</h4>
+              <h4 className="hidden lg:block text-sm font-semibold text-[var(--text-primary)]">Tools</h4>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {canvasTools.map((tool) => (
                   <CanvasToolButton
@@ -426,7 +426,7 @@ export function CanvasEditor() {
               onClick={() => setShowHint(!showHint)}
             >
               <HelpCircle className="w-4 h-4" />
-              <span className="hidden lg:inline">Aide / Indice</span>
+              <span className="hidden lg:inline">Help / Hint</span>
             </Button>
 
             {/* Hint Panel */}
@@ -435,7 +435,7 @@ export function CanvasEditor() {
                 <HintPanel
                   hintNumber={currentHint}
                   totalHints={3}
-                  hint="Pensez à séparer les composants de lecture et d'écriture pour améliorer la scalabilité (CQRS pattern)."
+                  hint="Think about separating read and write components to improve scalability (CQRS pattern)."
                   onNextHint={() => setCurrentHint(currentHint + 1)}
                   disabled={currentHint >= 3}
                 />
@@ -449,14 +449,14 @@ export function CanvasEditor() {
       <div className="flex-shrink-0 h-10 border-t border-[var(--border-default)] bg-[var(--surface-1)] px-4 flex items-center justify-between text-xs">
         <div className="flex items-center gap-4">
           <span className="text-[var(--text-secondary)]">
-            <span className="text-[var(--state-success)]">●</span> Connecté
+            <span className="text-[var(--state-success)]">●</span> Connected
           </span>
           <span className="text-[var(--text-muted)]">
-            Dernier enregistrement: Il y a 2 min
+            Last saved: 2 min ago
           </span>
         </div>
         <div className="text-[var(--text-muted)]">
-          Raccourcis: V (Select) · R (Rectangle) · A (Arrow) · T (Text)
+          Shortcuts: V (Select) · R (Rectangle) · A (Arrow) · T (Text)
         </div>
       </div>
 
@@ -465,11 +465,11 @@ export function CanvasEditor() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="theme-card corner-brackets relative bg-[var(--surface-1)] border-[var(--brand-primary)] p-6 max-w-lg w-full space-y-4">
             <h3 className="text-xl font-bold text-[var(--text-primary)]">
-              Soumettre votre solution ?
+              Submit your solution?
             </h3>
             <p className="text-[var(--text-secondary)]">
-              Vous êtes sur le point de soumettre votre diagramme pour évaluation.
-              Cette action est définitive et lancera l'analyse IA.
+              You are about to submit your diagram for evaluation.
+              This action is final and will launch the AI analysis.
             </p>
             
             {/* Preview Placeholder */}
@@ -483,14 +483,14 @@ export function CanvasEditor() {
                 className="flex-1"
                 onClick={() => setShowSubmitModal(false)}
               >
-                Annuler
+                Cancel
               </Button>
               <Button
                 variant="primary"
                 className="flex-1"
                 onClick={confirmSubmit}
               >
-                Confirmer et soumettre
+                Confirm and Submit
               </Button>
             </div>
           </div>

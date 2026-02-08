@@ -104,7 +104,7 @@ export function AdminCanvasChallenges() {
             <option value="architecture-logique">Architecture Logique</option>
             <option value="architecture-physique">Architecture Physique</option>
             <option value="dataflow">Dataflow</option>
-            <option value="securite">Sécurité</option>
+            <option value="securite">Security</option>
           </select>
         </FilterBar>
 

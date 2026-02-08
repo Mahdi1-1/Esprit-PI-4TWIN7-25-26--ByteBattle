@@ -24,14 +24,14 @@ export function Hackathon() {
         <div className="mb-8">
           <h1 className="mb-2">Hackathons</h1>
           <p className="text-[var(--text-secondary)]">
-            Compétitions en équipe style ICPC avec scoreboard en temps réel
+            Team competitions ICPC-style with real-time scoreboard
           </p>
         </div>
 
         {/* Ongoing Hackathons */}
         {ongoingHackathons.length > 0 && (
           <section className="mb-8">
-            <h2 className="mb-4">En cours</h2>
+            <h2 className="mb-4">Ongoing</h2>
             <div className="space-y-4">
               {ongoingHackathons.map((hackathon) => (
                 <HackathonCard key={hackathon.id} hackathon={hackathon} />
@@ -42,11 +42,11 @@ export function Hackathon() {
 
         {/* Upcoming Hackathons */}
         <section className="mb-8">
-          <h2 className="mb-4">À venir</h2>
+          <h2 className="mb-4">Upcoming</h2>
           <div className="p-12 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] text-center">
             <Trophy className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)]" />
             <p className="text-[var(--text-muted)]">
-              Aucun hackathon à venir pour le moment
+              No upcoming hackathons at the moment
             </p>
           </div>
         </section>
@@ -54,7 +54,7 @@ export function Hackathon() {
         {/* Past Hackathons */}
         {finishedHackathons.length > 0 && (
           <section>
-            <h2 className="mb-4">Terminés</h2>
+            <h2 className="mb-4">Finished</h2>
             <div className="space-y-4">
               {finishedHackathons.map((hackathon) => (
                 <HackathonCard key={hackathon.id} hackathon={hackathon} />
@@ -78,25 +78,25 @@ function HackathonCard({ hackathon }: { hackathon: any }) {
           <div className="flex items-center gap-3 mb-2">
             <h3>{hackathon.name}</h3>
             <Badge variant={hackathon.status}>
-              {hackathon.status === 'ongoing' ? 'En cours' : 
-               hackathon.status === 'upcoming' ? 'À venir' : 
-               'Terminé'}
+              {hackathon.status === 'ongoing' ? 'Ongoing' : 
+               hackathon.status === 'upcoming' ? 'Upcoming' : 
+               'Finished'}
             </Badge>
           </div>
           
           <div className="flex items-center gap-6 text-caption text-[var(--text-muted)]">
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4" />
-              <span>{hackathon.teams} équipes</span>
+              <span>{hackathon.teams} teams</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Trophy className="w-4 h-4" />
-              <span>{hackathon.problems} problèmes</span>
+              <span>{hackathon.problems} problems</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4" />
               <span>
-                {new Date(hackathon.startTime).toLocaleDateString('fr-FR', {
+                {new Date(hackathon.startTime).toLocaleDateString('en-US', {
                   day: 'numeric',
                   month: 'long',
                   hour: '2-digit',
@@ -112,14 +112,14 @@ function HackathonCard({ hackathon }: { hackathon: any }) {
             <Link to={`/hackathon/${hackathon.id}/scoreboard`}>
               <Button variant="primary" size="md">
                 <Play className="w-4 h-4" />
-                Rejoindre
+                Join
               </Button>
             </Link>
           )}
           {isFinished && (
             <Link to={`/hackathon/${hackathon.id}/scoreboard`}>
               <Button variant="secondary" size="md">
-                Voir le Classement
+                View Scoreboard
               </Button>
             </Link>
           )}
@@ -131,7 +131,7 @@ function HackathonCard({ hackathon }: { hackathon: any }) {
         <div className="pt-4 border-t border-[var(--border-default)]">
           <div className="flex items-center justify-between">
             <span className="text-[var(--text-secondary)] font-medium">
-              Temps restant:
+              Time remaining:
             </span>
             <CountdownTimer targetDate={hackathon.endTime} />
           </div>

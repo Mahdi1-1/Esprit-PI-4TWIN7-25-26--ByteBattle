@@ -57,54 +57,54 @@ export interface CommunityDesign {
 export const canvasChallenges: CanvasChallenge[] = [
   {
     id: 'canvas-001',
-    title: 'Chat Temps Réel WebSocket',
+    title: 'Real-Time WebSocket Chat',
     type: 'architecture-logique',
     difficulty: 'medium',
     duration: 45,
-    tags: ['WebSocket', 'Scalabilité', 'Temps Réel', 'HA'],
-    description: 'Concevoir une architecture complète pour un système de chat temps réel supportant 1M utilisateurs simultanés',
-    context: 'Une startup veut lancer une application de messagerie instantanée grand public. Le système doit gérer des messages texte, des notifications de présence (online/offline), et supporter une montée en charge progressive.',
+    tags: ['WebSocket', 'Scalability', 'Real-Time', 'HA'],
+    description: 'Design a complete architecture for a real-time chat system supporting 1M concurrent users',
+    context: 'A startup wants to launch a mass-market instant messaging app. The system must handle text messages, presence notifications (online/offline), and support progressive scaling.',
     requirements: [
-      'Support de 1M utilisateurs simultanés',
-      'Latence < 100ms pour la livraison de messages',
-      'Haute disponibilité (99.9% uptime)',
-      'Authentification sécurisée',
-      'Historique des messages persisté',
-      'Notifications push pour utilisateurs offline'
+      'Support 1M concurrent users',
+      'Latency < 100ms for message delivery',
+      'High availability (99.9% uptime)',
+      'Secure authentication',
+      'Persisted message history',
+      'Push notifications for offline users'
     ],
     constraints: [
-      'Budget cloud limité (optimiser les coûts)',
-      'Conformité RGPD (données EU)',
-      'Rate limiting pour éviter le spam',
-      'Chiffrement end-to-end des messages',
-      'Monitoring et alerting obligatoires'
+      'Limited cloud budget (optimize costs)',
+      'GDPR compliance (EU data)',
+      'Rate limiting to prevent spam',
+      'End-to-end message encryption',
+      'Monitoring and alerting required'
     ],
     deliverables: [
-      'Diagramme d\'architecture avec tous les composants',
-      'Flux de données principal (envoi/réception message)',
-      'Stratégie de scaling horizontal',
-      'Légende claire des technologies utilisées'
+      'Architecture diagram with all components',
+      'Main data flow (send/receive message)',
+      'Horizontal scaling strategy',
+      'Clear legend of technologies used'
     ],
     successCriteria: [
-      'Architecture claire et lisible',
-      'Tous les composants critiques présents',
-      'Stratégie de scalabilité explicite',
-      'Sécurité et monitoring pris en compte'
+      'Clear and readable architecture',
+      'All critical components present',
+      'Explicit scalability strategy',
+      'Security and monitoring considered'
     ],
     status: 'new',
     rubric: [
       {
-        criterion: 'Clarté du diagramme',
+        criterion: 'Diagram Clarity',
         maxPoints: 20,
-        description: 'Organisation visuelle, légende, nommage'
+        description: 'Visual organization, legend, naming'
       },
       {
-        criterion: 'Scalabilité',
+        criterion: 'Scalability',
         maxPoints: 25,
         description: 'Load balancing, caching, sharding'
       },
       {
-        criterion: 'Sécurité',
+        criterion: 'Security',
         maxPoints: 20,
         description: 'Auth, encryption, rate limiting'
       },
@@ -114,121 +114,121 @@ export const canvasChallenges: CanvasChallenge[] = [
         description: 'Logs, metrics, alerting'
       },
       {
-        criterion: 'Conformité exigences',
+        criterion: 'Requirements Compliance',
         maxPoints: 20,
-        description: 'Toutes les contraintes respectées'
+        description: 'All constraints respected'
       }
     ]
   },
   {
     id: 'canvas-002',
-    title: 'Système de Notification Event-Driven',
+    title: 'Event-Driven Notification System',
     type: 'dataflow',
     difficulty: 'hard',
     duration: 60,
     tags: ['Event-Driven', 'Queue', 'Microservices', 'Async'],
-    description: 'Concevoir un système de notifications multi-canal (email, SMS, push) basé sur des événements',
-    context: 'Une plateforme e-commerce doit envoyer des notifications pour différents événements : commande confirmée, expédition, livraison, promotions, etc. Le système doit être résilient et garantir la livraison.',
+    description: 'Design a multi-channel notification system (email, SMS, push) based on events',
+    context: 'An e-commerce platform must send notifications for various events: order confirmed, shipped, delivered, promotions, etc. The system must be resilient and guarantee delivery.',
     requirements: [
       'Support email, SMS, push notifications',
-      'Traitement asynchrone des événements',
-      'Gestion des retries et DLQ (Dead Letter Queue)',
-      'Idempotence (pas de notifications dupliquées)',
-      'Prioritisation des messages (urgent vs normal)',
-      'Personnalisation selon préférences utilisateur'
+      'Asynchronous event processing',
+      'Retry and DLQ (Dead Letter Queue) management',
+      'Idempotence (no duplicate notifications)',
+      'Message prioritization (urgent vs normal)',
+      'Personalization based on user preferences'
     ],
     constraints: [
-      'Coûts SMS à optimiser',
-      'Respect des quotas fournisseurs (rate limits)',
-      'Traçabilité complète des envois',
-      'Opt-out et préférences utilisateur',
-      'Performance : 10K notifications/seconde'
+      'Optimize SMS costs',
+      'Respect provider quotas (rate limits)',
+      'Complete traceability of sends',
+      'Opt-out and user preferences',
+      'Performance: 10K notifications/second'
     ],
     deliverables: [
-      'Architecture event-driven complète',
-      'Flux détaillé : événement → notification envoyée',
-      'Gestion des erreurs et retry logic',
-      'Stratégie de monitoring'
+      'Complete event-driven architecture',
+      'Detailed flow: event → notification sent',
+      'Error handling and retry logic',
+      'Monitoring strategy'
     ],
     successCriteria: [
-      'Pattern event-driven correctement appliqué',
-      'Queue et workers bien dimensionnés',
-      'Retry logic et DLQ présents',
-      'Idempotence garantie'
+      'Event-driven pattern correctly applied',
+      'Queue and workers properly sized',
+      'Retry logic and DLQ present',
+      'Idempotence guaranteed'
     ],
     status: 'attempted',
     rubric: [
       {
-        criterion: 'Architecture event-driven',
+        criterion: 'Event-driven Architecture',
         maxPoints: 30,
         description: 'Queue, workers, event bus'
       },
       {
-        criterion: 'Résilience',
+        criterion: 'Resilience',
         maxPoints: 25,
         description: 'Retry, DLQ, circuit breaker'
       },
       {
         criterion: 'Idempotence',
         maxPoints: 20,
-        description: 'Gestion des doublons'
+        description: 'Duplicate handling'
       },
       {
         criterion: 'Performance',
         maxPoints: 15,
-        description: 'Throughput et scalabilité'
+        description: 'Throughput and scalability'
       },
       {
         criterion: 'Monitoring',
         maxPoints: 10,
-        description: 'Observabilité du système'
+        description: 'System observability'
       }
     ]
   },
   {
     id: 'canvas-003',
-    title: 'Déploiement 3-Tiers + CDN',
+    title: '3-Tier Deployment + CDN',
     type: 'architecture-physique',
     difficulty: 'easy',
     duration: 30,
     tags: ['3-Tier', 'CDN', 'Deployment', 'DevOps'],
-    description: 'Concevoir l\'architecture de déploiement d\'une application web 3-tiers avec CDN',
-    context: 'Une application web classique (Frontend React, API Node.js, PostgreSQL) doit être déployée en production avec de bonnes pratiques de sécurité et performance.',
+    description: 'Design the deployment architecture for a 3-tier web application with CDN',
+    context: 'A classic web application (Frontend React, API Node.js, PostgreSQL) must be deployed to production with best practices for security and performance.',
     requirements: [
-      'Séparation Frontend / API / Database',
-      'CDN pour les assets statiques',
-      'SSL/TLS obligatoire',
-      'Scaling horizontal du backend',
-      'Backup automatique de la DB',
-      'Environnements staging + production'
+      'Separation Frontend / API / Database',
+      'CDN for static assets',
+      'Mandatory SSL/TLS',
+      'Horizontal backend scaling',
+      'Automatic DB backup',
+      'Staging + production environments'
     ],
     constraints: [
-      'Budget cloud modéré',
-      'Simplicité opérationnelle',
-      'Temps de déploiement < 10 minutes',
+      'Moderate cloud budget',
+      'Operational simplicity',
+      'Deployment time < 10 minutes',
       'Zero downtime deployments'
     ],
     deliverables: [
-      'Schéma d\'architecture réseau',
-      'Composants de sécurité (firewall, WAF)',
-      'Stratégie de déploiement',
-      'Points de monitoring'
+      'Network architecture schema',
+      'Security components (firewall, WAF)',
+      'Deployment strategy',
+      'Monitoring points'
     ],
     successCriteria: [
-      'Séparation claire des tiers',
-      'Sécurité réseau bien configurée',
-      'CDN correctement positionné',
-      'Stratégie de backup présente'
+      'Clear tier separation',
+      'Network security well configured',
+      'CDN correctly positioned',
+      'Backup strategy present'
     ],
     status: 'completed',
     rubric: [
       {
-        criterion: 'Architecture 3-tiers',
+        criterion: '3-Tier Architecture',
         maxPoints: 25,
-        description: 'Séparation correcte des couches'
+        description: 'Correct layer separation'
       },
       {
-        criterion: 'Sécurité réseau',
+        criterion: 'Network Security',
         maxPoints: 25,
         description: 'Firewall, VPC, SSL/TLS'
       },
@@ -238,58 +238,58 @@ export const canvasChallenges: CanvasChallenge[] = [
         description: 'CDN, caching, load balancing'
       },
       {
-        criterion: 'Opérations',
+        criterion: 'Operations',
         maxPoints: 15,
         description: 'CI/CD, backup, monitoring'
       },
       {
-        criterion: 'Conformité',
+        criterion: 'Compliance',
         maxPoints: 15,
-        description: 'Toutes les exigences remplies'
+        description: 'All requirements fulfilled'
       }
     ]
   },
   {
     id: 'canvas-004',
-    title: 'Architecture Microservices E-Commerce',
+    title: 'E-Commerce Microservices Architecture',
     type: 'architecture-logique',
     difficulty: 'expert',
     duration: 90,
     tags: ['Microservices', 'DDD', 'API Gateway', 'Service Mesh'],
-    description: 'Concevoir une architecture microservices complète pour une plateforme e-commerce',
-    context: 'Migration d\'un monolithe e-commerce vers des microservices. Domaines : Produits, Panier, Commandes, Paiements, Inventaire, Utilisateurs, Notifications.',
+    description: 'Design a complete microservices architecture for an e-commerce platform',
+    context: 'Migration from an e-commerce monolith to microservices. Domains: Products, Cart, Orders, Payments, Inventory, Users, Notifications.',
     requirements: [
-      'Découpage en domaines DDD',
-      'API Gateway + authentification centralisée',
-      'Communication inter-services (sync + async)',
-      'Gestion des transactions distribuées',
-      'Service discovery et load balancing',
-      'Observabilité (tracing distribué)'
+      'DDD domain breakdown',
+      'API Gateway + centralized authentication',
+      'Inter-service communication (sync + async)',
+      'Distributed transaction management',
+      'Service discovery and load balancing',
+      'Observability (distributed tracing)'
     ],
     constraints: [
-      'Migration progressive (strangler pattern)',
-      'Compatibilité avec le monolithe existant',
-      'Performances maintenues',
-      'Équipe devops limitée'
+      'Progressive migration (strangler pattern)',
+      'Compatibility with existing monolith',
+      'Maintained performance',
+      'Limited devops team'
     ],
     deliverables: [
-      'Carte complète des microservices',
-      'Patterns de communication',
-      'Stratégie de migration',
-      'Infrastructure support (service mesh, etc.)'
+      'Complete microservices map',
+      'Communication patterns',
+      'Migration strategy',
+      'Support infrastructure (service mesh, etc.)'
     ],
     successCriteria: [
-      'Découpage cohérent selon DDD',
-      'Communication inter-services claire',
-      'Patterns distribués bien appliqués',
-      'Stratégie de migration réaliste'
+      'Coherent breakdown according to DDD',
+      'Clear inter-service communication',
+      'Distributed patterns well applied',
+      'Realistic migration strategy'
     ],
     status: 'new',
     rubric: [
       {
-        criterion: 'Découpage microservices',
+        criterion: 'Microservices Breakdown',
         maxPoints: 30,
-        description: 'Bounded contexts, cohésion'
+        description: 'Bounded contexts, cohesion'
       },
       {
         criterion: 'Communication',
@@ -297,71 +297,71 @@ export const canvasChallenges: CanvasChallenge[] = [
         description: 'API Gateway, messaging, sync/async'
       },
       {
-        criterion: 'Résilience',
+        criterion: 'Resilience',
         maxPoints: 20,
         description: 'Circuit breaker, retry, fallback'
       },
       {
-        criterion: 'Observabilité',
+        criterion: 'Observability',
         maxPoints: 15,
         description: 'Tracing, logs, metrics'
       },
       {
         criterion: 'Migration',
         maxPoints: 10,
-        description: 'Stratégie pragmatique'
+        description: 'Pragmatic strategy'
       }
     ]
   },
   {
     id: 'canvas-005',
-    title: 'Sécurité API Banking',
+    title: 'Banking API Security',
     type: 'securite',
     difficulty: 'hard',
     duration: 60,
     tags: ['Security', 'API', 'Banking', 'OAuth', 'Encryption'],
-    description: 'Concevoir l\'architecture de sécurité d\'une API bancaire',
-    context: 'API exposée aux clients B2B pour consultation de comptes et initiation de virements. Conformité PSD2 et normes bancaires obligatoires.',
+    description: 'Design the security architecture for a banking API',
+    context: 'API exposed to B2B clients for account consultation and transfer initiation. PSD2 compliance and banking standards required.',
     requirements: [
-      'Authentification forte (OAuth 2.0 + MFA)',
-      'Chiffrement end-to-end',
-      'Rate limiting et anti-fraude',
-      'Audit trail complet',
-      'Isolation réseau stricte',
-      'Détection d\'anomalies temps réel'
+      'Strong authentication (OAuth 2.0 + MFA)',
+      'End-to-end encryption',
+      'Rate limiting and anti-fraud',
+      'Complete audit trail',
+      'Strict network isolation',
+      'Real-time anomaly detection'
     ],
     constraints: [
-      'Conformité PSD2',
-      'Audit externe annuel',
+      'PSD2 compliance',
+      'Annual external audit',
       'Zero trust architecture',
-      'Latence < 200ms malgré les contrôles'
+      'Latency < 200ms despite controls'
     ],
     deliverables: [
-      'Layers de sécurité (network, app, data)',
-      'Flux d\'authentification et autorisation',
-      'Stratégie anti-fraude',
-      'Gestion des secrets et clés'
+      'Security layers (network, app, data)',
+      'Authentication and authorization flow',
+      'Anti-fraud strategy',
+      'Secrets and key management'
     ],
     successCriteria: [
-      'Defense in depth appliquée',
-      'Authentification forte présente',
-      'Audit trail complet',
-      'Conformité réglementaire'
+      'Defense in depth applied',
+      'Strong authentication present',
+      'Complete audit trail',
+      'Regulatory compliance'
     ],
     status: 'new',
     rubric: [
       {
-        criterion: 'Authentification',
+        criterion: 'Authentication',
         maxPoints: 25,
         description: 'OAuth, MFA, session management'
       },
       {
-        criterion: 'Chiffrement',
+        criterion: 'Encryption',
         maxPoints: 20,
         description: 'In-transit, at-rest, key management'
       },
       {
-        criterion: 'Network security',
+        criterion: 'Network Security',
         maxPoints: 20,
         description: 'Firewall, WAF, DDoS protection'
       },
@@ -371,71 +371,71 @@ export const canvasChallenges: CanvasChallenge[] = [
         description: 'Audit logs, anomaly detection'
       },
       {
-        criterion: 'Conformité',
+        criterion: 'Compliance',
         maxPoints: 15,
-        description: 'PSD2, RGPD, standards bancaires'
+        description: 'PSD2, GDPR, banking standards'
       }
     ]
   },
   {
     id: 'canvas-006',
-    title: 'Pipeline CI/CD Multi-Environnement',
+    title: 'Multi-Environment CI/CD Pipeline',
     type: 'dataflow',
     difficulty: 'medium',
     duration: 45,
     tags: ['CI/CD', 'DevOps', 'Automation', 'GitOps'],
-    description: 'Concevoir un pipeline CI/CD complet avec gating et promotion',
-    context: 'Équipe de 20 développeurs, application microservices, déploiements fréquents. Besoin d\'automatiser tests, sécurité, et déploiements multi-environnements.',
+    description: 'Design a complete CI/CD pipeline with gating and promotion',
+    context: 'Team of 20 developers, microservices application, frequent deployments. Need to automate tests, security, and multi-environment deployments.',
     requirements: [
-      'Build automatisé sur commit',
-      'Tests unitaires, intégration, e2e',
-      'Scan de sécurité (SAST, DAST)',
-      'Environnements: dev, staging, production',
-      'Gating manuel avant production',
-      'Rollback automatique si erreur'
+      'Automated build on commit',
+      'Unit, integration, e2e tests',
+      'Security scanning (SAST, DAST)',
+      'Environments: dev, staging, production',
+      'Manual gating before production',
+      'Automatic rollback on error'
     ],
     constraints: [
-      'Temps de pipeline < 15 minutes',
-      'Visibilité pour toute l\'équipe',
-      'Secrets gérés de façon sécurisée',
-      'Compatibilité multi-clouds'
+      'Pipeline time < 15 minutes',
+      'Visibility for entire team',
+      'Securely managed secrets',
+      'Multi-cloud compatibility'
     ],
     deliverables: [
-      'Diagramme du pipeline complet',
-      'Gates et validations',
-      'Stratégie de rollback',
-      'Notifications et feedback'
+      'Complete pipeline diagram',
+      'Gates and validations',
+      'Rollback strategy',
+      'Notifications and feedback'
     ],
     successCriteria: [
-      'Pipeline clair de bout en bout',
-      'Tests et sécurité intégrés',
-      'Stratégie de promotion cohérente',
-      'Observabilité du pipeline'
+      'Clear end-to-end pipeline',
+      'Integrated tests and security',
+      'Coherent promotion strategy',
+      'Pipeline observability'
     ],
     status: 'new',
     rubric: [
       {
         criterion: 'Automation',
         maxPoints: 25,
-        description: 'Build, test, deploy automatisés'
+        description: 'Automated build, test, deploy'
       },
       {
-        criterion: 'Qualité',
+        criterion: 'Quality',
         maxPoints: 25,
-        description: 'Tests complets, code quality'
+        description: 'Comprehensive tests, code quality'
       },
       {
-        criterion: 'Sécurité',
+        criterion: 'Security',
         maxPoints: 20,
         description: 'Scans, secrets management'
       },
       {
         criterion: 'Gating',
         maxPoints: 15,
-        description: 'Validations et approbations'
+        description: 'Validations and approvals'
       },
       {
-        criterion: 'Observabilité',
+        criterion: 'Observability',
         maxPoints: 15,
         description: 'Logs, metrics, notifications'
       }
@@ -452,25 +452,25 @@ export const mockSubmissions: CanvasSubmission[] = [
     maxScore: 100,
     badges: ['Clarity Master', 'Security Aware', 'Scalability Pro'],
     feedback: {
-      summary: 'Excellente architecture globale avec une bonne prise en compte de la scalabilité. Quelques améliorations possibles sur la résilience et le monitoring.',
+      summary: 'Excellent overall architecture with good consideration of scalability. Some improvements possible on resilience and monitoring.',
       strengths: [
-        'Architecture claire et bien structurée avec séparation des responsabilités',
-        'Stratégie de scaling horizontal bien pensée (load balancers + auto-scaling)',
-        'Sécurité bien prise en compte (auth, encryption, rate limiting)',
-        'Utilisation appropriée de Redis pour le cache et la session'
+        'Clear and well-structured architecture with separation of concerns',
+        'Well-thought-out horizontal scaling strategy (load balancers + auto-scaling)',
+        'Security well considered (auth, encryption, rate limiting)',
+        'Appropriate use of Redis for cache and session'
       ],
       risks: [
-        'Single point of failure sur la base de données (pas de réplication visible)',
-        'Absence de circuit breaker entre les services',
-        'Monitoring et alerting peu détaillés',
-        'Stratégie de backup non spécifiée'
+        'Single point of failure on database (no visible replication)',
+        'Absence of circuit breaker between services',
+        'Monitoring and alerting not detailed',
+        'Backup strategy not specified'
       ],
       improvements: [
-        'Ajouter une réplication master-slave pour PostgreSQL',
-        'Implémenter un circuit breaker pattern entre les composants critiques',
-        'Détailler la stack de monitoring (Prometheus, Grafana, alerting)',
-        'Spécifier la stratégie de backup (RTO/RPO)',
-        'Ajouter une API Gateway pour centraliser l\'authentification'
+        'Add master-slave replication for PostgreSQL',
+        'Implement circuit breaker pattern between critical components',
+        'Detail monitoring stack (Prometheus, Grafana, alerting)',
+        'Specify backup strategy (RTO/RPO)',
+        'Add API Gateway to centralize authentication'
       ]
     },
     submittedAt: new Date('2024-01-28T14:30:00'),
@@ -482,7 +482,7 @@ export const communityDesigns: CommunityDesign[] = [
   {
     id: 'design-001',
     challengeId: 'canvas-001',
-    challengeTitle: 'Chat Temps Réel WebSocket',
+    challengeTitle: 'Real-Time WebSocket Chat',
     author: 'Sarah_Chen',
     authorLevel: 45,
     score: 92,
@@ -496,7 +496,7 @@ export const communityDesigns: CommunityDesign[] = [
   {
     id: 'design-002',
     challengeId: 'canvas-002',
-    challengeTitle: 'Système de Notification Event-Driven',
+    challengeTitle: 'Event-Driven Notification System',
     author: 'MaxDev42',
     authorLevel: 67,
     score: 88,
@@ -510,7 +510,7 @@ export const communityDesigns: CommunityDesign[] = [
   {
     id: 'design-003',
     challengeId: 'canvas-004',
-    challengeTitle: 'Architecture Microservices E-Commerce',
+    challengeTitle: 'E-Commerce Microservices Architecture',
     author: 'Alex_Architect',
     authorLevel: 89,
     score: 95,
@@ -524,7 +524,7 @@ export const communityDesigns: CommunityDesign[] = [
   {
     id: 'design-004',
     challengeId: 'canvas-003',
-    challengeTitle: 'Déploiement 3-Tiers + CDN',
+    challengeTitle: '3-Tier Deployment + CDN',
     author: 'DevOpsNinja',
     authorLevel: 34,
     score: 85,
@@ -538,7 +538,7 @@ export const communityDesigns: CommunityDesign[] = [
   {
     id: 'design-005',
     challengeId: 'canvas-005',
-    challengeTitle: 'Sécurité API Banking',
+    challengeTitle: 'Banking API Security',
     author: 'SecureCode_Pro',
     authorLevel: 78,
     score: 91,
@@ -552,7 +552,7 @@ export const communityDesigns: CommunityDesign[] = [
   {
     id: 'design-006',
     challengeId: 'canvas-006',
-    challengeTitle: 'Pipeline CI/CD Multi-Environnement',
+    challengeTitle: 'Multi-Environment CI/CD Pipeline',
     author: 'CloudMaster',
     authorLevel: 56,
     score: 87,
@@ -595,7 +595,7 @@ export const canvasAssets = [
 export const canvasTemplates = [
   {
     id: 'web-arch',
-    name: 'Architecture Web',
+    name: 'Web Architecture',
     description: 'Frontend + Backend + Database',
     icon: '🌐'
   },

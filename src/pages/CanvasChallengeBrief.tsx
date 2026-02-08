@@ -29,7 +29,7 @@ export function CanvasChallengeBrief() {
               Challenge non trouvé
             </h2>
             <Button onClick={() => navigate('/canvas')}>
-              Retour au catalogue
+              Back to Catalog
             </Button>
           </div>
         </div>
@@ -68,7 +68,7 @@ export function CanvasChallengeBrief() {
             className="gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour au catalogue
+            Back to Catalog
           </Button>
 
           {/* Hero Section */}
@@ -236,21 +236,20 @@ export function CanvasChallengeBrief() {
                   id: 'solo',
                   name: 'Training (Solo)',
                   icon: '🧑‍💻',
-                  description: 'Entraînez-vous à votre rythme',
+                  description: 'Practice at your own pace',
                   available: true
                 },
                 {
-                  id: 'duel',
                   name: 'Duel 1v1',
                   icon: '⚔️',
-                  description: 'Affrontez un adversaire',
+                  description: 'Challenge an opponent',
                   available: true
                 },
                 {
                   id: 'hackathon',
                   name: 'Hackathon',
                   icon: '🏆',
-                  description: 'Compétition par équipes',
+                  description: 'Team competition',
                   available: false
                 }
               ].map((mode) => (

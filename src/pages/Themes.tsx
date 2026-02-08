@@ -58,9 +58,9 @@ export function Themes() {
       <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="mb-2">Thèmes & Skins</h1>
+          <h1 className="mb-2">Themes & Skins</h1>
           <p className="text-[var(--text-secondary)]">
-            Débloquez de nouveaux thèmes en montant de niveau
+            Unlock new themes by leveling up
           </p>
         </div>
 
@@ -68,9 +68,9 @@ export function Themes() {
         <div className="mb-8 p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3>Niveau Actuel</h3>
+              <h3>Current Level</h3>
               <p className="text-[var(--text-muted)]">
-                Continuez à jouer pour débloquer plus de thèmes
+                Keep playing to unlock more themes
               </p>
             </div>
             <div className="flex items-center gap-2">

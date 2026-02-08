@@ -71,7 +71,7 @@ export function Problem() {
           <div className="flex items-center gap-2 text-caption text-[var(--text-muted)]">
             <Link to="/problems" className="hover:text-[var(--brand-primary)] flex items-center gap-1">
               <ChevronLeft className="w-4 h-4" />
-              Problèmes
+              Problems
             </Link>
             <span>/</span>
             <span className="text-[var(--text-primary)]">{problem.title}</span>

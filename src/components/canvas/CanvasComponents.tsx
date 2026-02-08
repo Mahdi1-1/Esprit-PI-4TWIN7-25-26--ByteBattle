@@ -286,7 +286,7 @@ export function HintPanel({ hintNumber, totalHints, hint, onNextHint, disabled =
     ">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-[var(--brand-primary)]">
-          💡 Indice {hintNumber}/{totalHints}
+          💡 Hint {hintNumber}/{totalHints}
         </h4>
       </div>
       <p className="text-sm text-[var(--text-secondary)]">{hint}</p>
@@ -304,7 +304,7 @@ export function HintPanel({ hintNumber, totalHints, hint, onNextHint, disabled =
           transition-colors
         "
       >
-        Indice suivant
+        Next Hint
       </button>
     </div>
   );

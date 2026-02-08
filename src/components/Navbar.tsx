@@ -75,7 +75,7 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
                   className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
                 >
                   <Palette className="w-4 h-4" />
-                  <span>Thèmes</span>
+                  <span>Themes</span>
                 </Link>
               </>
             ) : null}
@@ -106,7 +106,7 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
               {showFontSizePanel && (
                 <div className="absolute top-full right-0 mt-2 w-64 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] shadow-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[var(--text-primary)]">Taille de police</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Font Size</span>
                     <span className="text-xs text-[var(--text-secondary)]">{fontSize}%</span>
                   </div>
                   
@@ -276,7 +276,7 @@ export function Navbar({ isLoggedIn = false, userAvatar, username }: NavbarProps
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Palette className="w-4 h-4" />
-                <span>Thèmes</span>
+                <span>Themes</span>
               </Link>
             </div>
           </div>
