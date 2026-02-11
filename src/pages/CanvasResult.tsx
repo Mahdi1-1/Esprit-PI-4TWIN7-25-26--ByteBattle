@@ -80,7 +80,7 @@ export function CanvasResult() {
       <Navbar isLoggedIn userAvatar={mockUser.avatar} username={mockUser.username} />
       
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="w-full px-4 sm:px-6 lg:px-10 space-y-8">
           {/* Back Button */}
           <Button
             variant="ghost"

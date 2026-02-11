@@ -33,7 +33,7 @@ export function CompanyNavbar({ companyName = 'TechCorp Inc.', companyLogo, user
 
   return (
     <nav className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-default)] backdrop-blur-sm bg-opacity-95">
-      <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="w-full px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
         {/* Left: Logo + Company Name */}
         <div className="flex items-center gap-8">
           <Link to="/company/overview" className="flex items-center gap-3">

@@ -81,7 +81,7 @@ export function CompanyCandidatesList() {
     <Layout>
       <CompanyNavbar companyName="TechCorp Inc." userName="John Doe" userRole="recruiter" />
       
-      <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-6" dir={direction}>
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6" dir={direction}>
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>

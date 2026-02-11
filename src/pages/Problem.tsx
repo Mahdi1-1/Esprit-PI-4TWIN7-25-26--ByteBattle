@@ -67,7 +67,7 @@ export function Problem() {
 
       {/* Breadcrumb */}
       <div className="border-b border-[var(--border-default)] bg-[var(--surface-1)]">
-        <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-3">
+        <div className="w-full px-4 sm:px-6 lg:px-10 py-3">
           <div className="flex items-center gap-2 text-caption text-[var(--text-muted)]">
             <Link to="/problems" className="hover:text-[var(--brand-primary)] flex items-center gap-1">
               <ChevronLeft className="w-4 h-4" />
@@ -79,7 +79,7 @@ export function Problem() {
         </div>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-6">
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
           {/* Left Panel - Problem Statement */}
           <div className="flex flex-col overflow-hidden">

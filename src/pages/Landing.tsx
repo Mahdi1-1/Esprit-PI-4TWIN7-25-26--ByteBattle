@@ -1,14 +1,17 @@
+import React from 'react';
 import { Link } from 'react-router';
 import { Code2, Swords, Users, Brain, Shield, Zap, ArrowRight, Github } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Layout } from '../components/Layout';
+import { Navbar } from '../components/Navbar';
 
 export function Landing() {
   return (
     <Layout>
+      <Navbar />
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-20 lg:py-32">
+        <div className="w-full px-4 sm:px-6 lg:px-10 py-20 lg:py-32">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-full">
               <Zap className="w-4 h-4 text-[var(--brand-primary)]" />
@@ -75,7 +78,7 @@ export function Landing() {
 
       {/* Features Section */}
       <section className="py-20 bg-[var(--bg-secondary)]">
-        <div className="max-w-[1440px] mx-auto px-6 lg:px-20">
+        <div className="w-full px-4 sm:px-6 lg:px-10">
           <div className="text-center mb-12">
             <h2 className="mb-4">Key Features</h2>
             <p className="text-[var(--text-secondary)]">
@@ -120,7 +123,7 @@ export function Landing() {
 
       {/* Social Proof */}
       <section className="py-20">
-        <div className="max-w-[1440px] mx-auto px-6 lg:px-20 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-10 text-center">
           <p className="text-caption text-[var(--text-muted)] mb-8">
             Used by developers from
           </p>
@@ -135,7 +138,7 @@ export function Landing() {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 border-y border-[var(--border-default)]">
-        <div className="max-w-[1440px] mx-auto px-6 lg:px-20 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-10 text-center">
           <h2 className="mb-4">Ready to start your adventure?</h2>
           <p className="text-[var(--text-secondary)] mb-8 max-w-2xl mx-auto">
             Join thousands of developers improving their skills every day
@@ -150,7 +153,7 @@ export function Landing() {
 
       {/* Footer */}
       <footer className="py-12 bg-[var(--surface-1)] border-t border-[var(--border-default)]">
-        <div className="max-w-[1440px] mx-auto px-6 lg:px-20">
+        <div className="w-full px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">

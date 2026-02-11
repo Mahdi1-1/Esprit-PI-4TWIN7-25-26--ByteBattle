@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import { Button } from '../components/Button';
 import { canvasChallenges } from '../data/canvasChallengeData';
-import { ExcalidrawCanvas } from '../components/canvas/ExcalidrawCanvas';
-import type { ExcalidrawElement } from '@excalidraw/excalidraw/types/types';
+import { ExcalidrawEditor } from '../components/ExcalidrawEditor';
 import {
   CanvasTimer
 } from '../components/canvas/CanvasComponents';
@@ -29,7 +28,7 @@ export function CanvasEditor() {
   const [showBrief, setShowBrief] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submissionBlob, setSubmissionBlob] = useState<Blob | null>(null);
-  const [submissionElements, setSubmissionElements] = useState<readonly ExcalidrawElement[]>([]);
+  const [submissionElements, setSubmissionElements] = useState<readonly any[]>([]);
   const [timeRemaining, setTimeRemaining] = useState(challenge?.duration ? challenge.duration * 60 : 0);
   const [lastSaveTime, setLastSaveTime] = useState<Date>(new Date());
 
@@ -248,13 +247,15 @@ export function CanvasEditor() {
             </div>
           )}
 
-          <ExcalidrawCanvas
-            challengeId={id || 'unknown'}
-            onSave={(elements, blob) => {
-              setLastSaveTime(new Date());
-            }}
-            onExport={(blob) => {
-              console.log('Exported:', blob.size, 'bytes');
+          <ExcalidrawEditor
+            hideToolbar
+            hideThemeToggle
+            onChange={(elements) => {
+              // Auto-save draft to localStorage
+              localStorage.setItem(`canvas_draft_${id}`, JSON.stringify({
+                elements,
+                timestamp: Date.now()
+              }));
             }}
           />
         </div>

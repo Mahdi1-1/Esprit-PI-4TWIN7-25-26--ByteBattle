@@ -1,9 +1,13 @@
 import { Button } from '../components/Button';
+import { Layout } from '../components/Layout';
+import { Navbar } from '../components/Navbar';
 
 export function ThemeShowcaseComponents() {
   return (
-    <div className="min-h-screen p-8 bg-[var(--bg-primary)]">
-      <div className="max-w-6xl mx-auto space-y-12">
+    <Layout>
+      <Navbar />
+      <div className="p-8">
+        <div className="w-full px-4 sm:px-6 lg:px-10 space-y-12">
         {/* Header */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold gradient-brand-text">
@@ -264,5 +268,6 @@ export function ThemeShowcaseComponents() {
         </section>
       </div>
     </div>
+    </Layout>
   );
 }
