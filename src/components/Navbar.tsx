@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router';
-import { Menu, Moon, Sun, Swords, Trophy, Code2, Users, Palette, PenTool, Type, LogOut, Settings as SettingsIcon, User as UserIcon } from 'lucide-react';
+import { Menu, Moon, Sun, Swords, Trophy, Code2, Users, Palette, PenTool, Pencil, Type, LogOut, Settings as SettingsIcon, User as UserIcon, MessageSquare, Bot, Layers } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useFontSize } from '../context/FontSizeContext';
 import { useAuth } from '../context/AuthContext';
@@ -57,7 +57,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
   return (
     <nav className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-default)] backdrop-blur-sm bg-opacity-95">
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-20">
+      <div className="w-full px-4 sm:px-6 lg:px-10">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
@@ -86,6 +86,34 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 >
                   <PenTool className="w-4 h-4" />
                   <span>{t('nav.canvas')}</span>
+                </Link>
+                <Link
+                  to="/sketchpad"
+                  className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  <span>{t('nav.drawing')}</span>
+                </Link>
+                <Link
+                  to="/discussion"
+                  className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{t('nav.discussion')}</span>
+                </Link>
+                <Link
+                  to="/data-structures"
+                  className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+                >
+                  <Layers className="w-4 h-4" />
+                  <span>{t('nav.dataStructures')}</span>
+                </Link>
+                <Link
+                  to="/interview"
+                  className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+                >
+                  <Bot className="w-4 h-4" />
+                  <span>{t('nav.interview')}</span>
                 </Link>
                 <Link
                   to="/duel"
@@ -329,6 +357,38 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
               >
                 <PenTool className="w-4 h-4" />
                 <span>{t('nav.canvas')}</span>
+              </Link>
+              <Link
+                to="/sketchpad"
+                className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Pencil className="w-4 h-4" />
+                <span>{t('nav.drawing')}</span>
+              </Link>
+              <Link
+                to="/discussion"
+                className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>{t('nav.discussion')}</span>
+              </Link>
+              <Link
+                to="/data-structures"
+                className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Layers className="w-4 h-4" />
+                <span>{t('nav.dataStructures')}</span>
+              </Link>
+              <Link
+                to="/interview"
+                className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Bot className="w-4 h-4" />
+                <span>{t('nav.interview')}</span>
               </Link>
               <Link
                 to="/duel"

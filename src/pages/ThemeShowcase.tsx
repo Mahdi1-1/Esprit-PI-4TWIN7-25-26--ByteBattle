@@ -15,7 +15,7 @@ export function ThemeShowcase() {
         username={mockUser.username} 
       />
 
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {/* Theme Header */}
         <div className="mb-12 text-center">
           <h1 className="mb-4 gradient-brand-text uppercase tracking-wider">

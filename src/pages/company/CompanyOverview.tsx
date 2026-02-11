@@ -31,7 +31,7 @@ export function CompanyOverview() {
     <Layout>
       <CompanyNavbar companyName="TechCorp Inc." userName="John Doe" userRole="owner" />
       
-      <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-8">
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-8">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>

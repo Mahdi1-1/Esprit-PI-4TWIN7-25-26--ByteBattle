@@ -16,6 +16,11 @@ import { CanvasChallengeBrief } from './pages/CanvasChallengeBrief';
 import { CanvasEditor } from './pages/CanvasEditor';
 import { CanvasResult } from './pages/CanvasResult';
 import { CanvasGallery } from './pages/CanvasGallery';
+import { DiscussionPage } from './pages/DiscussionPage';
+import { DiscussionDetailPage } from './pages/DiscussionDetailPage';
+import { AIInterviewPage } from './pages/AIInterviewPage';
+import { DataStructuresPage } from './pages/DataStructuresPage';
+import { SketchpadPage } from './pages/SketchpadPage';
 
 // Front Office Pages
 import { Profile } from './pages/Profile';
@@ -137,6 +142,28 @@ export const router = createBrowserRouter([
   {
     path: '/canvas/gallery',
     Component: CanvasGallery,
+  },
+  
+  {
+    path: '/discussion',
+    Component: DiscussionPage,
+  },
+  {
+    path: '/discussion/:id',
+    Component: DiscussionDetailPage,
+  },
+  
+  {
+    path: '/interview',
+    Component: AIInterviewPage,
+  },
+  {
+    path: '/data-structures',
+    Component: DataStructuresPage,
+  },
+  {
+    path: '/sketchpad',
+    Component: SketchpadPage,
   },
   // Admin Routes
   {

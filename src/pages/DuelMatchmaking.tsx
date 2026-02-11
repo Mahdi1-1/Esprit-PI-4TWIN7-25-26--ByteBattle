@@ -47,7 +47,7 @@ export function DuelMatchmaking() {
         username={mockUser.username} 
       />
 
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-20 py-12">
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-12">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
