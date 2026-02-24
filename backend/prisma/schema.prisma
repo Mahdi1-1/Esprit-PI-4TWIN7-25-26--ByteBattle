@@ -1,0 +1,312 @@
+// ─── Prisma Schema — ByteBattle (MongoDB) ───────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------
+// 👤 USERS & COMPANIES
+// ---------------------------------------------------------
+
+model User {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  email         String     @unique
+  username      String     @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  profileImage  String?
+  role          UserRole   @default(user)
+  status        UserStatus @default(active)
+  level         Int        @default(1)
+  xp            Int        @default(0)
+  elo           Int        @default(1200)
+  tokensLeft    Int        @default(10)
+  isPremium     Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  submissions   Submission[]
+  discussions   Discussion[]
+  comments      Comment[]
+  interviews    InterviewSession[]
+  auditLogs     AuditLog[]
+  companyRoles  CompanyMember[]
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum UserStatus {
+  active
+  suspended
+  banned
+}
+
+model Company {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  slug       String   @unique
+  logoUrl    String?
+  website    String?
+  domain     String?
+  status     String
+  joinPolicy String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members CompanyMember[]
+}
+
+model CompanyMember {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String   @db.ObjectId
+  company   Company  @relation(fields: [companyId], references: [id])
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  role      String
+  status    String
+  joinedAt  DateTime @default(now())
+}
+
+// ---------------------------------------------------------
+// 💻 CHALLENGES & SUBMISSIONS
+// ---------------------------------------------------------
+
+model Challenge {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  kind             ChallengeKind
+  difficulty       Difficulty
+  tags             String[]
+  descriptionMd    String
+  status           ChallengeStatus @default(draft)
+  allowedLanguages String[]
+  constraints      Json?
+  tests            ChallengeTest[]
+  examples         Json[]
+  category         String
+  deliverables     String?
+  rubric           Json?
+  assets           String[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  submissions Submission[]
+}
+
+type ChallengeTest {
+  input          String
+  expectedOutput String
+  isHidden       Boolean @default(true)
+}
+
+enum ChallengeKind {
+  CODE
+  CANVAS
+}
+
+enum Difficulty {
+  easy
+  medium
+  hard
+}
+
+enum ChallengeStatus {
+  draft
+  published
+  archived
+}
+
+model Submission {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String        @db.ObjectId
+  user        User          @relation(fields: [userId], references: [id])
+  challengeId String        @db.ObjectId
+  challenge   Challenge     @relation(fields: [challengeId], references: [id])
+  kind        ChallengeKind
+  score       Int           @default(0)
+  context     String
+  language    String?
+  code        String?
+  verdict     String?
+  testsPassed Int?
+  testsTotal  Int?
+  timeMs      Float?
+  memMb       Float?
+  snapshotUrl String?
+  canvasJson  Json?
+  createdAt   DateTime      @default(now())
+
+  aiReview AIReview?
+}
+
+model AIReview {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  submissionId  String     @unique @db.ObjectId
+  submission    Submission @relation(fields: [submissionId], references: [id])
+  status        String
+  provider      String
+  model         String
+  promptVersion String
+  latencyMs     Int
+  reviewBigO    String?
+  issues        String[]
+  suggestions   String[]
+  ttsUrl        String?
+  lang          String
+  createdAt     DateTime   @default(now())
+}
+
+// ---------------------------------------------------------
+// 🏆 HACKATHONS & TEAMS
+// ---------------------------------------------------------
+
+model Hackathon {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  startTime    DateTime
+  endTime      DateTime
+  status       HackathonStatus @default(draft)
+  freezeAt     DateTime?
+  challengeIds String[]        @db.ObjectId
+  rulesMd      String?
+  scope        String
+  companyId    String?         @db.ObjectId
+  joinCode     String?
+  teamPolicy   Json?
+
+  teams Team[]
+}
+
+enum HackathonStatus {
+  draft
+  active
+  frozen
+  ended
+}
+
+model Team {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  hackathonId String       @db.ObjectId
+  hackathon   Hackathon    @relation(fields: [hackathonId], references: [id])
+  name        String
+  members     TeamMember[]
+  solvedCount Int          @default(0)
+  penaltyTime Int          @default(0)
+  score       Int          @default(0)
+  type        String
+  companyId   String?      @db.ObjectId
+  session     String?
+  analytics   Json?
+}
+
+type TeamMember {
+  userId String @db.ObjectId
+  role   String
+}
+
+// ---------------------------------------------------------
+// 💬 FORUM & AI INTERVIEWS
+// ---------------------------------------------------------
+
+model Discussion {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  content      String
+  authorId     String   @db.ObjectId
+  author       User     @relation(fields: [authorId], references: [id])
+  tags         String[]
+  challengeId  String?  @db.ObjectId
+  upvotes      String[] @db.ObjectId
+  downvotes    String[] @db.ObjectId
+  commentCount Int      @default(0)
+  views        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  comments Comment[]
+
+  @@index([tags])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Comment {
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
+  content         String
+  authorId        String     @db.ObjectId
+  author          User       @relation(fields: [authorId], references: [id])
+  discussionId    String     @db.ObjectId
+  discussion      Discussion @relation(fields: [discussionId], references: [id])
+  parentCommentId String?    @db.ObjectId
+  upvotes         String[]   @db.ObjectId
+  downvotes       String[]   @db.ObjectId
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([discussionId])
+}
+
+model InterviewSession {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String      @db.ObjectId
+  user       User        @relation(fields: [userId], references: [id])
+  difficulty Difficulty
+  topic      String
+  messages   AIMessage[]
+  feedback   Json?
+  status     String
+  tokensUsed Int         @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+type AIMessage {
+  role      String
+  content   String
+  timestamp DateTime @default(now())
+  code      String?
+  language  String?
+}
+
+// ---------------------------------------------------------
+// 🛡️ MODERATION & LOGS
+// ---------------------------------------------------------
+
+model Badge {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  name     String @unique
+  rarity   String
+  ruleText String
+  iconUrl  String
+}
+
+model Report {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  type       String
+  targetType String
+  targetId   String   @db.ObjectId
+  reporterId String   @db.ObjectId
+  reason     String
+  status     String   @default("open")
+  createdAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  actorId    String   @db.ObjectId
+  actor      User     @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String   @db.ObjectId
+  details    Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+}
