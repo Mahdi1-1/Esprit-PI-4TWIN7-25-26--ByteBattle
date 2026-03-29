@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { Breadcrumb, StatusChip, FilterBar } from '../../components/admin/AdminComponents';
-import { Search, Plus, Trophy, Users, Calendar, Play, Pause, Square } from 'lucide-react';
+import { hackathonsService } from '../../services/hackathonsService';
+import { Search, Plus, Trophy, Users, Calendar, Play, Pause, Square, Loader } from 'lucide-react';
 
 interface Hackathon {
   id: string;
@@ -14,42 +15,34 @@ interface Hackathon {
   participants: number;
 }
 
-const mockHackathons: Hackathon[] = [
-  {
-    id: 'hack-001',
-    title: 'Winter CodeFest 2026',
-    startDate: new Date('2026-02-15T10:00:00'),
-    endDate: new Date('2026-02-15T15:00:00'),
-    status: 'UPCOMING',
-    teams: 0,
-    problems: 10,
-    participants: 0
-  },
-  {
-    id: 'hack-002',
-    title: 'Spring Showdown 2024',
-    startDate: new Date('2024-01-20T09:00:00'),
-    endDate: new Date('2024-01-20T18:00:00'),
-    status: 'FINISHED',
-    teams: 45,
-    problems: 12,
-    participants: 180
-  },
-  {
-    id: 'hack-003',
-    title: 'Summer Sprint 2025',
-    startDate: new Date('2025-06-10T08:00:00'),
-    endDate: new Date('2025-06-10T20:00:00'),
-    status: 'ONGOING',
-    teams: 32,
-    problems: 15,
-    participants: 128
-  }
-];
-
 export function AdminHackathons() {
-  const [hackathons] = useState<Hackathon[]>(mockHackathons);
+  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const fetchHackathons = async () => {
+      try {
+        const res = await hackathonsService.getAll();
+        const data = Array.isArray(res) ? res : res.data || [];
+        setHackathons(data.map((h: any) => ({
+          id: h.id,
+          title: h.title,
+          startDate: new Date(h.startDate),
+          endDate: new Date(h.endDate),
+          status: h.status || 'UPCOMING',
+          teams: h.teams?.length || h.teamCount || 0,
+          problems: h.problems?.length || h.problemCount || 0,
+          participants: h.participantCount || 0,
+        })));
+      } catch (err) {
+        console.error('Failed to load hackathons:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHackathons();
+  }, []);
 
   return (
     <AdminLayout>
@@ -61,7 +54,10 @@ export function AdminHackathons() {
               <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Hackathons & Events</h1>
               <p className="text-sm text-[var(--text-secondary)]">{hackathons.length} hackathons total</p>
             </div>
-            <button className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
+            <button
+              className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+              onClick={() => window.location.href = '/admin/hackathons/create'}
+            >
               <Plus className="w-4 h-4" />
               Create Hackathon
             </button>
@@ -91,7 +87,12 @@ export function AdminHackathons() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <Trophy className="w-5 h-5 text-[var(--brand-primary)]" />
-                    <h3 className="text-lg font-bold text-[var(--text-primary)]">{hackathon.title}</h3>
+                    <h3 
+                      className="text-lg font-bold text-[var(--text-primary)] cursor-pointer hover:text-[var(--brand-primary)] transition-colors"
+                      onClick={() => window.location.href = `/admin/hackathons/${hackathon.id}`}
+                    >
+                      {hackathon.title}
+                    </h3>
                     <StatusChip status={hackathon.status} type="hackathon" />
                   </div>
                   <div className="flex items-center gap-6 text-sm text-[var(--text-secondary)]">
@@ -125,9 +126,12 @@ export function AdminHackathons() {
                       </button>
                     </>
                   )}
-                  <button className="px-3 py-1.5 border border-[var(--border-default)] rounded text-sm hover:bg-[var(--surface-2)] transition-colors">
+                    <button
+                    className="px-3 py-1.5 border border-[var(--border-default)] rounded text-sm hover:bg-[var(--surface-2)] transition-colors"
+                    onClick={() => window.location.href = `/admin/hackathons/${hackathon.id}/edit`}
+                    >
                     Edit
-                  </button>
+                    </button>
                   <button className="px-3 py-1.5 border border-[var(--border-default)] rounded text-sm hover:bg-[var(--surface-2)] transition-colors">
                     Scoreboard
                   </button>

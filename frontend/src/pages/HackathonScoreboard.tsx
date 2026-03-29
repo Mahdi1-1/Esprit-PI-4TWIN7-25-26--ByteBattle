@@ -1,32 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { Navbar } from '../components/Navbar';
 import { Badge } from '../components/Badge';
 import { Timer } from '../components/Timer';
-import { mockUser, mockScoreboard, mockHackathons } from '../data/mockData';
-import { Trophy, Flame, AlertTriangle } from 'lucide-react';
+import { Layout } from '../components/Layout';
+import { Trophy, Flame, AlertTriangle, Loader } from 'lucide-react';
+import { hackathonsService } from '../services/hackathonsService';
 
 export function HackathonScoreboard() {
   const { id } = useParams();
-  const hackathon = mockHackathons.find(h => h.id === id);
+  const [hackathon, setHackathon] = useState<any>(null);
+  const [scoreboard, setScoreboard] = useState<any[]>([]);
   const [filter, setFilter] = useState<'all' | 'top10' | 'myteam'>('all');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [hackRes, scoreRes] = await Promise.allSettled([
+          hackathonsService.getById(id!),
+          hackathonsService.getScoreboard(id!),
+        ]);
+        if (hackRes.status === 'fulfilled' && hackRes.value) {
+          setHackathon(hackRes.value);
+        }
+        if (scoreRes.status === 'fulfilled' && scoreRes.value?.length) {
+          setScoreboard(scoreRes.value);
+        }
+      } catch (err) {
+        console.error('Failed to load scoreboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <Navbar />
+        <div className="flex items-center justify-center h-64">
+          <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!hackathon) {
-    return <div>Hackathon not found</div>;
+    return (
+      <Layout>
+        <Navbar />
+        <div className="flex items-center justify-center h-64">
+          <p className="text-[var(--text-muted)]">Hackathon not found</p>
+        </div>
+      </Layout>
+    );
   }
 
   const isFrozen = hackathon.frozenTime && new Date() > hackathon.frozenTime;
-  const filteredScoreboard = filter === 'top10' 
-    ? mockScoreboard.slice(0, 10)
-    : mockScoreboard;
+  const filteredScoreboard = filter === 'top10'
+    ? scoreboard.slice(0, 10)
+    : scoreboard;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
-      <Navbar 
-        isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
-      />
+    <Layout>
+      <Navbar />
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {/* Header */}
@@ -36,9 +75,9 @@ export function HackathonScoreboard() {
               <h1 className="mb-2">{hackathon.name}</h1>
               <div className="flex items-center gap-4">
                 <Badge variant={hackathon.status}>
-                  {hackathon.status === 'ongoing' ? 'ONGOING' : 'FINISHED'}
+                  {hackathon.status === 'active' ? 'ACTIVE' : hackathon.status === 'frozen' ? 'FROZEN' : 'ENDED'}
                 </Badge>
-                {hackathon.status === 'ongoing' && (
+                {hackathon.status === 'active' && (
                   <Timer endTime={hackathon.endTime} />
                 )}
               </div>
@@ -195,16 +234,16 @@ export function HackathonScoreboard() {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }
 
-function ProblemCell({ 
-  status, 
-  time, 
-  attempts, 
-  firstBlood 
-}: { 
+function ProblemCell({
+  status,
+  time,
+  attempts,
+  firstBlood
+}: {
   status: 'solved' | 'attempted' | 'unattempted';
   time: number;
   attempts: number;
@@ -232,8 +271,8 @@ function ProblemCell({
     <div className="flex items-center justify-center">
       <div className={`
         px-2 py-1 rounded text-caption font-code font-medium
-        ${firstBlood 
-          ? 'bg-[var(--brand-secondary)]/20 text-[var(--brand-secondary)] border border-[var(--brand-secondary)]/30' 
+        ${firstBlood
+          ? 'bg-[var(--brand-secondary)]/20 text-[var(--brand-secondary)] border border-[var(--brand-secondary)]/30'
           : 'bg-[var(--state-success)]/10 text-[var(--state-success)]'
         }
       `}>
@@ -247,12 +286,12 @@ function ProblemCell({
   );
 }
 
-function LiveFeedItem({ 
-  type, 
-  message, 
-  time, 
-  isFirstBlood 
-}: { 
+function LiveFeedItem({
+  type,
+  message,
+  time,
+  isFirstBlood
+}: {
   type: 'solve' | 'clarification' | 'announcement';
   message: string;
   time: string;

@@ -2,49 +2,94 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
-import { mockUser } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { duelsService } from '../services/duelsService';
+import { io, Socket } from 'socket.io-client';
+import { profileService } from '../services/profileService';
+ 
 import { Swords, Target, Users, Zap } from 'lucide-react';
 
 export function DuelMatchmaking() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isSearching, setIsSearching] = useState(false);
   const [estimatedTime, setEstimatedTime] = useState(15);
   const [searchTime, setSearchTime] = useState(0);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [duelId, setDuelId] = useState<string | null>(null);
+
+  const currentUser = {
+    username: user?.username || 'Player 1',
+    avatar: user?.avatar?.renderUrl || profileService.getPhotoUrl(user?.profileImage, user?.username || 'Player'),
+    elo: user?.elo || 1200
+  };
 
   useEffect(() => {
+    let interval: NodeJS.Timeout;
     if (isSearching) {
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         setSearchTime(t => t + 1);
-        
-        // Simulate match found after 3 seconds
-        if (searchTime >= 3) {
-          clearInterval(interval);
-          setTimeout(() => {
-            navigate('/duel/room');
-          }, 500);
-        }
       }, 1000);
-
-      return () => clearInterval(interval);
     }
-  }, [isSearching, searchTime, navigate]);
+    return () => clearInterval(interval);
+  }, [isSearching]);
 
-  const handleStartSearch = () => {
+  const handleStartSearch = async () => {
     setIsSearching(true);
     setSearchTime(0);
+
+    try {
+      const existingToken = localStorage.getItem('token');
+      // Create or join duel in DB via API
+      const duel = await duelsService.createOrJoin('easy');
+      setDuelId(duel.id);
+
+      // Connect socket
+      const newSocket = io('http://localhost:4001/duels', {
+        auth: { token: `Bearer ${existingToken}` },
+        transports: ['websocket'],
+      });
+
+      newSocket.on('connect', () => {
+        newSocket.emit('join_duel', { duelId: duel.id });
+      });
+
+      newSocket.on('duel_state_update', (state) => {
+        // If state is ready or active, navigate to the room
+        if (state.status === 'ready' || state.status === 'active') {
+          navigate(`/duel/room/${duel.id}`);
+        }
+      });
+
+      setSocket(newSocket);
+    } catch (err) {
+      console.error('Failed to start search:', err);
+      setIsSearching(false);
+    }
   };
 
   const handleCancelSearch = () => {
     setIsSearching(false);
     setSearchTime(0);
+    if (socket) {
+      socket.disconnect();
+      setSocket(null);
+    }
+    setDuelId(null);
   };
+
+  useEffect(() => {
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, [socket]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <Navbar 
         isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
+         
+         
       />
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-12">
@@ -68,15 +113,15 @@ export function DuelMatchmaking() {
                 <div className="flex items-center justify-center gap-8 mb-8 pb-8 border-b border-[var(--border-default)]">
                   <div className="text-center">
                     <img
-                      src={mockUser.avatar}
-                      alt={mockUser.username}
-                      className="w-24 h-24 mx-auto mb-3 rounded-full border-4 border-[var(--brand-primary)] glow"
+                      src={currentUser.avatar}
+                      alt={currentUser.username}
+                      className="w-24 h-24 mx-auto mb-3 rounded-full border-4 border-[var(--brand-primary)] glow object-cover"
                     />
-                    <h3 className="mb-1">{mockUser.username}</h3>
+                    <h3 className="mb-1">{currentUser.username}</h3>
                     <div className="flex items-center gap-2 justify-center">
                       <span className="text-caption text-[var(--text-muted)]">Elo:</span>
                       <span className="font-semibold text-[var(--brand-primary)]">
-                        {mockUser.elo}
+                        {currentUser.elo}
                       </span>
                     </div>
                   </div>
@@ -87,7 +132,7 @@ export function DuelMatchmaking() {
                   <InfoCard
                     icon={<Target className="w-5 h-5" />}
                     label="Elo Range"
-                    value={`${mockUser.elo - 100} - ${mockUser.elo + 100}`}
+                    value={`${currentUser.elo - 100} - ${currentUser.elo + 100}`}
                   />
                   <InfoCard
                     icon={<Users className="w-5 h-5" />}
@@ -131,7 +176,7 @@ export function DuelMatchmaking() {
 
                   <div className="mb-8 p-4 bg-[var(--surface-2)] rounded-[var(--radius-md)]">
                     <p className="text-caption text-[var(--text-secondary)]">
-                      Looking for a player with Elo {mockUser.elo - 100} - {mockUser.elo + 100}
+                      Looking for a player with Elo {currentUser.elo - 100} - {currentUser.elo + 100}
                     </p>
                   </div>
 

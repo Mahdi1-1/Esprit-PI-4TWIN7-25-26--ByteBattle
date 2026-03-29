@@ -1,7 +1,7 @@
 import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { useTheme, ThemeName, THEME_LEVEL_REQUIREMENTS } from '../context/ThemeContext';
-import { mockUser } from '../data/mockData';
+ 
 import { Lock, Check, Sparkles } from 'lucide-react';
 import { Layout } from '../components/Layout';
 
@@ -51,8 +51,8 @@ export function Themes() {
     <Layout>
       <Navbar 
         isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
+         
+         
       />
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">

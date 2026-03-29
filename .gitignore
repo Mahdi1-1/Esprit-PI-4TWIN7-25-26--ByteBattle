@@ -1,30 +1,93 @@
-# Dependencies
+# ─── Dependencies ───
 node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
 
-# Build output
+# ─── Build Output ───
 build/
 dist/
+out/
+.next/
+*.js.map
+*.css.map
 
-# Environment files
+# ─── Environment Files ───
 .env
 .env.local
 .env.*.local
+.env.production.local
+.env.test.local
+.env.development.local
 
-# Logs
+# ─── Logs ───
 *.log
 npm-debug.log*
 pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# Editor
+# ─── Editor & IDE ───
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
+*.iml
 .DS_Store
 Thumbs.db
+.project
+.classpath
+.c9/
+*.sublime-workspace
+.terraform/
+.cache/
 
-# Vite
+# ─── OS ───
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ─── Vite & Frontend ───
 *.local
+.eslintcache
+
+# ─── Backend (Prisma) ───
+prisma/dev.db
+prisma/dev.db-journal
+.prisma/
+
+# ─── Test Coverage ───
+coverage/
+.nyc_output/
+
+# ─── Uploaded Files & Media ───
+uploads/
+/uploads/
+public/uploads/
+temp/
+tmp/
+
+# ─── Docker ───
+.docker/
+docker-compose.override.yml
+
+# ─── IDE Temporary Files ───
+*.pem
+*.key
+*.cer
+.env*.pem
+
+# ─── NestJS specific ───
+dist/
+.env
+
+# ─── Audio/Media temporary files ───
+*.mp3
+*.wav
+*.tmp

@@ -1,26 +1,65 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Layout } from '../components/Layout';
 import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { canvasChallenges, mockSubmissions } from '../data/canvasChallengeData';
-import { mockUser } from '../data/mockData';
-import { CheckCircle2, AlertTriangle, Lightbulb, Download, Share2, BookmarkPlus, ArrowRight } from 'lucide-react';
+import { type CanvasChallenge, type CanvasSubmission } from '../data/canvasChallengeData';
+import { canvasService } from '../services/canvasService';
+import { CheckCircle2, Lightbulb, Download, Share2, BookmarkPlus, ArrowRight, Loader } from 'lucide-react';
 
 export function CanvasSubmissionResult() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [challenge, setChallenge] = useState<CanvasChallenge | null>(null);
+  const [submission, setSubmission] = useState<CanvasSubmission | null>(null);
+  const [allChallenges, setAllChallenges] = useState<CanvasChallenge[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const challenge = canvasChallenges.find((c) => c.id === id);
-  const submission = mockSubmissions[0]; // Mock data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [challengeRes, submissionsRes, allChallengesRes] = await Promise.allSettled([
+          canvasService.getChallengeById(id!),
+          canvasService.getSubmissions(id!),
+          canvasService.getChallenges(),
+        ]);
+        if (challengeRes.status === 'fulfilled' && challengeRes.value) {
+          setChallenge(challengeRes.value);
+        }
+        if (submissionsRes.status === 'fulfilled' && submissionsRes.value?.length) {
+          setSubmission(submissionsRes.value[0]);
+        }
+        if (allChallengesRes.status === 'fulfilled' && allChallengesRes.value) {
+          setAllChallenges(allChallengesRes.value);
+        }
+      } catch (err) {
+        console.error('Failed to load submission result:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <Navbar isLoggedIn />
+        <div className="flex items-center justify-center h-64">
+          <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!challenge || !submission) {
     return (
       <Layout>
         <Navbar 
           isLoggedIn 
-          userAvatar={mockUser.avatar} 
-          username={mockUser.username} 
+           
+           
         />
         <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
@@ -55,8 +94,8 @@ export function CanvasSubmissionResult() {
     <Layout>
       <Navbar 
         isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
+         
+         
       />
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto space-y-8">
@@ -91,9 +130,9 @@ export function CanvasSubmissionResult() {
               {/* Badges */}
               <div className="flex items-center justify-center gap-2 flex-wrap">
                 {submission.badges.map((badge) => (
-                  <Badge key={badge} variant="success" className="gap-1">
-                    <span>🏆</span>
-                    {badge}
+                  <Badge key={badge.name} variant="default" className="gap-1">
+                    <span>{badge.icon}</span>
+                    {badge.name}
                   </Badge>
                 ))}
               </div>
@@ -165,22 +204,6 @@ export function CanvasSubmissionResult() {
               </ul>
             </div>
 
-            {/* Risks */}
-            <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-[var(--state-warning)]" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">Identified Risks</h3>
-              </div>
-              <ul className="space-y-3">
-                {submission.feedback.risks.map((risk, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <span className="text-[var(--state-warning)] flex-shrink-0 mt-1">⚠️</span>
-                    <span className="text-[var(--text-secondary)]">{risk}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             {/* Improvements */}
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
               <div className="flex items-center gap-2">
@@ -214,7 +237,7 @@ export function CanvasSubmissionResult() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="font-semibold text-[var(--text-primary)]">
-                          {criterion.criterion}
+                          {criterion.category}
                         </div>
                         <div className="text-sm text-[var(--text-secondary)]">
                           {criterion.description}
@@ -284,8 +307,8 @@ export function CanvasSubmissionResult() {
               variant="primary"
               onClick={() => {
                 // Navigate to next challenge
-                const currentIndex = canvasChallenges.findIndex(c => c.id === id);
-                const nextChallenge = canvasChallenges[currentIndex + 1] || canvasChallenges[0];
+                const currentIndex = allChallenges.findIndex(c => c.id === id);
+                const nextChallenge = allChallenges[currentIndex + 1] || allChallenges[0];
                 navigate(`/canvas/${nextChallenge.id}/brief`);
               }}
               className="gap-2"
@@ -301,7 +324,7 @@ export function CanvasSubmissionResult() {
               Similar Challenges
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {canvasChallenges.slice(1, 4).map((relatedChallenge) => (
+              {allChallenges.filter(c => c.id !== id).slice(0, 3).map((relatedChallenge) => (
                 <div
                   key={relatedChallenge.id}
                   className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-4 space-y-3 hover:border-[var(--brand-primary)] cursor-pointer transition-colors"

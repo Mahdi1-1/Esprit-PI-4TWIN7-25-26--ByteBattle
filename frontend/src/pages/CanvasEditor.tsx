@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import { Button } from '../components/Button';
-import { canvasChallenges } from '../data/canvasChallengeData';
+import { type CanvasChallenge } from '../data/canvasChallengeData';
+import { canvasService } from '../services/canvasService';
 import { ExcalidrawEditor } from '../components/ExcalidrawEditor';
 import {
   CanvasTimer
@@ -15,8 +16,10 @@ import {
   X,
   Menu,
   CheckSquare,
-  FileJson
+  FileJson,
+  Loader
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export function CanvasEditor() {
   const { id } = useParams<{ id: string }>();
@@ -24,13 +27,102 @@ export function CanvasEditor() {
   const location = useLocation();
   const mode = (location.state as any)?.mode || 'solo';
 
-  const challenge = canvasChallenges.find((c) => c.id === id);
+  const [challenge, setChallenge] = useState<CanvasChallenge | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showBrief, setShowBrief] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submissionBlob, setSubmissionBlob] = useState<Blob | null>(null);
   const [submissionElements, setSubmissionElements] = useState<readonly any[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState(challenge?.duration ? challenge.duration * 60 : 0);
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [lastSaveTime, setLastSaveTime] = useState<Date>(new Date());
+  const [focusLostCount, setFocusLostCount] = useState(0);
+  const [totalFocusLostTime, setTotalFocusLostTime] = useState(0);
+  const [lastBlurTime, setLastBlurTime] = useState<number | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      try {
+        const res = await canvasService.getChallengeById(id!);
+        setChallenge(res);
+        setTimeRemaining(res?.duration ? res.duration * 60 : 0);
+      } catch (err) {
+        console.error('Failed to load challenge:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChallenge();
+  }, [id]);
+
+  // Auto Full Screen on mount
+  useEffect(() => {
+    const enterFullScreen = async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          setIsFullScreen(true);
+        }
+      } catch (err) {
+        console.warn('Auto-fullscreen blocked:', err);
+      }
+    };
+    enterFullScreen();
+
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+  }, []);
+
+  // Focus tracking for Canvas
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    const handleLoss = () => {
+      setLastBlurTime((prev) => {
+        if (prev === null) {
+          setFocusLostCount((c) => c + 1);
+          toast.error('Attention ! Focus perdu sur le Canvas.', { icon: '⚠️' });
+          return Date.now();
+        }
+        return prev;
+      });
+      // Start counting seconds immediately
+      if (interval) clearInterval(interval);
+      interval = setInterval(() => {
+         setTotalFocusLostTime(prev => prev + 1);
+      }, 1000);
+    };
+
+    const handleGain = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+      setLastBlurTime(null);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleLoss();
+      } else {
+        handleGain();
+      }
+    };
+
+    window.addEventListener('blur', handleLoss);
+    window.addEventListener('focus', handleGain);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      window.removeEventListener('blur', handleLoss);
+      window.removeEventListener('focus', handleGain);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Timer
   useEffect(() => {
@@ -39,6 +131,14 @@ export function CanvasEditor() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+        <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+      </div>
+    );
+  }
 
   if (!challenge) {
     return (
@@ -134,21 +234,37 @@ export function CanvasEditor() {
   return (
     <div className="h-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden">
       {/* Top Bar */}
-      <div className="flex-shrink-0 h-16 border-b border-[var(--border-default)] bg-[var(--surface-1)] px-4 flex items-center justify-between gap-4">
+      <div className="h-16 px-4 border-b border-[var(--border-default)] flex items-center justify-between bg-[var(--surface-1)]">
         <div className="flex items-center gap-4">
-          {/* Challenge Info */}
-          <div className="hidden sm:block">
-            <h2 className="font-bold text-[var(--text-primary)] text-sm lg:text-base">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/canvas')}>
+            <Undo2 className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-lg font-bold text-[var(--text-primary)] leading-none mb-1">
               {challenge.title}
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)]">
-              Mode: {mode === 'solo' ? '🧑‍💻 Training' : mode === 'duel' ? '⚔️ Duel' : '🏆 Hackathon'}
-            </p>
+            </h1>
+            <div className="flex items-center gap-2 text-caption text-[var(--text-muted)]">
+              <span>{mode === 'bi' ? 'Mode Duo' : 'Mode Solo'}</span>
+              {mode === 'bi' && <span>• 2 participants</span>}
+              <span>• Sauvegardé {lastSaveTime.toLocaleTimeString()}</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Timer */}
+        <div className="flex items-center gap-4">
+           {focusLostCount > 0 && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/30 rounded-full text-red-400 text-xs">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span>Focus perdu ({focusLostCount}x, {totalFocusLostTime}s)</span>
+            </div>
+          )}
+
+          {!isFullScreen && (
+            <Button variant="ghost" size="sm" onClick={() => document.documentElement.requestFullscreen()}>
+              <span className="text-xs text-yellow-500">Full Screen</span>
+            </Button>
+          )}
+
           <CanvasTimer
             minutes={minutes}
             seconds={seconds}
@@ -233,31 +349,37 @@ export function CanvasEditor() {
 
         {/* Center - Excalidraw Canvas */}
         <div className="flex-1 flex flex-col bg-[var(--bg-secondary)] overflow-hidden relative">
-          {!showBrief && (
-            <div className="absolute top-4 left-4 z-10">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowBrief(true)}
-                className="gap-2"
+          {!isFullScreen && (
+            <div className="absolute inset-0 z-[100] bg-[var(--surface-1)]/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6">
+              <span className="w-12 h-12 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </span>
+              <h3 className="text-xl font-bold mb-2">Mode Plein Écran Requis</h3>
+              <p className="text-[var(--text-secondary)] mb-6 max-w-md">
+                Pour éditer le canvas, veuillez activer le mode plein écran afin de garantir les conditions de l'examen.
+              </p>
+              <Button 
+                size="lg" 
+                variant="primary" 
+                onClick={() => document.documentElement.requestFullscreen()}
               >
-                <Menu className="w-4 h-4" />
-                Brief
+                Activer le Mode Plein Écran
               </Button>
             </div>
           )}
 
-          <ExcalidrawEditor
-            hideToolbar
-            hideThemeToggle
-            onChange={(elements) => {
-              // Auto-save draft to localStorage
-              localStorage.setItem(`canvas_draft_${id}`, JSON.stringify({
-                elements,
-                timestamp: Date.now()
-              }));
-            }}
-          />
+          <div className="relative flex-1 bg-[var(--surface-2)]">
+             <ExcalidrawEditor
+                // @ts-ignore
+                initialData={challenge?.initialData}
+                // @ts-ignore
+                onChange={(elements, state) => {
+                  setSubmissionElements(elements);
+                }}
+              />
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Code2, Mail, Lock, AlertCircle } from 'lucide-react';
+import { BBLogo } from '../../components/BBLogo';
 
 export function AdminLogin() {
   const navigate = useNavigate();
@@ -30,8 +31,8 @@ export function AdminLogin() {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] rounded-xl mb-4">
-            <Code2 className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <BBLogo className="h-16 w-auto" />
           </div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">ByteBattle Admin</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-2">

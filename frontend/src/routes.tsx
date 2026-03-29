@@ -1,13 +1,18 @@
 import { createBrowserRouter } from 'react-router';
 import { Landing } from './pages/Landing';
+import { AuthCallback } from './pages/AuthCallback';
 import { UnifiedLogin } from './pages/UnifiedLogin';
-import {Signup} from './pages/Signup'
+import { Signup } from './pages/Signup'
 import { Dashboard } from './pages/Dashboard';
 import { Problems } from './pages/Problems';
 import { Problem } from './pages/Problem';
+import { DuelRoom } from './pages/DuelRoom';
 import { DuelMatchmaking } from './pages/DuelMatchmaking';
 import { Hackathon } from './pages/Hackathon';
 import { HackathonScoreboard } from './pages/HackathonScoreboard';
+import { HackathonLobby } from './pages/HackathonLobby';
+import { HackathonWorkspace } from './pages/HackathonWorkspace';
+import { HackathonResults } from './pages/HackathonResults';
 import { Leaderboard } from './pages/Leaderboard';
 import { Themes } from './pages/Themes';
 import { ThemeShowcase } from './pages/ThemeShowcase';
@@ -36,6 +41,11 @@ import { AdminMonitoring } from './pages/admin/AdminMonitoring';
 import { AdminSubmissions } from './pages/admin/AdminSubmissions';
 import { AdminCanvasChallenges } from './pages/admin/AdminCanvasChallenges';
 import { AdminHackathons } from './pages/admin/AdminHackathons';
+import { AdminHackathonCreate } from './pages/admin/AdminHackathonCreate';
+import { AdminHackathonDetail } from './pages/admin/AdminHackathonDetail';
+import { AdminHackathonMonitoring } from './pages/admin/AdminHackathonMonitoring';
+import { AdminHackathonClarifications } from './pages/admin/AdminHackathonClarifications';
+import { AdminHackathonEdit } from './pages/admin/AdminHackathonEdit';
 import { AdminReports } from './pages/admin/AdminReports';
 import { AdminAnticheat } from './pages/admin/AdminAnticheat';
 import { AdminAISettings } from './pages/admin/AdminAISettings';
@@ -60,8 +70,11 @@ import {
   SettingsSecurityPlaceholder
 } from './pages/UnderConstruction';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RoleRoute } from './components/RoleRoute';
+import { DuelResult } from './pages/DuelResult';
 
 export const router = createBrowserRouter([
+  // ─── Public Routes (no auth required) ─────────────
   {
     path: '/',
     Component: Landing,
@@ -72,169 +85,215 @@ export const router = createBrowserRouter([
     Component: UnifiedLogin,
   },
   {
+    path: '/auth/callback',
+    Component: AuthCallback,
+  },
+  {
     path: '/signup',
     Component: Signup,
   },
+
+  // ─── User Routes (role: user only) ─────────────────
   {
     path: '/dashboard',
-    Component: Dashboard,
+    element: <RoleRoute allowedRoles={['user']}><Dashboard /></RoleRoute>,
   },
   {
     path: '/profile',
-    Component: Profile,
+    element: <RoleRoute allowedRoles={['user']}><Profile /></RoleRoute>,
   },
   {
     path: '/settings',
-    Component: Settings,
+    element: <RoleRoute allowedRoles={['user']}><Settings /></RoleRoute>,
   },
   {
     path: '/problems',
-    Component: Problems,
+    element: <RoleRoute allowedRoles={['user']}><Problems /></RoleRoute>,
   },
   {
     path: '/problem/:id',
-    Component: Problem,
+    element: <RoleRoute allowedRoles={['user']}><Problem /></RoleRoute>,
   },
   {
     path: '/duel',
-    Component: DuelMatchmaking,
+    element: <RoleRoute allowedRoles={['user']}><DuelMatchmaking /></RoleRoute>,
+  },
+  {
+    path: '/duel/room/:id',
+    element: <RoleRoute allowedRoles={['user']}><DuelRoom /></RoleRoute>,
   },
   {
     path: '/duel/matchmaking',
-    Component: DuelMatchmaking,
+    element: <RoleRoute allowedRoles={['user']}><DuelMatchmaking /></RoleRoute>,
+  },
+  {
+    path: '/duel/result',
+    element: <RoleRoute allowedRoles={['user']}><DuelResult /></RoleRoute>,
   },
   {
     path: '/hackathon',
-    Component: Hackathon,
+    element: <RoleRoute allowedRoles={['user']}><Hackathon /></RoleRoute>,
   },
   {
     path: '/hackathon/:id/scoreboard',
-    Component: HackathonScoreboard,
+    element: <RoleRoute allowedRoles={['user']}><HackathonScoreboard /></RoleRoute>,
+  },
+  {
+    path: '/hackathon/:id/lobby',
+    element: <RoleRoute allowedRoles={['user']}><HackathonLobby /></RoleRoute>,
+  },
+  {
+    path: '/hackathon/:id/workspace',
+    element: <RoleRoute allowedRoles={['user']}><HackathonWorkspace /></RoleRoute>,
+  },
+  {
+    path: '/hackathon/:id/results',
+    element: <RoleRoute allowedRoles={['user']}><HackathonResults /></RoleRoute>,
   },
   {
     path: '/leaderboard',
-    Component: Leaderboard,
+    element: <RoleRoute allowedRoles={['user']}><Leaderboard /></RoleRoute>,
   },
   {
     path: '/themes',
-    Component: Themes,
+    element: <RoleRoute allowedRoles={['user']}><Themes /></RoleRoute>,
   },
   {
     path: '/theme-showcase',
-    Component: ThemeShowcase,
+    element: <RoleRoute allowedRoles={['user']}><ThemeShowcase /></RoleRoute>,
   },
   {
     path: '/theme-components',
-    Component: ThemeShowcaseComponents,
+    element: <RoleRoute allowedRoles={['user']}><ThemeShowcaseComponents /></RoleRoute>,
   },
   {
     path: '/canvas',
-    Component: CanvasCatalog,
+    element: <RoleRoute allowedRoles={['user']}><CanvasCatalog /></RoleRoute>,
   },
   {
     path: '/canvas/:id/brief',
-    Component: CanvasChallengeBrief,
+    element: <RoleRoute allowedRoles={['user']}><CanvasChallengeBrief /></RoleRoute>,
   },
   {
     path: '/canvas/:id/editor',
-    Component: CanvasEditor,
+    element: <RoleRoute allowedRoles={['user']}><CanvasEditor /></RoleRoute>,
   },
   {
     path: '/canvas/:id/result',
-    Component: CanvasResult,
+    element: <RoleRoute allowedRoles={['user']}><CanvasResult /></RoleRoute>,
   },
   {
     path: '/canvas/gallery',
-    Component: CanvasGallery,
+    element: <RoleRoute allowedRoles={['user']}><CanvasGallery /></RoleRoute>,
   },
-  
   {
     path: '/discussion',
-    Component: DiscussionPage,
+    element: <RoleRoute allowedRoles={['user']}><DiscussionPage /></RoleRoute>,
   },
   {
     path: '/discussion/:id',
-    Component: DiscussionDetailPage,
+    element: <RoleRoute allowedRoles={['user']}><DiscussionDetailPage /></RoleRoute>,
   },
-  
   {
     path: '/interview',
-    Component: AIInterviewPage,
+    element: <RoleRoute allowedRoles={['user']}><AIInterviewPage /></RoleRoute>,
   },
   {
     path: '/data-structures',
-    Component: DataStructuresPage,
+    element: <RoleRoute allowedRoles={['user']}><DataStructuresPage /></RoleRoute>,
   },
   {
     path: '/sketchpad',
-    Component: SketchpadPage,
+    element: <RoleRoute allowedRoles={['user']}><SketchpadPage /></RoleRoute>,
   },
-  // Admin Routes
+
+  // ─── Admin Routes (role: admin only) ───────────────
   {
     path: '/admin',
-    element: <ProtectedRoute><AdminDashboard /></ProtectedRoute>,
+    element: <RoleRoute allowedRoles={['admin']}><AdminDashboard /></RoleRoute>,
   },
   {
     path: '/admin/dashboard',
-    Component: AdminDashboard,
+    element: <RoleRoute allowedRoles={['admin']}><AdminDashboard /></RoleRoute>,
   },
   {
     path: '/admin/users',
-    element: <ProtectedRoute><AdminUsers /></ProtectedRoute>,
+    element: <RoleRoute allowedRoles={['admin']}><AdminUsers /></RoleRoute>,
   },
   {
     path: '/admin/problems',
-    element: <ProtectedRoute><AdminProblems /></ProtectedRoute>,
+    element: <RoleRoute allowedRoles={['admin']}><AdminProblems /></RoleRoute>,
   },
   {
     path: '/admin/problems/new',
-    element: <ProtectedRoute><AdminProblemForm /></ProtectedRoute>,
+    element: <RoleRoute allowedRoles={['admin']}><AdminProblemForm /></RoleRoute>,
   },
-   {
+  {
     path: '/admin/problem/:id',
-    element: <ProtectedRoute><AdminProblem /></ProtectedRoute>,
+    element: <RoleRoute allowedRoles={['admin']}><AdminProblem /></RoleRoute>,
   },
   {
     path: '/admin/problems/:id/edit',
-    Component: AdminProblemForm,
+    element: <RoleRoute allowedRoles={['admin']}><AdminProblemForm /></RoleRoute>,
   },
   {
     path: '/admin/canvas-challenges',
-    Component: AdminCanvasChallenges,
+    element: <RoleRoute allowedRoles={['admin']}><AdminCanvasChallenges /></RoleRoute>,
   },
   {
     path: '/admin/submissions',
-    Component: AdminSubmissions,
+    element: <RoleRoute allowedRoles={['admin']}><AdminSubmissions /></RoleRoute>,
   },
   {
     path: '/admin/hackathons',
-    Component: AdminHackathons,
+    element: <RoleRoute allowedRoles={['admin']}><AdminHackathons /></RoleRoute>,
+  },
+  {
+    path: '/admin/hackathons/create',
+    element: <RoleRoute allowedRoles={['admin']}><AdminHackathonCreate /></RoleRoute>,
+  },
+  {
+    path: '/admin/hackathons/:id',
+    element: <RoleRoute allowedRoles={['admin']}><AdminHackathonDetail /></RoleRoute>,
+  },
+  {
+    path: '/admin/hackathons/:id/edit',
+    element: <RoleRoute allowedRoles={['admin']}><AdminHackathonEdit /></RoleRoute>,
+  },
+  {
+    path: '/admin/hackathons/:id/monitoring',
+    element: <RoleRoute allowedRoles={['admin']}><AdminHackathonMonitoring /></RoleRoute>,
+  },
+  {
+    path: '/admin/hackathons/:id/clarifications',
+    element: <RoleRoute allowedRoles={['admin']}><AdminHackathonClarifications /></RoleRoute>,
   },
   {
     path: '/admin/reports',
-    Component: AdminReports,
+    element: <RoleRoute allowedRoles={['admin']}><AdminReports /></RoleRoute>,
   },
   {
     path: '/admin/anticheat',
-    Component: AdminAnticheat,
+    element: <RoleRoute allowedRoles={['admin']}><AdminAnticheat /></RoleRoute>,
   },
   {
     path: '/admin/monitoring',
-    Component: AdminMonitoring,
+    element: <RoleRoute allowedRoles={['admin']}><AdminMonitoring /></RoleRoute>,
   },
   {
     path: '/admin/ai-settings',
-    Component: AdminAISettings,
+    element: <RoleRoute allowedRoles={['admin']}><AdminAISettings /></RoleRoute>,
   },
   {
     path: '/admin/feature-flags',
-    Component: AdminFeatureFlags,
+    element: <RoleRoute allowedRoles={['admin']}><AdminFeatureFlags /></RoleRoute>,
   },
   {
     path: '/admin/audit-logs',
-    Component: AdminAuditLogs,
+    element: <RoleRoute allowedRoles={['admin']}><AdminAuditLogs /></RoleRoute>,
   },
-  // Error Pages
+
+  // ─── Error Pages ──────────────────────────────────
   {
     path: '/403',
     Component: PermissionDenied,
@@ -255,42 +314,40 @@ export const router = createBrowserRouter([
     path: '*',
     Component: NotFound,
   },
-  // Company Portal Pages
+
+  // ─── Company Portal (auth required, any role) ─────
   {
     path: '/company/overview',
-    Component: CompanyOverview,
+    element: <ProtectedRoute><CompanyOverview /></ProtectedRoute>,
   },
   {
     path: '/company/candidates',
-    Component: CompanyCandidatesList,
+    element: <ProtectedRoute><CompanyCandidatesList /></ProtectedRoute>,
   },
-  // Under Construction Pages
+
+  // ─── Under Construction Pages ─────────────────────
   {
     path: '/under-construction',
     Component: UnderConstruction,
   },
   {
-    path: '/duel-room',
-    Component: DuelRoomPlaceholder,
-  },
-  {
     path: '/achievements',
-    Component: AchievementsPlaceholder,
+    element: <RoleRoute allowedRoles={['user']}><AchievementsPlaceholder /></RoleRoute>,
   },
   {
     path: '/notifications',
-    Component: NotificationsPlaceholder,
+    element: <ProtectedRoute><NotificationsPlaceholder /></ProtectedRoute>,
   },
   {
     path: '/ugc-moderation',
-    Component: UGCModerationPlaceholder,
+    element: <RoleRoute allowedRoles={['admin']}><UGCModerationPlaceholder /></RoleRoute>,
   },
   {
     path: '/billing',
-    Component: BillingPlaceholder,
+    element: <ProtectedRoute><BillingPlaceholder /></ProtectedRoute>,
   },
   {
     path: '/settings-security',
-    Component: SettingsSecurityPlaceholder,
+    element: <RoleRoute allowedRoles={['user']}><SettingsSecurityPlaceholder /></RoleRoute>,
   },
 ]);

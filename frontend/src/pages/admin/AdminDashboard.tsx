@@ -1,9 +1,54 @@
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { MetricCard, StatusChip } from '../../components/admin/AdminComponents';
-import { dashboardKPIs, systemMetrics } from '../../data/adminData';
-import { Clock, Activity, CheckCircle, AlertTriangle, Swords, Trophy } from 'lucide-react';
+import { adminService } from '../../services/adminService';
+import { type DashboardKPIs, type SystemMetric } from '../../data/adminData';
+import { Clock, Activity, CheckCircle, AlertTriangle, Swords, Trophy, Loader } from 'lucide-react';
 
 export function AdminDashboard() {
+  const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
+  const [metrics, setMetrics] = useState<SystemMetric[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [dashRes, metricsRes] = await Promise.allSettled([
+          adminService.getDashboardStats(),
+          adminService.getSystemMetrics(),
+        ]);
+        if (dashRes.status === 'fulfilled') setKpis(dashRes.value);
+        if (metricsRes.status === 'fulfilled') setMetrics(Array.isArray(metricsRes.value) ? metricsRes.value : []);
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const dashboardKPIs: DashboardKPIs = {
+    submissions24h: kpis?.submissions24h ?? 0,
+    submissions7d: kpis?.submissions7d ?? 0,
+    avgJudgeTime: kpis?.avgJudgeTime ?? 0,
+    queuePending: kpis?.queuePending ?? 0,
+    queueFailed: kpis?.queueFailed ?? 0,
+    activeDuels: kpis?.activeDuels ?? 0,
+    activeHackathons: kpis?.activeHackathons ?? 0,
+    verdictRatio: kpis?.verdictRatio ?? {},
+  };
+
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
@@ -52,7 +97,7 @@ export function AdminDashboard() {
           />
           <MetricCard
             title="Acceptance Rate"
-            value={`${dashboardKPIs.verdictRatio.ACCEPTED.toFixed(1)}%`}
+            value={`${(dashboardKPIs.verdictRatio?.ACCEPTED ?? 0).toFixed(1)}%`}
             icon={<CheckCircle className="w-4 h-4" />}
             color="success"
           />
@@ -78,12 +123,12 @@ export function AdminDashboard() {
                 <div key={verdict} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[var(--text-secondary)]">{verdict.replace('_', ' ')}</span>
-                    <span className="font-semibold text-[var(--text-primary)]">{percentage.toFixed(1)}%</span>
+                    <span className="font-semibold text-[var(--text-primary)]">{(Number(percentage) || 0).toFixed(1)}%</span>
                   </div>
                   <div className="h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"
-                      style={{ width: `${percentage}%` }}
+                      style={{ width: `${Number(percentage) || 0}%` }}
                     />
                   </div>
                 </div>
@@ -95,7 +140,7 @@ export function AdminDashboard() {
           <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6">
             <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">System Health</h2>
             <div className="space-y-4">
-              {systemMetrics.map((metric) => (
+              {metrics.map((metric) => (
                 <div key={metric.service} className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">

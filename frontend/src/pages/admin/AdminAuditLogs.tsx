@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { Breadcrumb, FilterBar, Pagination, CodeViewer } from '../../components/admin/AdminComponents';
-import { Search, FileCheck, Eye, X } from 'lucide-react';
-import { auditLogs, AuditLog } from '../../data/adminData';
+import { Search, FileCheck, Eye, X, Loader } from 'lucide-react';
+import { type AuditLog } from '../../data/adminData';
+import { adminService } from '../../services/adminService';
 
 export function AdminAuditLogs() {
-  const [logs] = useState<AuditLog[]>(auditLogs);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -13,11 +15,30 @@ export function AdminAuditLogs() {
   const [showDrawer, setShowDrawer] = useState(false);
   const itemsPerPage = 15;
 
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const res = await adminService.getAuditLogs({
+          page: currentPage,
+          limit: itemsPerPage,
+          action: actionFilter !== 'all' ? actionFilter : undefined,
+        });
+        const data = Array.isArray(res) ? res : res.data || [];
+        setLogs(data);
+      } catch (err) {
+        console.error('Failed to load audit logs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLogs();
+  }, [currentPage, actionFilter]);
+
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
-      log.admin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.actorId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.entity.toLowerCase().includes(searchTerm.toLowerCase());
+      log.entityType.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAction = actionFilter === 'all' || log.action === actionFilter;
     return matchesSearch && matchesAction;
   });
@@ -101,21 +122,21 @@ export function AdminAuditLogs() {
                 {paginatedLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-[var(--surface-2)] transition-colors">
                     <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
-                      {new Date(log.timestamp).toLocaleString()}
+                      {new Date(log.createdAt).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-[var(--text-primary)]">
-                      {log.admin}
+                      {log.actorId}
                     </td>
                     <td className="px-4 py-3">
                       <span className="px-2 py-0.5 text-xs bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30 rounded">
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{log.entity}</td>
+                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{log.entityType}</td>
                     <td className="px-4 py-3 text-sm font-mono text-[var(--text-muted)]">
                       {log.entityId}
                     </td>
-                    <td className="px-4 py-3 text-sm font-mono text-[var(--text-muted)]">{log.ip}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-[var(--text-muted)]">{log.ip ?? '—'}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => handleViewLog(log)}
@@ -160,9 +181,9 @@ export function AdminAuditLogs() {
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-xs text-[var(--text-muted)] mb-1">Admin</div>
+                  <div className="text-xs text-[var(--text-muted)] mb-1">Actor ID</div>
                   <div className="text-sm font-medium text-[var(--text-primary)]">
-                    {selectedLog.admin}
+                    {selectedLog.actorId}
                   </div>
                 </div>
                 <div>
@@ -172,9 +193,9 @@ export function AdminAuditLogs() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-[var(--text-muted)] mb-1">Entity</div>
+                  <div className="text-xs text-[var(--text-muted)] mb-1">Entity Type</div>
                   <div className="text-sm font-medium text-[var(--text-primary)]">
-                    {selectedLog.entity}
+                    {selectedLog.entityType}
                   </div>
                 </div>
                 <div>
@@ -186,35 +207,24 @@ export function AdminAuditLogs() {
                 <div>
                   <div className="text-xs text-[var(--text-muted)] mb-1">Timestamp</div>
                   <div className="text-sm font-medium text-[var(--text-primary)]">
-                    {new Date(selectedLog.timestamp).toLocaleString()}
+                    {new Date(selectedLog.createdAt).toLocaleString()}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-[var(--text-muted)] mb-1">IP Address</div>
                   <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
-                    {selectedLog.ip}
+                    {selectedLog.ip ?? '—'}
                   </div>
                 </div>
               </div>
 
-              {selectedLog.before && (
+              {selectedLog.details && (
                 <div>
-                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Before</h3>
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Details</h3>
                   <CodeViewer
-                    code={JSON.stringify(selectedLog.before, null, 2)}
+                    code={JSON.stringify(selectedLog.details, null, 2)}
                     language="json"
-                    maxHeight="200px"
-                  />
-                </div>
-              )}
-
-              {selectedLog.after && (
-                <div>
-                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">After</h3>
-                  <CodeViewer
-                    code={JSON.stringify(selectedLog.after, null, 2)}
-                    language="json"
-                    maxHeight="200px"
+                    maxHeight="300px"
                   />
                 </div>
               )}

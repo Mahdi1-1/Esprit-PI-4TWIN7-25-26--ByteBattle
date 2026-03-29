@@ -13,14 +13,32 @@ datasource db {
 // 👤 USERS & COMPANIES
 // ---------------------------------------------------------
 
+type Avatar {
+  rpmAvatarId    String
+  rpmModelUrl    String
+  renderUrl      String
+  localImageUrl  String?
+  thumbnailUrl   String?
+  scene          String
+  expression     String?
+  updatedAt      DateTime
+}
+
 model User {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   email         String     @unique
   username      String     @unique
-  passwordHash  String
+  passwordHash  String?    // Allow null for OAuth users
   firstName     String
   lastName      String
+  
   profileImage  String?
+  avatar        Avatar?
+  
+  googleId      String?
+  isOAuthUser   Boolean    @default(false)
+  provider      String     @default("local")
+
   role          UserRole   @default(user)
   status        UserStatus @default(active)
   level         Int        @default(1)
@@ -37,6 +55,20 @@ model User {
   interviews    InterviewSession[]
   auditLogs     AuditLog[]
   companyRoles  CompanyMember[]
+
+  // Profile settings
+  bio               String?
+  editorTheme       String    @default("vs-dark")
+  preferredLanguage String    @default("en")
+  lastLogin         DateTime?
+
+  // Relations de duel
+  duelsAsPlayer1 Duel[]    @relation("DuelPlayer1")
+  duelsAsPlayer2 Duel[]    @relation("DuelPlayer2")
+  wonDuels       Duel[]    @relation("DuelWinner")
+
+  notificationsReceived Notification[] @relation("UserNotifications")
+  notificationsActed    Notification[] @relation("UserNotificationActors")
 }
 
 enum UserRole {
@@ -90,16 +122,23 @@ model Challenge {
   status           ChallengeStatus @default(draft)
   allowedLanguages String[]
   constraints      Json?
+  hints            String[]        @default([])
   tests            ChallengeTest[]
   examples         Json[]
   category         String
   deliverables     String?
   rubric           Json?
   assets           String[]
+  
+  // Paramètres pour les duels
+  isDuelEnabled    Boolean         @default(true)
+  duelTimeLimit    Int?            // Override du temps limite pour ce challenge
+
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
   submissions Submission[]
+  duels       Duel[]
 }
 
 type ChallengeTest {
@@ -125,44 +164,98 @@ enum ChallengeStatus {
   archived
 }
 
+// ---------------------------------------------------------
+// 🎤 AI INTERVIEW DOMAINS & LANGUAGES
+// ---------------------------------------------------------
+
+enum InterviewDomain {
+  CLOUD_COMPUTING
+  SOFTWARE_ENGINEERING
+  CYBERSECURITY
+  DATA_SCIENCE_AI
+  FRONTEND_ENGINEERING
+  BACKEND_ENGINEERING
+  DEVOPS_SRE
+  MOBILE_DEVELOPMENT
+}
+
+enum InterviewLanguage {
+  FR
+  EN
+}
+
 model Submission {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String        @db.ObjectId
-  user        User          @relation(fields: [userId], references: [id])
-  challengeId String        @db.ObjectId
-  challenge   Challenge     @relation(fields: [challengeId], references: [id])
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String            @db.ObjectId
+  user        User              @relation(fields: [userId], references: [id])
+  challengeId String            @db.ObjectId
+  challenge   Challenge         @relation(fields: [challengeId], references: [id])
   kind        ChallengeKind
-  score       Int           @default(0)
   context     String
+
+  jobId       String?           // NEW: ID of the BullMQ job for tracking
+
   language    String?
   code        String?
-  verdict     String?
+  
+  verdict     String            @default("queued")
+  score       Int               @default(0)
   testsPassed Int?
   testsTotal  Int?
   timeMs      Float?
   memMb       Float?
   snapshotUrl String?
   canvasJson  Json?
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime          @default(now())
 
   aiReview AIReview?
+
+  @@index([userId])
+  @@index([challengeId])
+  @@index([verdict])
+  @@index([createdAt(sort: Desc)])
 }
 
+// ✨ UPDATED: AI Review Model with Gemini integration
 model AIReview {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   submissionId  String     @unique @db.ObjectId
-  submission    Submission @relation(fields: [submissionId], references: [id])
-  status        String
-  provider      String
-  model         String
-  promptVersion String
-  latencyMs     Int
-  reviewBigO    String?
-  issues        String[]
-  suggestions   String[]
-  ttsUrl        String?
-  lang          String
+  submission    Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  // Review scores
+  score         Int        // Overall score 0-100
+  readability   Int        // Readability score 0-100
+  bestPractices Int        // Best practices score 0-100
+  
+  // Review details
+  strengths     String[]   // Positive aspects
+  improvements  String[]   // Areas for improvement
+  bugs          String[]   // Potential bugs detected
+  suggestions   String[]   // Refactoring suggestions
+  
+  // Code analysis
+  complexity    String     // "low" | "medium" | "high"
+  reviewBigO    String?    // Big-O complexity analysis (legacy field)
+  
+  // Summary
+  summary       String     // General summary in 2-3 sentences
+  
+  // AI metadata
+  status        String     @default("completed") // "pending" | "completed" | "failed"
+  provider      String     @default("gemini")    // "gemini" | "openai" | etc.
+  model         String     @default("gemini-1.5-flash")
+  promptVersion String     @default("1.0")
+  latencyMs     Int?       // Time taken to generate review
+  
+  // Optional features
+  ttsUrl        String?    // Text-to-speech URL (if generated)
+  lang          String     @default("en") // Language of the review
+  
   createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
 }
 
 // ---------------------------------------------------------
@@ -170,27 +263,51 @@ model AIReview {
 // ---------------------------------------------------------
 
 model Hackathon {
-  id           String          @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  startTime    DateTime
-  endTime      DateTime
-  status       HackathonStatus @default(draft)
-  freezeAt     DateTime?
-  challengeIds String[]        @db.ObjectId
-  rulesMd      String?
-  scope        String
-  companyId    String?         @db.ObjectId
-  joinCode     String?
-  teamPolicy   Json?
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String?
+  startTime       DateTime
+  endTime         DateTime
+  status          HackathonStatus @default(draft)
+  freezeAt        DateTime?
+  challengeIds    String[]        @db.ObjectId
+  rulesMd         String?
+  scope           String          // "public" | "enterprise" | "invite-only"
+  companyId       String?         @db.ObjectId
+  joinCode        String?
+  teamPolicy      Json?           // { minSize, maxSize, autoAssign }
+  bannerUrl       String?
+  cancelledReason String?
+  createdById     String?         @db.ObjectId
 
+  // Legacy relation (existing Team model — DO NOT REMOVE)
   teams Team[]
+
+  // New hackathon-specific relations
+  hackathonTeams HackathonTeam[]
+  submissions    HackathonSubmission[]
+  messages       HackathonMessage[]
+  announcements  HackathonAnnouncement[]
+  clarifications HackathonClarification[]
+  auditLogs      HackathonAuditLog[]
+  yjsSnapshots   YjsDocumentSnapshot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([joinCode])
 }
 
 enum HackathonStatus {
   draft
+  lobby
+  checkin
   active
   frozen
   ended
+  archived
+  cancelled
 }
 
 model Team {
@@ -214,6 +331,139 @@ type TeamMember {
 }
 
 // ---------------------------------------------------------
+// 🏆 HACKATHON TEAMS & SUBMISSIONS (NEW — separate from Team)
+// ---------------------------------------------------------
+
+model HackathonTeam {
+  id             String                @id @default(auto()) @map("_id") @db.ObjectId
+  hackathonId    String                @db.ObjectId
+  hackathon      Hackathon             @relation(fields: [hackathonId], references: [id])
+  name           String
+  members        HackathonTeamMember[]
+  joinCode       String
+  isCheckedIn    Boolean               @default(false)
+  isDisqualified Boolean               @default(false)
+  solvedCount    Int                   @default(0)
+  penaltyTime    Int                   @default(0)
+  score          Int                   @default(0)
+  type           String                // "open" | "enterprise"
+  companyId      String?               @db.ObjectId
+  createdAt      DateTime              @default(now())
+
+  submissions    HackathonSubmission[]
+  messages       HackathonMessage[]
+  clarifications HackathonClarification[]
+  yjsSnapshots   YjsDocumentSnapshot[]
+
+  @@index([hackathonId])
+}
+
+type HackathonTeamMember {
+  userId   String   @db.ObjectId
+  role     String   // "captain" | "member"
+  joinedAt DateTime @default(now())
+}
+
+model HackathonSubmission {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  hackathonId    String        @db.ObjectId
+  hackathon      Hackathon     @relation(fields: [hackathonId], references: [id])
+  teamId         String        @db.ObjectId
+  team           HackathonTeam @relation(fields: [teamId], references: [id])
+  challengeId    String        @db.ObjectId
+  userId         String        @db.ObjectId
+  code           String
+  language       String
+  verdict        String        @default("queued")
+  testsPassed    Int?
+  testsTotal     Int?
+  timeMs         Float?
+  memMb          Float?
+  attemptNumber  Int
+  penaltyMinutes Int           @default(0)
+  isFirstBlood   Boolean       @default(false)
+  jobId          String?
+  submittedAt    DateTime      @default(now())
+
+  @@index([hackathonId, teamId, challengeId])
+  @@index([hackathonId, challengeId, verdict])
+  @@index([hackathonId, submittedAt(sort: Desc)])
+}
+
+model HackathonMessage {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  hackathonId  String        @db.ObjectId
+  hackathon    Hackathon     @relation(fields: [hackathonId], references: [id])
+  teamId       String        @db.ObjectId
+  team         HackathonTeam @relation(fields: [teamId], references: [id])
+  userId       String        @db.ObjectId
+  content      String
+  codeSnippet  String?
+  codeLanguage String?
+  sentAt       DateTime      @default(now())
+
+  @@index([hackathonId, teamId, sentAt])
+}
+
+model HackathonAnnouncement {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  hackathonId String    @db.ObjectId
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id])
+  adminId     String    @db.ObjectId
+  content     String
+  isPinned    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([hackathonId, createdAt(sort: Desc)])
+}
+
+model HackathonClarification {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  hackathonId  String        @db.ObjectId
+  hackathon    Hackathon     @relation(fields: [hackathonId], references: [id])
+  teamId       String        @db.ObjectId
+  team         HackathonTeam @relation(fields: [teamId], references: [id])
+  userId       String        @db.ObjectId
+  challengeId  String?       @db.ObjectId
+  question     String
+  answer       String?
+  answeredById String?       @db.ObjectId
+  status       String        @default("pending")
+  isBroadcast  Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  answeredAt   DateTime?
+
+  @@index([hackathonId, status])
+  @@index([hackathonId, teamId])
+}
+
+model HackathonAuditLog {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  hackathonId String    @db.ObjectId
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id])
+  actorId     String    @db.ObjectId
+  action      String
+  details     Json?
+  createdAt   DateTime  @default(now())
+
+  @@index([hackathonId, createdAt(sort: Desc)])
+  @@index([hackathonId, action])
+}
+
+model YjsDocumentSnapshot {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  hackathonId String        @db.ObjectId
+  hackathon   Hackathon     @relation(fields: [hackathonId], references: [id])
+  teamId      String        @db.ObjectId
+  team        HackathonTeam @relation(fields: [teamId], references: [id])
+  challengeId String        @db.ObjectId
+  snapshot    Bytes
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([hackathonId, teamId, challengeId])
+}
+
+// ---------------------------------------------------------
 // 💬 FORUM & AI INTERVIEWS
 // ---------------------------------------------------------
 
@@ -221,6 +471,7 @@ model Discussion {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   title        String
   content      String
+  category     String   @default("general")
   authorId     String   @db.ObjectId
   author       User     @relation(fields: [authorId], references: [id])
   tags         String[]
@@ -229,12 +480,17 @@ model Discussion {
   downvotes    String[] @db.ObjectId
   commentCount Int      @default(0)
   views        Int      @default(0)
+  isSolved     Boolean  @default(false)
+  bestAnswerCommentId String? @db.ObjectId
+  flags        String[] @db.ObjectId
+  isHidden     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   comments Comment[]
 
   @@index([tags])
+  @@index([category])
   @@index([createdAt(sort: Desc)])
 }
 
@@ -248,32 +504,56 @@ model Comment {
   parentCommentId String?    @db.ObjectId
   upvotes         String[]   @db.ObjectId
   downvotes       String[]   @db.ObjectId
+  isBestAnswer    Boolean    @default(false)
+  flags           String[]   @db.ObjectId
+  isHidden        Boolean    @default(false)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
   @@index([discussionId])
 }
 
+model Notification {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  recipientId String   @db.ObjectId
+  recipient   User     @relation("UserNotifications", fields: [recipientId], references: [id])
+  actorId     String   @db.ObjectId
+  actor       User     @relation("UserNotificationActors", fields: [actorId], references: [id])
+  type        String   // "like-post" | "like-comment" | "new-comment" | "reply-comment" | "best-answer"
+  targetId    String   @db.ObjectId  // discussionId or commentId
+  targetType  String   // "discussion" | "comment"
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId, createdAt(sort: Desc)])
+  @@index([recipientId, isRead])
+}
+
 model InterviewSession {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String      @db.ObjectId
-  user       User        @relation(fields: [userId], references: [id])
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String           @db.ObjectId
+  user       User             @relation(fields: [userId], references: [id])
   difficulty Difficulty
-  topic      String
+  topic      String?
+  domain     InterviewDomain
+  language   InterviewLanguage @default(FR)
   messages   AIMessage[]
   feedback   Json?
+  verdict    String?
   status     String
-  tokensUsed Int         @default(0)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  tokensUsed Int              @default(0)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 }
 
 type AIMessage {
-  role      String
-  content   String
-  timestamp DateTime @default(now())
-  code      String?
-  language  String?
+  role       String
+  content    String
+  timestamp  DateTime  @default(now())
+  code       String?
+  language   String?
+  isVoice    Boolean?
+  confidence Float?
 }
 
 // ---------------------------------------------------------
@@ -309,4 +589,73 @@ model AuditLog {
   details    Json?
   ip         String?
   createdAt  DateTime @default(now())
+}
+
+// ---------------------------------------------------------
+// ⚔️ DUELS 
+// ---------------------------------------------------------
+
+model Duel {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Joueurs
+  player1Id     String       @db.ObjectId
+  player1       User         @relation("DuelPlayer1", fields: [player1Id], references: [id])
+  player2Id     String       @db.ObjectId
+  player2       User         @relation("DuelPlayer2", fields: [player2Id], references: [id])
+  
+  // Challenge
+  challengeId   String       @db.ObjectId
+  challenge     Challenge    @relation(fields: [challengeId], references: [id])
+  
+  // État du duel
+  status        DuelStatus   @default(waiting)
+  winnerId      String?      @db.ObjectId
+  winner        User?        @relation("DuelWinner", fields: [winnerId], references: [id])
+  
+  // Règles
+  timeLimit     Int          @default(1800) // 30 minutes en secondes
+  difficulty    Difficulty
+  
+  // Soumissions
+  player1Score  Int          @default(0)
+  player2Score  Int          @default(0)
+  player1Time   Int?         // Temps de résolution en ms
+  player2Time   Int?
+  player1Tests  Int          @default(0)
+  player2Tests  Int          @default(0)
+  
+  // Langages utilisés par chaque joueur
+  player1Language String?
+  player2Language String?
+
+  // Metadata
+  startedAt     DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  
+  // Événements du duel
+  events        DuelEvent[]
+
+  @@index([player1Id])
+  @@index([player2Id])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum DuelStatus {
+  waiting      // En attente du 2e joueur
+  ready        // Les 2 joueurs sont connectés
+  active       // Duel en cours
+  completed    // Terminé
+  cancelled    // Annulé
+  abandoned    // Un joueur a quitté
+}
+
+type DuelEvent {
+  type      String   // "join", "submit", "test", "message", "finish"
+  playerId  String   @db.ObjectId
+  timestamp DateTime @default(now())
+  data      Json?
 }

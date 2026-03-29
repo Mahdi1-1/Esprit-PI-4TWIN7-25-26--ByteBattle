@@ -17,4 +17,30 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 (not authenticated) and 403 (forbidden / wrong role)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const { status } = error.response;
+
+      if (status === 401) {
+        // Token expired or invalid — clear and redirect to login
+        localStorage.removeItem('token');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
+
+      if (status === 403) {
+        // Forbidden — user doesn't have the right role
+        if (window.location.pathname !== '/403') {
+          window.location.href = '/403';
+        }
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 export default api;

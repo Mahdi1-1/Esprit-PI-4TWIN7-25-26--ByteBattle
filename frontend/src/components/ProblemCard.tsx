@@ -35,7 +35,8 @@ export function ProblemCard({
       <div
         className="
           group
-          p-4
+          p-6
+          mb-6
           bg-[var(--surface-1)]
           border border-[var(--border-default)]
           rounded-[var(--radius-lg)]

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { Layout } from '../components/Layout';
 import { Navbar } from '../components/Navbar';
@@ -8,13 +8,14 @@ import { useLanguage } from '../context/LanguageContext';
 import {
   MessageSquare, ThumbsUp, ThumbsDown, Eye, Pin, CheckCircle2,
   Search, Filter, Plus, TrendingUp, Clock, Flame, ChevronLeft, ChevronRight,
-  Tag,
+  Tag, Loader,
 } from 'lucide-react';
 import {
-  mockDiscussions,
   discussionCategories,
   type DiscussionPost,
 } from '../data/discussionData';
+import { discussionsService } from '../services/discussionsService';
+import { profileService } from '../services/profileService';
 
 const POSTS_PER_PAGE = 5;
 
@@ -26,27 +27,63 @@ export function DiscussionPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [currentPage, setCurrentPage] = useState(1);
+  const [discussions, setDiscussions] = useState<DiscussionPost[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  // Filter & sort
-  const filtered = mockDiscussions
-    .filter((p) => {
-      if (selectedCategory !== 'all' && p.category !== selectedCategory) return false;
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        return p.title.toLowerCase().includes(q) || p.tags.some((tag) => tag.toLowerCase().includes(q));
+  useEffect(() => {
+    const fetchDiscussions = async () => {
+      setLoading(true);
+      try {
+        const sortMap: Record<SortOption, string> = {
+          trending: 'popular',
+          newest: 'newest',
+          'most-voted': 'most-voted',
+        };
+        const res = await discussionsService.getAll({
+          page: currentPage,
+          limit: POSTS_PER_PAGE,
+          search: searchQuery || undefined,
+          tags: selectedCategory !== 'all' ? selectedCategory : undefined,
+          sort: sortMap[sortBy],
+        });
+        if (res?.data?.length) {
+          setDiscussions(res.data.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            content: d.content,
+            author: {
+              username: d.author?.username || 'Unknown',
+              avatar: profileService.getPhotoUrl(d.author?.profileImage, d.author?.username),
+              level: d.author?.level || 1,
+            },
+            category: d.tags?.[0] || 'general',
+            tags: d.tags || [],
+            upvotes: d.upvotes?.length || 0,
+            downvotes: d.downvotes?.length || 0,
+            commentCount: d.commentCount || 0,
+            views: d.views || 0,
+            createdAt: new Date(d.createdAt).toLocaleDateString(),
+            isPinned: false,
+            isSolved: false,
+          })));
+          setTotalPages(Math.max(1, Math.ceil(res.total / POSTS_PER_PAGE)));
+        } else {
+          setDiscussions([]);
+          setTotalPages(1);
+        }
+      } catch (err) {
+        console.error('Failed to load discussions:', err);
+        setDiscussions([]);
+        setTotalPages(1);
+      } finally {
+        setLoading(false);
       }
-      return true;
-    })
-    .sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      if (sortBy === 'most-voted') return b.upvotes - a.upvotes;
-      if (sortBy === 'newest') return 0; // already chronological in mock
-      return b.views - a.views; // trending
-    });
+    };
+    fetchDiscussions();
+  }, [currentPage, searchQuery, selectedCategory, sortBy]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / POSTS_PER_PAGE));
-  const paged = filtered.slice((currentPage - 1) * POSTS_PER_PAGE, currentPage * POSTS_PER_PAGE);
+  const paged = discussions;
 
   const categoryColorMap: Record<string, string> = {};
   discussionCategories.forEach((c) => { categoryColorMap[c.id] = c.color; });
@@ -99,11 +136,10 @@ export function DiscussionPage() {
               <div className="space-y-1">
                 <button
                   onClick={() => { setSelectedCategory('all'); setCurrentPage(1); }}
-                  className={`w-full text-left px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors ${
-                    selectedCategory === 'all'
+                  className={`w-full text-left px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors ${selectedCategory === 'all'
                       ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
-                  }`}
+                    }`}
                 >
                   💬 {t('discussion.allPosts')}
                 </button>
@@ -111,11 +147,10 @@ export function DiscussionPage() {
                   <button
                     key={cat.id}
                     onClick={() => { setSelectedCategory(cat.id); setCurrentPage(1); }}
-                    className={`w-full text-left px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors ${
-                      selectedCategory === cat.id
+                    className={`w-full text-left px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors ${selectedCategory === cat.id
                         ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
-                    }`}
+                      }`}
                   >
                     {cat.icon} {cat.label}
                   </button>
@@ -163,11 +198,10 @@ export function DiscussionPage() {
                   <button
                     key={opt.key}
                     onClick={() => setSortBy(opt.key)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors whitespace-nowrap ${
-                      sortBy === opt.key
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors whitespace-nowrap ${sortBy === opt.key
                         ? 'bg-[var(--brand-primary)] text-[var(--bg-primary)] font-medium'
                         : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:border-[var(--brand-primary)]'
-                    }`}
+                      }`}
                   >
                     {opt.icon}
                     <span className="hidden sm:inline">{opt.label}</span>
@@ -202,11 +236,10 @@ export function DiscussionPage() {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-9 h-9 rounded-[var(--radius-md)] text-sm font-medium transition-colors ${
-                      page === currentPage
+                    className={`w-9 h-9 rounded-[var(--radius-md)] text-sm font-medium transition-colors ${page === currentPage
                         ? 'bg-[var(--brand-primary)] text-[var(--bg-primary)]'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
-                    }`}
+                      }`}
                   >
                     {page}
                   </button>
@@ -234,7 +267,7 @@ function PostCard({ post, ...rest }: { post: DiscussionPost } & React.HTMLAttrib
 
   return (
     <Link to={`/discussion/${post.id}`} className="block">
-      <div className="theme-card p-5 hover:border-[var(--brand-primary)]/40 transition-all group">
+      <div className="theme-card p-6 hover:border-[var(--brand-primary)]/40 transition-all group">
         <div className="flex gap-4">
           {/* Vote Column */}
           <div className="hidden sm:flex flex-col items-center gap-1 min-w-[50px]">

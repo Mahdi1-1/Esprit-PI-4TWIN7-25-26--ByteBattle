@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import {
   StatusChip,
@@ -7,11 +7,13 @@ import {
   Breadcrumb,
   CodeViewer
 } from '../../components/admin/AdminComponents';
-import { submissions, Submission } from '../../data/adminData';
-import { Search, Eye, X } from 'lucide-react';
+import { type Submission } from '../../data/adminData';
+import { adminService } from '../../services/adminService';
+import { Search, Eye, X, Loader } from 'lucide-react';
 
 export function AdminSubmissions() {
-  const [submissionsList] = useState<Submission[]>(submissions);
+  const [submissionsList, setSubmissionsList] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [verdictFilter, setVerdictFilter] = useState<string>('all');
   const [languageFilter, setLanguageFilter] = useState<string>('all');
@@ -20,10 +22,30 @@ export function AdminSubmissions() {
   const [showDrawer, setShowDrawer] = useState(false);
   const itemsPerPage = 15;
 
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        const res = await adminService.getSubmissions({
+          page: currentPage,
+          limit: itemsPerPage,
+          verdict: verdictFilter !== 'all' ? verdictFilter : undefined,
+          language: languageFilter !== 'all' ? languageFilter : undefined,
+        });
+        const data = Array.isArray(res) ? res : res.data || [];
+        setSubmissionsList(data);
+      } catch (err) {
+        console.error('Failed to load submissions:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSubmissions();
+  }, [currentPage, verdictFilter, languageFilter]);
+
   const filteredSubmissions = submissionsList.filter((sub) => {
     const matchesSearch =
-      sub.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.problemTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (sub.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (sub.problemTitle || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       sub.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesVerdict = verdictFilter === 'all' || sub.verdict === verdictFilter;
     const matchesLanguage = languageFilter === 'all' || sub.language === languageFilter;
@@ -147,22 +169,22 @@ export function AdminSubmissions() {
                       {submission.id}
                     </td>
                     <td className="px-4 py-3 text-sm text-[var(--text-primary)]">
-                      {submission.username}
+                      {submission.username || submission.userId}
                     </td>
                     <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
-                      {submission.problemTitle}
+                      {submission.problemTitle || submission.challengeId}
                     </td>
                     <td className="px-4 py-3">
-                      <StatusChip status={submission.verdict} type="verdict" />
+                      <StatusChip status={submission.verdict || '—'} type="verdict" />
                     </td>
                     <td className="px-4 py-3 text-sm font-mono text-[var(--text-primary)]">
-                      {submission.timeMs}ms
+                      {submission.timeMs ?? '—'}ms
                     </td>
                     <td className="px-4 py-3 text-sm font-mono text-[var(--text-primary)]">
-                      {submission.memoryMb.toFixed(1)}MB
+                      {submission.memoryMb != null ? submission.memoryMb.toFixed(1) : '—'}MB
                     </td>
                     <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
-                      {submission.language}
+                      {submission.language ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
                       {new Date(submission.createdAt).toLocaleString()}
@@ -222,35 +244,35 @@ export function AdminSubmissions() {
                 <div>
                   <div className="text-xs text-[var(--text-muted)] mb-1">User</div>
                   <div className="text-sm font-medium text-[var(--text-primary)]">
-                    {selectedSubmission.username}
+                    {selectedSubmission.username || selectedSubmission.userId}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-[var(--text-muted)] mb-1">Problem</div>
                   <div className="text-sm font-medium text-[var(--text-primary)]">
-                    {selectedSubmission.problemTitle}
+                    {selectedSubmission.problemTitle || selectedSubmission.challengeId}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-[var(--text-muted)] mb-1">Verdict</div>
-                  <StatusChip status={selectedSubmission.verdict} type="verdict" />
+                  <StatusChip status={selectedSubmission.verdict || '—'} type="verdict" />
                 </div>
                 <div>
                   <div className="text-xs text-[var(--text-muted)] mb-1">Language</div>
                   <div className="text-sm font-medium text-[var(--text-primary)]">
-                    {selectedSubmission.language}
+                    {selectedSubmission.language ?? '—'}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-[var(--text-muted)] mb-1">Time</div>
                   <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
-                    {selectedSubmission.timeMs}ms
+                    {selectedSubmission.timeMs ?? '—'}ms
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-[var(--text-muted)] mb-1">Memory</div>
                   <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
-                    {selectedSubmission.memoryMb.toFixed(1)}MB
+                    {selectedSubmission.memoryMb != null ? selectedSubmission.memoryMb.toFixed(1) : '—'}MB
                   </div>
                 </div>
                 <div className="col-span-2">
@@ -269,7 +291,7 @@ export function AdminSubmissions() {
                   </h3>
                   <CodeViewer
                     code={selectedSubmission.code}
-                    language={selectedSubmission.language}
+                    language={selectedSubmission.language ?? undefined}
                     maxHeight="400px"
                   />
                 </div>
