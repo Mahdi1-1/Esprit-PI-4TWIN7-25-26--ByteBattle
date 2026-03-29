@@ -11,8 +11,12 @@ import {
   ConfirmModal,
   Breadcrumb
 } from '../../components/admin/AdminComponents';
-import { adminUsers, AdminUser } from '../../data/adminData';
+import { type AdminUser as BaseAdminUser } from '../../data/adminData';
 import { Search, Filter, MoreVertical, Ban, RotateCcw, Shield, Trash2, Eye } from 'lucide-react';
+
+interface AdminUser extends BaseAdminUser {
+  flags: { anticheat: number; reports: number };
+}
 
 export function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -49,7 +53,7 @@ export function AdminUsers() {
         username: u.username,
         email: u.email,
         role: u.role,
-        status: u.status || 'ACTIVE',
+        status: u.status || 'active',
         level: u.level || 1,
         elo: u.elo || 1000,
         flags: { anticheat: 0, reports: 0 }, // Backend doesn't provide this yet
@@ -85,7 +89,7 @@ export function AdminUsers() {
       message: `Are you sure you want to ban ${user.username}? They will lose access to the platform.`,
       action: async () => {
         try {
-          await api.patch(`/users/${user.id}/status`, { status: "BANNED" });
+          await api.patch(`/users/${user.id}/status`, { status: "banned" });
           fetchUsers(); // Refresh list
           setConfirmModal(null);
         } catch (error) {
@@ -151,10 +155,9 @@ export function AdminUsers() {
               className="px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] outline-none"
             >
               <option value="all">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="BANNED">Banned</option>
-              <option value="SUSPENDED">Suspended</option>
-              <option value="LOCKED">Locked</option>
+              <option value="active">Active</option>
+              <option value="banned">Banned</option>
+              <option value="suspended">Suspended</option>
             </select>
           </div>
         </FilterBar>

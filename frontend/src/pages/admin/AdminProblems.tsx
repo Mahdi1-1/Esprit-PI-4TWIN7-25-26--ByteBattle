@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import {
@@ -8,18 +8,48 @@ import {
   EmptyState,
   Breadcrumb
 } from '../../components/admin/AdminComponents';
-import { problems, Problem } from '../../data/adminData';
-import { Search, Plus, Edit, Copy, Archive, Eye, MoreVertical } from 'lucide-react';
+import { type Problem } from '../../data/adminData';
+import { challengesService } from '../../services/challengesService';
+import { Search, Plus, Edit, Copy, Archive, Eye, MoreVertical, Loader } from 'lucide-react';
 
 export function AdminProblems() {
   const navigate = useNavigate();
-  const [problemsList] = useState<Problem[]>(problems);
+  const [problemsList, setProblemsList] = useState<Problem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    const fetchProblems = async () => {
+      try {
+        const res = await challengesService.getAll({ kind: 'CODE' });
+        const data = Array.isArray(res) ? res : res.data || [];
+        setProblemsList(data.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug || p.title.toLowerCase().replace(/\s+/g, '-'),
+          difficulty: p.difficulty,
+          category: p.category || '',
+          tags: p.tags || [],
+          acceptanceRate: p.acceptanceRate ?? (p._count?.submissions ? 0 : 0),
+          submissions: p._count?.submissions || 0,
+          timeLimit: p.constraints?.timeLimit || 1000,
+          memoryLimit: p.constraints?.memoryLimit || 256,
+          status: p.status || 'DRAFT',
+          createdAt: p.createdAt,
+        })));
+      } catch (err) {
+        console.error('Failed to load problems:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProblems();
+  }, []);
 
   const filteredProblems = problemsList.filter((problem) => {
     const matchesSearch =

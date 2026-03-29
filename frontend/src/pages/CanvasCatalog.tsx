@@ -1,22 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Layout } from '../components/Layout';
 import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { canvasChallenges, CanvasChallenge } from '../data/canvasChallengeData';
-import { mockUser } from '../data/mockData';
+import { Loader } from 'lucide-react';
+import { type CanvasChallenge } from '../data/canvasChallengeData';
+import { canvasService } from '../services/canvasService';
 
 export function CanvasCatalog() {
   const navigate = useNavigate();
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [challenges, setChallenges] = useState<CanvasChallenge[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredChallenges = canvasChallenges.filter((challenge) => {
-    if (selectedType !== 'all' && challenge.type !== selectedType) return false;
-    if (selectedDifficulty !== 'all' && challenge.difficulty !== selectedDifficulty) return false;
-    return true;
-  });
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        const params: any = {};
+        if (selectedType !== 'all') params.type = selectedType;
+        if (selectedDifficulty !== 'all') params.difficulty = selectedDifficulty;
+        const res = await canvasService.getChallenges(params);
+        setChallenges(res?.data || []);
+      } catch (err) {
+        console.error('Failed to load canvas challenges:', err);
+        setChallenges([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChallenges();
+  }, [selectedType, selectedDifficulty]);
+
+  const filteredChallenges = challenges;
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -41,8 +58,8 @@ export function CanvasCatalog() {
     <Layout>
       <Navbar 
               isLoggedIn 
-              userAvatar={mockUser.avatar} 
-              username={mockUser.username} 
+               
+               
             />
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full px-4 sm:px-6 lg:px-10 space-y-8">
@@ -131,10 +148,10 @@ export function CanvasCatalog() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Available Challenges', value: canvasChallenges.length, icon: '🎯' },
-              { label: 'Completed', value: canvasChallenges.filter(c => c.status === 'completed').length, icon: '✅' },
-              { label: 'In Progress', value: canvasChallenges.filter(c => c.status === 'attempted').length, icon: '🔄' },
-              { label: 'New', value: canvasChallenges.filter(c => c.status === 'new').length, icon: '🆕' }
+              { label: 'Available Challenges', value: challenges.length, icon: '🎯' },
+              { label: 'Completed', value: challenges.filter(c => c.status === 'completed').length, icon: '✅' },
+              { label: 'In Progress', value: challenges.filter(c => c.status === 'attempted').length, icon: '🔄' },
+              { label: 'New', value: challenges.filter(c => !c.status || c.status === 'new').length, icon: '🆕' }
             ].map((stat, idx) => (
               <div key={idx} className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-4">
                 <div className="flex items-center gap-2 mb-2">

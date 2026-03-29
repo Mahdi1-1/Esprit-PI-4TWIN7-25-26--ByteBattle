@@ -1,0 +1,138 @@
+@theme {
+  --color-cyber-bg: #03001C;
+  --color-cyber-bg-dark: #000000;
+  --color-cyber-cyan: #00E5FF;
+  --color-cyber-purple: #8B5CF6;
+  --color-cyber-success: #22C55E;
+  --color-cyber-red-alert: #FF1744;
+  --color-cyber-surface: #0B0B2A;
+
+  --color-space-bg: #09090B;
+  --color-space-bg-dark: #000000;
+  --color-space-cyan: #22D3EE;
+  --color-space-magenta: #E879F9;
+  --color-space-blue: #1D4ED8;
+  --color-space-red-alarm: #D50000;
+
+  --color-dojo-ink: #111111;
+  --color-dojo-ink-deep: #000000;
+  --color-dojo-gold: #D4AF37;
+  --color-dojo-gold-tarnished: #8B7355;
+  --color-dojo-ivory: #F5F5DC;
+  --color-dojo-ivory-faded: #e0e0c0;
+
+  --color-pixel-bg: #12121F;
+  --color-pixel-bg-dark: #000000;
+
+  --color-rpg-night: #1E1B4B;
+  --color-rpg-night-deep: #0F0F24;
+
+  --color-sports-dark: #0B1120;
+  --color-sports-dark-deep: #050810;
+
+  --font-orbitron: 'Orbitron', sans-serif;
+  --font-rajdhani: 'Rajdhani', sans-serif;
+  --font-chakra: 'Chakra Petch', sans-serif;
+  --font-noto-serif-jp: 'Noto Serif JP', serif;
+  --font-noto-sans-jp: 'Noto Sans JP', sans-serif;
+  --font-press-start: '"Press Start 2P"', cursive;
+  --font-cinzel: 'Cinzel', serif;
+  --font-lora: 'Lora', serif;
+  --font-teko: 'Teko', sans-serif;
+  --font-barlow: 'Barlow', sans-serif;
+
+  --animate-scan-line: scanLine 8s linear infinite;
+  --animate-fall-slow: fallSlow 5s linear infinite;
+  --animate-glitch: glitch 0.5s ease infinite;
+
+  @keyframes scanLine {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  @keyframes fallSlow {
+    0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+  }
+
+  @keyframes glitch {
+    0% { transform: translate(0) }
+    20% { transform: translate(-2px, 2px) }
+    40% { transform: translate(-2px, -2px) }
+    60% { transform: translate(2px, 2px) }
+    80% { transform: translate(2px, -2px) }
+    100% { transform: translate(0) }
+  }
+}
+/* Grille Cyber animée */
+.cyber-grid {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+}
+.cyber-grid-red {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(239, 68, 68, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(239, 68, 68, 0.05) 1px, transparent 1px);
+}
+
+/* Scanlines CRT */
+.crt-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.1) 2px,
+    rgba(0,0,0,0.1) 4px
+  );
+}
+
+/* Chromatic aberration */
+.chromatic-aberration {
+  text-shadow: -2px 0 red, 2px 0 cyan;
+}
+
+/* Ink drip effect */
+.ink-drip {
+  animation: drip 2s ease-in forwards;
+}
+
+/* Cercle enso SVG */
+.enso-circle {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: ensoDraw 3s ease-in-out forwards;
+}
+
+/* LED scoreboard effect */
+.led-effect {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0,0,0,0.3) 2px,
+    rgba(0,0,0,0.3) 4px
+  ),
+  repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0,0,0,0.3) 2px,
+    rgba(0,0,0,0.3) 4px
+  );
+}
+
+/* Crack lines (pseudo-elements) */
+.crack-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M50,50 L40,30 L60,10 L30,0" stroke="%23ff0000" stroke-width="0.5" fill="none"/></svg>');
+  background-size: cover;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}

@@ -5,17 +5,49 @@ import { XPBar } from '../components/ProgressBar';
 import { ProblemCard } from '../components/ProblemCard';
 import { MatchCard } from '../components/MatchCard';
 import { RarityBadge } from '../components/Badge';
-import { mockProblems, mockMatches } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Swords, Play, Users, TrendingUp } from 'lucide-react';
+import { Swords, Play, Users, TrendingUp, Loader } from 'lucide-react';
 import { Layout } from '../components/Layout';
+import { useState, useEffect } from 'react';
+import api from '../api/axios';
+import { profileService } from '../services/profileService';
 
 export function Dashboard() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const recommendedProblems = mockProblems.slice(0, 3);
-  const recentMatches = mockMatches.slice(0, 3);
+
+  const [recommendedProblems, setRecommendedProblems] = useState<any[]>([]);
+  const [recentMatches, setRecentMatches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // En attendant que ces routes backend soient créées conformément aux spécifications
+        // On effectue des requêtes réelles. Si elles échouent (404), on set des tableaux vides
+        const [problemsRes, matchesRes] = await Promise.allSettled([
+          api.get('/challenges/recommended'), // Route for upcoming FR-07
+          api.get('/users/me/history') // Route for upcoming E2 - User Profile history
+        ]);
+
+        if (problemsRes.status === 'fulfilled') {
+          setRecommendedProblems(problemsRes.value.data.slice(0, 3));
+        }
+
+        if (matchesRes.status === 'fulfilled') {
+          setRecentMatches(matchesRes.value.data.slice(0, 3));
+        }
+
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   return (
     <Layout>
@@ -72,19 +104,26 @@ export function Dashboard() {
                 </Link>
               </div>
               <div className="space-y-3">
-                {recommendedProblems.map((problem) => (
-                  <ProblemCard 
-                    // @ts-ignore
-                    key={problem.id}
-                    id={problem.id}
-                    title={problem.title}
-                    difficulty={problem.difficulty as any}
-                    tags={problem.tags}
-                    solveRate={problem.solveRate}
-                    avgTime={problem.avgTime}
-                    status={problem.status as any} 
-                  />
-                ))}
+                {loading ? (
+                  <div className="flex justify-center p-8"><Loader className="animate-spin text-[var(--brand-primary)]" /></div>
+                ) : recommendedProblems.length > 0 ? (
+                  recommendedProblems.map((problem) => (
+                    <ProblemCard
+                      key={problem._id || problem.id}
+                      id={problem._id || problem.id}
+                      title={problem.title}
+                      difficulty={problem.difficulty as any}
+                      tags={problem.tags}
+                      solveRate={problem.solveRate || 0}
+                      avgTime={problem.avgTime || 0}
+                      status={problem.status || 'new'}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] text-[var(--text-muted)]">
+                    Aucun problème recommandé pour le moment.
+                  </div>
+                )}
               </div>
             </section>
 
@@ -100,7 +139,7 @@ export function Dashboard() {
               </div>
               <div className="space-y-3">
                 {recentMatches.map((match) => (
-                  <MatchCard 
+                  <MatchCard
                     // @ts-ignore
                     key={match.id}
                     opponent={match.opponent}
@@ -122,7 +161,7 @@ export function Dashboard() {
             <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
               <div className="flex items-center gap-4 mb-4">
                 <img
-                  src={user?.avatar}
+                  src={profileService.getPhotoUrl(user?.profileImage, user?.username)}
                   alt={user?.username}
                   className="w-16 h-16 rounded-full border-4 border-[var(--brand-primary)] glow"
                 />
@@ -136,10 +175,10 @@ export function Dashboard() {
                 </div>
               </div>
 
-              <XPBar 
-                current={user?.currentXP || 0} 
-                max={user?.maxXP || 1000} 
-                level={user?.level || 1} 
+              <XPBar
+                current={user?.xp || 0}
+                max={1000 * (user?.level || 1)}
+                level={user?.level || 1}
               />
 
               <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
@@ -156,7 +195,7 @@ export function Dashboard() {
             <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
               <h3 className="mb-4">{t('dashboard.skills')}</h3>
               <div className="space-y-3">
-                {user?.skills && Object.entries(user.skills).map(([skill, value]) => (
+                {Object.entries({ Algorithm: 75, DataStructures: 60, DynamicProgramming: 45, Graph: 55, Debug: 80, CleanCode: 65 } as Record<string, number>).map(([skill, value]) => (
                   <div key={skill}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-caption text-[var(--text-secondary)]">
@@ -181,7 +220,10 @@ export function Dashboard() {
             <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
               <h3 className="mb-4">{t('dashboard.badges')}</h3>
               <div className="space-y-3">
-                {user?.badges && user.badges.map((badge) => (
+                {[
+                  { name: 'First Blood', rarity: 'rare' as const, description: 'Solved your first challenge' },
+                  { name: 'Speed Demon', rarity: 'epic' as const, description: 'Solved a challenge in under 5 minutes' },
+                ].map((badge) => (
                   <div
                     key={badge.name}
                     className="flex items-start gap-3 p-3 bg-[var(--surface-2)] rounded-[var(--radius-md)]"

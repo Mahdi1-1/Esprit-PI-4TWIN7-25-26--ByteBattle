@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
 
 interface TimerProps {
-  endTime: Date;
+  endTime: Date | string;
   onExpire?: () => void;
   variant?: 'default' | 'warning' | 'danger';
 }
@@ -13,7 +13,7 @@ export function Timer({ endTime, onExpire, variant = 'default' }: TimerProps) {
   useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
-      const end = endTime.getTime();
+      const end = typeof endTime === 'string' ? new Date(endTime).getTime() : endTime.getTime();
       const diff = Math.max(0, end - now);
       
       if (diff === 0 && onExpire) {
@@ -73,13 +73,18 @@ export function Timer({ endTime, onExpire, variant = 'default' }: TimerProps) {
   );
 }
 
-export function CountdownTimer({ targetDate }: { targetDate: Date }) {
+export function CountdownTimer({ targetDate }: { targetDate: Date | string | null | undefined }) {
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
   useEffect(() => {
+    if (!targetDate) {
+      setTimeLeft(0);
+      return;
+    }
+
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
-      const target = targetDate.getTime();
+      const target = typeof targetDate === 'string' ? new Date(targetDate).getTime() : targetDate.getTime();
       return Math.max(0, target - now);
     };
 

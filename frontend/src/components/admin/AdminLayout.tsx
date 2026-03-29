@@ -29,6 +29,7 @@ import {
   ChevronRight,
   LogOut
 } from 'lucide-react';
+import { BBLogo } from '../BBLogo';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -96,9 +97,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--border-default)]">
           {!sidebarCollapsed && (
             <Link to="/admin" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] rounded flex items-center justify-center">
-                <Code2 className="w-5 h-5 text-white" />
-              </div>
+              <BBLogo className="h-8 w-auto" />
               <span className="font-bold text-[var(--text-primary)]">Admin</span>
             </Link>
           )}
@@ -220,41 +219,40 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             {/* Admin Profile */}
             <div className="flex items-center gap-2 pl-3 border-l border-[var(--border-default)]">
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   className="flex items-center gap-2 hover:bg-[var(--surface-2)] px-2 py-1 rounded-lg transition-colors"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-bold">SA</span>
                   </div>
-                  <ChevronLeft 
-                    className={`w-4 h-4 text-[var(--text-secondary)] transition-transform duration-200 ${
-                      isProfileMenuOpen ? '-rotate-90' : 'rotate-270'
-                    }`} 
+                  <ChevronLeft
+                    className={`w-4 h-4 text-[var(--text-secondary)] transition-transform duration-200 ${isProfileMenuOpen ? '-rotate-90' : 'rotate-270'
+                      }`}
                   />
                 </button>
-                
+
                 {/* Dropdown Menu */}
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg shadow-xl 
                                   animate-in fade-in zoom-in-95 duration-200 z-[100] transform origin-top-right">
-                    
+
                     <div className="px-4 py-3 border-b border-[var(--border-default)]">
                       <div className="font-medium text-[var(--text-primary)] leading-none mb-1">SysAdmin</div>
                       <div className="text-xs text-[var(--text-muted)] truncate">admin@bytebattle.com</div>
                     </div>
 
                     <div className="py-1">
-                      <Link 
-                        to="/admin/settings" 
+                      <Link
+                        to="/admin/settings"
                         onClick={() => setIsProfileMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] transition-colors"
                       >
                         <Settings className="w-4 h-4" />
                         Settings
                       </Link>
-                      
-                      <button 
+
+                      <button
                         type="button"
                         onClick={(e) => {
                           e.preventDefault();
@@ -283,26 +281,24 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <div 
+            <div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setMobileMenuOpen(false)}
             />
             <div className="absolute top-0 bottom-0 left-0 w-64 bg-[var(--surface-1)] border-r border-[var(--border-default)] shadow-xl flex flex-col animate-in slide-in-from-left duration-200">
               <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--border-default)]">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] rounded flex items-center justify-center">
-                    <Code2 className="w-5 h-5 text-white" />
-                  </div>
+                  <BBLogo className="h-8 w-auto" />
                   <span className="font-bold text-[var(--text-primary)]">Admin</span>
                 </div>
-                <button 
+                <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-1 hover:bg-[var(--surface-2)] rounded transition-colors"
                 >
                   <X className="w-5 h-5 text-[var(--text-secondary)]" />
                 </button>
               </div>
-              
+
               <nav className="flex-1 overflow-y-auto p-2">
                 <ul className="space-y-1">
                   {navItems.map((item) => (

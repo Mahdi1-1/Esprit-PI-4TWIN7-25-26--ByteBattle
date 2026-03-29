@@ -24,7 +24,7 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.login.signup': 'Sign up',
     'auth.login.noaccount': "Don't have an account?",
     'auth.login.orcontinue': 'or continue with',
-    
+
     // Navigation
     'nav.problems': 'Problems',
     'nav.canvas': 'Canvas',
@@ -43,7 +43,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.visualizer': 'Visualizer',
     'nav.dataStructures': 'Data Structures',
     'nav.interview': 'Interview',
-    
+
     // Dashboard
     'dashboard.welcome': 'Welcome',
     'dashboard.quickduel': 'Quick Duel',
@@ -59,7 +59,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.skills': 'Skills',
     'dashboard.badges': 'Recent Badges',
     'dashboard.unlock': 'Unlock new themes',
-    
+
     // Common
     'common.loading': 'Loading...',
     'common.error': 'Error',
@@ -72,7 +72,8 @@ const translations: Record<Language, Record<string, string>> = {
     'common.filter': 'Filter',
     'common.export': 'Export',
     'common.import': 'Import',
-    
+    'common.back': 'Back',
+
     // Settings
     'settings.title': 'Settings',
     'settings.profile': 'Profile',
@@ -82,7 +83,80 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.preferences': 'Preferences',
     'settings.language': 'Language',
     'settings.dangerzone': 'Danger Zone',
-    
+
+    // Settings - Profile Photo
+    'settings.profile.photo': 'Profile Photo',
+    'settings.profile.photo.change': 'Change Photo',
+    'settings.profile.photo.remove': 'Remove Photo',
+    'settings.profile.photo.upload': 'Upload Photo',
+    'settings.profile.photo.uploading': 'Uploading...',
+    'settings.profile.photo.success': 'Photo updated successfully',
+    'settings.profile.photo.removed': 'Photo removed',
+    'settings.profile.photo.error': 'Failed to update photo',
+    'settings.profile.photo.invalid': 'Please select a valid image file (JPG, PNG, or WebP)',
+    'settings.profile.photo.tooLarge': 'File is too large. Maximum size is 5MB.',
+
+    // Settings - Bio
+    'settings.profile.bio': 'Bio',
+    'settings.profile.bio.placeholder': 'Tell us about yourself...',
+    'settings.profile.bio.charCount': '{count}/250 characters',
+
+    // Settings - Security
+    'settings.security.password': 'Password',
+    'settings.security.password.current': 'Current Password',
+    'settings.security.password.new': 'New Password',
+    'settings.security.password.confirm': 'Confirm New Password',
+    'settings.security.password.change': 'Change Password',
+    'settings.security.password.success': 'Password changed successfully',
+    'settings.security.password.error': 'Failed to change password',
+    'settings.security.password.incorrect': 'Current password is incorrect',
+    'settings.security.password.mismatch': 'Passwords do not match',
+    'settings.security.password.weak': 'Password is too weak',
+    'settings.security.password.oauth': 'Password managed by Google',
+    'settings.security.password.oauthDesc': 'You signed up with Google. Password changes are not available.',
+
+    // Settings - Email
+    'settings.account.email': 'Email Address',
+    'settings.account.email.current': 'Current Email',
+    'settings.account.email.new': 'New Email',
+    'settings.account.email.change': 'Change Email',
+    'settings.account.email.success': 'Email changed successfully',
+    'settings.account.email.error': 'Failed to change email',
+    'settings.account.email.inUse': 'This email is already in use',
+    'settings.account.email.invalid': 'Please enter a valid email address',
+    'settings.account.email.oauth': 'Email managed by Google',
+    'settings.account.email.oauthDesc': 'You signed up with Google. Email changes are not available.',
+
+    // Settings - Editor Theme
+    'settings.preferences.editorTheme': 'Code Editor Theme',
+    'settings.preferences.editorTheme.desc': 'Choose the color theme for code editors',
+    'settings.preferences.editorTheme.preview': 'Preview',
+
+    // Settings - Danger Zone
+    'settings.dangerzone.title': 'Danger Zone',
+    'settings.dangerzone.delete': 'Delete Account',
+    'settings.dangerzone.delete.desc': 'Permanently delete your account and all associated data',
+    'settings.dangerzone.delete.warning': 'This action cannot be undone',
+    'settings.dangerzone.delete.confirm': 'Type DELETE to confirm',
+    'settings.dangerzone.delete.success': 'Account deleted successfully',
+    'settings.dangerzone.delete.error': 'Failed to delete account',
+
+    // Profile Stats
+    'profile.stats.title': 'Statistics',
+    'profile.stats.elo': 'ELO Rating',
+    'profile.stats.xp': 'Experience Points',
+    'profile.stats.level': 'Level',
+    'profile.stats.duelsWon': 'Duels Won',
+    'profile.stats.duelsLost': 'Duels Lost',
+    'profile.stats.duelsTotal': 'Total Duels',
+    'profile.stats.winRate': 'Win Rate',
+    'profile.stats.challengesSolved': 'Challenges Solved',
+    'profile.stats.forumPosts': 'Forum Posts',
+    'profile.stats.comments': 'Comments',
+    'profile.stats.leaderboard': 'Leaderboard Position',
+    'profile.stats.joined': 'Member Since',
+    'profile.stats.lastLogin': 'Last Login',
+
     // Discussion Forum
     'discussion.title': 'Discussion Forum',
     'discussion.subtitle': 'Ask questions, share knowledge, and connect with the community',
@@ -105,7 +179,7 @@ const translations: Record<Language, Record<string, string>> = {
     'discussion.noComments': 'No comments yet. Be the first to reply!',
     'discussion.notFound': 'Discussion not found',
     'discussion.backToForum': 'Back to Forum',
-    
+
     // Algorithm Visualizer
     'visualizer.title': 'Algorithm Visualizer',
     'visualizer.subtitle': 'Watch algorithms come to life with interactive animations',
@@ -117,7 +191,7 @@ const translations: Record<Language, Record<string, string>> = {
     'visualizer.pseudocode': 'Pseudocode',
     'visualizer.speed': 'Speed',
     'visualizer.size': 'Size',
-    
+
     // AI Mock Interview
     'interview.title': 'AI Mock Interview',
     'interview.subtitle': 'Practice technical interviews with our AI interviewer. Get real-time feedback and improve your skills.',
@@ -126,7 +200,9 @@ const translations: Record<Language, Record<string, string>> = {
     'interview.bestScore': 'Best Score',
     'interview.streak': 'Streak',
     'interview.selectTopic': 'Select Topic',
+    'interview.selectDomain': 'Select Domain',
     'interview.selectDifficulty': 'Select Difficulty',
+    'interview.selectLanguage': 'Select Interview Language',
     'interview.startInterview': 'Start Interview',
     'interview.pastSessions': 'Past Sessions',
     'interview.end': 'End Interview',
@@ -143,6 +219,8 @@ const translations: Record<Language, Record<string, string>> = {
     'interview.improvements': 'Areas for Improvement',
     'interview.recommendation': 'Recommendation',
     'interview.newSession': 'Start New Session',
+    'interview.error.insufficientTokens': 'Insufficient AI tokens to start the interview. Please purchase more tokens or wait for your balance to replenish.',
+    'interview.error.failed': 'Failed to start the interview. Please try again later.',
 
     // Sketchpad
     'sketchpad.new': 'New Canvas',
@@ -152,7 +230,7 @@ const translations: Record<Language, Record<string, string>> = {
     'sketchpad.open': 'Open',
     'sketchpad.delete': 'Delete',
   },
-  
+
   fr: {
     // Auth
     'auth.login.title': 'Connectez-vous à votre compte',
@@ -164,7 +242,7 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.login.signup': "S'inscrire",
     'auth.login.noaccount': "Vous n'avez pas de compte ?",
     'auth.login.orcontinue': 'ou continuer avec',
-    
+
     // Navigation
     'nav.problems': 'Problèmes',
     'nav.canvas': 'Canvas',
@@ -183,7 +261,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.visualizer': 'Visualiseur',
     'nav.dataStructures': 'Structures de Données',
     'nav.interview': 'Entretien',
-    
+
     // Dashboard
     'dashboard.welcome': 'Bienvenue',
     'dashboard.quickduel': 'Duel Rapide',
@@ -199,7 +277,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.skills': 'Compétences',
     'dashboard.badges': 'Badges Récents',
     'dashboard.unlock': 'Débloquer de nouveaux thèmes',
-    
+
     // Common
     'common.loading': 'Chargement...',
     'common.error': 'Erreur',
@@ -212,7 +290,8 @@ const translations: Record<Language, Record<string, string>> = {
     'common.filter': 'Filtrer',
     'common.export': 'Exporter',
     'common.import': 'Importer',
-    
+    'common.back': 'Retour',
+
     // Settings
     'settings.title': 'Paramètres',
     'settings.profile': 'Profil',
@@ -222,7 +301,80 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.preferences': 'Préférences',
     'settings.language': 'Langue',
     'settings.dangerzone': 'Zone Dangereuse',
-    
+
+    // Settings - Profile Photo
+    'settings.profile.photo': 'Photo de Profil',
+    'settings.profile.photo.change': 'Changer la Photo',
+    'settings.profile.photo.remove': 'Supprimer la Photo',
+    'settings.profile.photo.upload': 'Télécharger une Photo',
+    'settings.profile.photo.uploading': 'Téléchargement...',
+    'settings.profile.photo.success': 'Photo mise à jour avec succès',
+    'settings.profile.photo.removed': 'Photo supprimée',
+    'settings.profile.photo.error': 'Échec de la mise à jour de la photo',
+    'settings.profile.photo.invalid': 'Veuillez sélectionner un fichier image valide (JPG, PNG ou WebP)',
+    'settings.profile.photo.tooLarge': 'Le fichier est trop volumineux. Taille maximale: 5 Mo.',
+
+    // Settings - Bio
+    'settings.profile.bio': 'Bio',
+    'settings.profile.bio.placeholder': 'Parlez-nous de vous...',
+    'settings.profile.bio.charCount': '{count}/250 caractères',
+
+    // Settings - Security
+    'settings.security.password': 'Mot de Passe',
+    'settings.security.password.current': 'Mot de Passe Actuel',
+    'settings.security.password.new': 'Nouveau Mot de Passe',
+    'settings.security.password.confirm': 'Confirmer le Nouveau Mot de Passe',
+    'settings.security.password.change': 'Changer le Mot de Passe',
+    'settings.security.password.success': 'Mot de passe changé avec succès',
+    'settings.security.password.error': 'Échec du changement de mot de passe',
+    'settings.security.password.incorrect': 'Le mot de passe actuel est incorrect',
+    'settings.security.password.mismatch': 'Les mots de passe ne correspondent pas',
+    'settings.security.password.weak': 'Le mot de passe est trop faible',
+    'settings.security.password.oauth': 'Mot de passe géré par Google',
+    'settings.security.password.oauthDesc': 'Vous vous êtes inscrit avec Google. Les changements de mot de passe ne sont pas disponibles.',
+
+    // Settings - Email
+    'settings.account.email': 'Adresse Email',
+    'settings.account.email.current': 'Email Actuel',
+    'settings.account.email.new': 'Nouvel Email',
+    'settings.account.email.change': 'Changer l\'Email',
+    'settings.account.email.success': 'Email changé avec succès',
+    'settings.account.email.error': 'Échec du changement d\'email',
+    'settings.account.email.inUse': 'Cet email est déjà utilisé',
+    'settings.account.email.invalid': 'Veuillez entrer une adresse email valide',
+    'settings.account.email.oauth': 'Email géré par Google',
+    'settings.account.email.oauthDesc': 'Vous vous êtes inscrit avec Google. Les changements d\'email ne sont pas disponibles.',
+
+    // Settings - Editor Theme
+    'settings.preferences.editorTheme': 'Thème de l\'Éditeur de Code',
+    'settings.preferences.editorTheme.desc': 'Choisissez le thème de couleur pour les éditeurs de code',
+    'settings.preferences.editorTheme.preview': 'Aperçu',
+
+    // Settings - Danger Zone
+    'settings.dangerzone.title': 'Zone Dangereuse',
+    'settings.dangerzone.delete': 'Supprimer le Compte',
+    'settings.dangerzone.delete.desc': 'Supprimer définitivement votre compte et toutes les données associées',
+    'settings.dangerzone.delete.warning': 'Cette action est irréversible',
+    'settings.dangerzone.delete.confirm': 'Tapez DELETE pour confirmer',
+    'settings.dangerzone.delete.success': 'Compte supprimé avec succès',
+    'settings.dangerzone.delete.error': 'Échec de la suppression du compte',
+
+    // Profile Stats
+    'profile.stats.title': 'Statistiques',
+    'profile.stats.elo': 'Classement ELO',
+    'profile.stats.xp': 'Points d\'Expérience',
+    'profile.stats.level': 'Niveau',
+    'profile.stats.duelsWon': 'Duels Gagnés',
+    'profile.stats.duelsLost': 'Duels Perdus',
+    'profile.stats.duelsTotal': 'Total des Duels',
+    'profile.stats.winRate': 'Taux de Victoire',
+    'profile.stats.challengesSolved': 'Défis Résolus',
+    'profile.stats.forumPosts': 'Publications du Forum',
+    'profile.stats.comments': 'Commentaires',
+    'profile.stats.leaderboard': 'Position au Classement',
+    'profile.stats.joined': 'Membre Depuis',
+    'profile.stats.lastLogin': 'Dernière Connexion',
+
     // Discussion Forum
     'discussion.title': 'Forum de Discussion',
     'discussion.subtitle': 'Posez des questions, partagez vos connaissances et connectez-vous avec la communauté',
@@ -245,7 +397,7 @@ const translations: Record<Language, Record<string, string>> = {
     'discussion.noComments': 'Pas encore de commentaires. Soyez le premier à répondre !',
     'discussion.notFound': 'Discussion introuvable',
     'discussion.backToForum': 'Retour au forum',
-    
+
     // Algorithm Visualizer
     'visualizer.title': 'Visualiseur d\'Algorithmes',
     'visualizer.subtitle': 'Regardez les algorithmes prendre vie avec des animations interactives',
@@ -257,7 +409,7 @@ const translations: Record<Language, Record<string, string>> = {
     'visualizer.pseudocode': 'Pseudocode',
     'visualizer.speed': 'Vitesse',
     'visualizer.size': 'Taille',
-    
+
     // AI Mock Interview
     'interview.title': 'Entretien IA',
     'interview.subtitle': 'Entraînez-vous aux entretiens techniques avec notre IA. Obtenez un retour en temps réel.',
@@ -266,7 +418,9 @@ const translations: Record<Language, Record<string, string>> = {
     'interview.bestScore': 'Meilleur score',
     'interview.streak': 'Série',
     'interview.selectTopic': 'Choisir un sujet',
+    'interview.selectDomain': 'Choisir un domaine',
     'interview.selectDifficulty': 'Choisir la difficulté',
+    'interview.selectLanguage': 'Choisir la langue de l\'entretien',
     'interview.startInterview': 'Commencer l\'entretien',
     'interview.pastSessions': 'Sessions passées',
     'interview.end': 'Terminer',
@@ -283,6 +437,8 @@ const translations: Record<Language, Record<string, string>> = {
     'interview.improvements': 'Axes d\'amélioration',
     'interview.recommendation': 'Recommandation',
     'interview.newSession': 'Nouvelle session',
+    'interview.error.insufficientTokens': 'Tokens IA insuffisants pour démarrer l\'entretien. Veuillez acheter plus de tokens ou attendre le renouvellement de votre solde.',
+    'interview.error.failed': 'Échec du démarrage de l\'entretien. Veuillez réessayer plus tard.',
 
     // Sketchpad
     'sketchpad.new': 'Nouveau canevas',
@@ -292,7 +448,7 @@ const translations: Record<Language, Record<string, string>> = {
     'sketchpad.open': 'Ouvrir',
     'sketchpad.delete': 'Supprimer',
   },
-  
+
   ar: {
     // Auth
     'auth.login.title': 'تسجيل الدخول إلى حسابك',
@@ -304,7 +460,7 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.login.signup': 'إنشاء حساب',
     'auth.login.noaccount': 'ليس لديك حساب؟',
     'auth.login.orcontinue': 'أو المتابعة مع',
-    
+
     // Navigation
     'nav.problems': 'المسائل',
     'nav.canvas': 'لوحة الرسم',
@@ -323,7 +479,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.visualizer': 'المرئيات',
     'nav.dataStructures': 'هياكل البيانات',
     'nav.interview': 'المقابلة',
-    
+
     // Dashboard
     'dashboard.welcome': 'مرحباً',
     'dashboard.quickduel': 'مبارزة سريعة',
@@ -339,7 +495,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.skills': 'المهارات',
     'dashboard.badges': 'الشارات الأخيرة',
     'dashboard.unlock': 'فتح سمات جديدة',
-    
+
     // Common
     'common.loading': 'جاري التحميل...',
     'common.error': 'خطأ',
@@ -352,7 +508,8 @@ const translations: Record<Language, Record<string, string>> = {
     'common.filter': 'تصفية',
     'common.export': 'تصدير',
     'common.import': 'استيراد',
-    
+    'common.back': 'رجوع',
+
     // Settings
     'settings.title': 'الإعدادات',
     'settings.profile': 'الملف الشخصي',
@@ -362,7 +519,80 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.preferences': 'التفضيلات',
     'settings.language': 'اللغة',
     'settings.dangerzone': 'منطقة الخطر',
-    
+
+    // Settings - Profile Photo
+    'settings.profile.photo': 'صورة الملف الشخصي',
+    'settings.profile.photo.change': 'تغيير الصورة',
+    'settings.profile.photo.remove': 'حذف الصورة',
+    'settings.profile.photo.upload': 'رفع صورة',
+    'settings.profile.photo.uploading': 'جارٍ الرفع...',
+    'settings.profile.photo.success': 'تم تحديث الصورة بنجاح',
+    'settings.profile.photo.removed': 'تم حذف الصورة',
+    'settings.profile.photo.error': 'فشل في تحديث الصورة',
+    'settings.profile.photo.invalid': 'يرجى تحديد ملف صورة صالح (JPG أو PNG أو WebP)',
+    'settings.profile.photo.tooLarge': 'الملف كبير جداً. الحجم الأقصى 5 ميجابايت.',
+
+    // Settings - Bio
+    'settings.profile.bio': 'نبذة',
+    'settings.profile.bio.placeholder': 'أخبرنا عن نفسك...',
+    'settings.profile.bio.charCount': '{count}/250 حرف',
+
+    // Settings - Security
+    'settings.security.password': 'كلمة المرور',
+    'settings.security.password.current': 'كلمة المرور الحالية',
+    'settings.security.password.new': 'كلمة المرور الجديدة',
+    'settings.security.password.confirm': 'تأكيد كلمة المرور الجديدة',
+    'settings.security.password.change': 'تغيير كلمة المرور',
+    'settings.security.password.success': 'تم تغيير كلمة المرور بنجاح',
+    'settings.security.password.error': 'فشل في تغيير كلمة المرور',
+    'settings.security.password.incorrect': 'كلمة المرور الحالية غير صحيحة',
+    'settings.security.password.mismatch': 'كلمات المرور غير متطابقة',
+    'settings.security.password.weak': 'كلمة المرور ضعيفة جداً',
+    'settings.security.password.oauth': 'كلمة المرور يديرها Google',
+    'settings.security.password.oauthDesc': 'لقد سجل الدخول باستخدام Google. لا يمكن تغيير كلمة المرور.',
+
+    // Settings - Email
+    'settings.account.email': 'البريد الإلكتروني',
+    'settings.account.email.current': 'البريد الحالي',
+    'settings.account.email.new': 'البريد الجديد',
+    'settings.account.email.change': 'تغيير البريد',
+    'settings.account.email.success': 'تم تغيير البريد بنجاح',
+    'settings.account.email.error': 'فشل في تغيير البريد',
+    'settings.account.email.inUse': 'هذا البريد مستخدم بالفعل',
+    'settings.account.email.invalid': 'يرجى إدخال بريد إلكتروني صالح',
+    'settings.account.email.oauth': 'البريد يديره Google',
+    'settings.account.email.oauthDesc': 'لقد سجل الدخول باستخدام Google. لا يمكن تغيير البريد.',
+
+    // Settings - Editor Theme
+    'settings.preferences.editorTheme': 'سمة محرر الكود',
+    'settings.preferences.editorTheme.desc': 'اختر سمة الألوان لمحررات الكود',
+    'settings.preferences.editorTheme.preview': 'معاينة',
+
+    // Settings - Danger Zone
+    'settings.dangerzone.title': 'منطقة الخطر',
+    'settings.dangerzone.delete': 'حذف الحساب',
+    'settings.dangerzone.delete.desc': 'حذف حسابك وجميع البيانات المرتبطة بشكل دائم',
+    'settings.dangerzone.delete.warning': 'لا يمكن التراجع عن هذا الإجراء',
+    'settings.dangerzone.delete.confirm': 'اكتب DELETE للتأكيد',
+    'settings.dangerzone.delete.success': 'تم حذف الحساب بنجاح',
+    'settings.dangerzone.delete.error': 'فشل في حذف الحساب',
+
+    // Profile Stats
+    'profile.stats.title': 'الإحصائيات',
+    'profile.stats.elo': 'تصنيف ELO',
+    'profile.stats.xp': 'نقاط الخبرة',
+    'profile.stats.level': 'المستوى',
+    'profile.stats.duelsWon': 'المبارزات الفائزة',
+    'profile.stats.duelsLost': 'المبارزات الخاسرة',
+    'profile.stats.duelsTotal': 'إجمالي المبارزات',
+    'profile.stats.winRate': 'نسبة الفوز',
+    'profile.stats.challengesSolved': 'التحديات المحلولة',
+    'profile.stats.forumPosts': 'منشورات المنتدى',
+    'profile.stats.comments': 'التعليقات',
+    'profile.stats.leaderboard': 'موقعك في الترتيب',
+    'profile.stats.joined': 'عضو منذ',
+    'profile.stats.lastLogin': 'آخر تسجيل دخول',
+
     // Discussion Forum
     'discussion.title': 'منتدى النقاش',
     'discussion.subtitle': 'اطرح أسئلة، شارك معرفتك، وتواصل مع المجتمع',
@@ -385,7 +615,7 @@ const translations: Record<Language, Record<string, string>> = {
     'discussion.noComments': 'لا توجد تعليقات بعد. كن أول من يرد!',
     'discussion.notFound': 'المناقشة غير موجودة',
     'discussion.backToForum': 'العودة إلى المنتدى',
-    
+
     // Algorithm Visualizer
     'visualizer.title': 'مرئيات الخوارزميات',
     'visualizer.subtitle': 'شاهد الخوارزميات تنبض بالحياة مع الرسوم المتحركة التفاعلية',
@@ -397,7 +627,7 @@ const translations: Record<Language, Record<string, string>> = {
     'visualizer.pseudocode': 'الكود الزائف',
     'visualizer.speed': 'السرعة',
     'visualizer.size': 'الحجم',
-    
+
     // AI Mock Interview
     'interview.title': 'مقابلة ذكاء اصطناعي',
     'interview.subtitle': 'تدرب على المقابلات التقنية مع الذكاء الاصطناعي. احصل على تقييم فوري.',
@@ -406,7 +636,9 @@ const translations: Record<Language, Record<string, string>> = {
     'interview.bestScore': 'أفضل نتيجة',
     'interview.streak': 'سلسلة',
     'interview.selectTopic': 'اختر الموضوع',
+    'interview.selectDomain': 'اختر المجال',
     'interview.selectDifficulty': 'اختر المستوى',
+    'interview.selectLanguage': 'اختر لغة المقابلة',
     'interview.startInterview': 'بدء المقابلة',
     'interview.pastSessions': 'الجلسات السابقة',
     'interview.end': 'إنهاء المقابلة',
@@ -423,6 +655,8 @@ const translations: Record<Language, Record<string, string>> = {
     'interview.improvements': 'مجالات التحسين',
     'interview.recommendation': 'التوصية',
     'interview.newSession': 'جلسة جديدة',
+    'interview.error.insufficientTokens': 'رصيد الذكاء الاصطناعي غير كافٍ لبدء المقابلة. يرجى شراء المزيد من الرموز أو انتظار تجديد رصيدك.',
+    'interview.error.failed': 'فشل بدء المقابلة. يرجى المحاولة مرة أخرى لاحقًا.',
 
     // Sketchpad
     'sketchpad.new': 'لوحة جديدة',

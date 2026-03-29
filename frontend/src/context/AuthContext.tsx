@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '../api/axios';
-import { Account } from '../data/models';
+import { User } from '../data/models';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: Account | null;
+  user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (username: string, email: string, password: string, firstName: string, lastName: string) => Promise<void>; // Update signup signature
+  signup: (username: string, email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => void;
+  updateUser: (data: Partial<User>) => void;
   isLoading: boolean;
 }
 
@@ -15,8 +16,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<Account | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Global event listener for profile updates (like avatar creation)
+  useEffect(() => {
+    const handleProfileUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail && user) {
+        setUser({
+          ...user,
+          // Replace or merge updated fields from detail
+          ...customEvent.detail
+        });
+      }
+    };
+
+    // Listen for custom event 'user-profile-updated'
+    window.addEventListener('user-profile-updated', handleProfileUpdate);
+    return () => window.removeEventListener('user-profile-updated', handleProfileUpdate);
+  }, [user]);
 
   // Check token on mount
   useEffect(() => {
@@ -52,19 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      // Use accessToken (from backend generateTokens) or access_token (standard)
-      const { accessToken, access_token, user } = response.data;
+      const { accessToken, access_token } = response.data;
       const token = accessToken || access_token;
-      
+
       localStorage.setItem('token', token);
       setIsAuthenticated(true);
-      // Fetch full profile if not included in login response
-      if (user) {
-        setUser(user);
-      } else {
-        const profile = await api.get('/auth/me');
-        setUser(profile.data);
-      }
+      // Always fetch full profile so profileImage and all fields are present
+      const profile = await api.get('/auth/me');
+      setUser(profile.data);
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -74,14 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = async (username: string, email: string, password: string, firstName: string, lastName: string) => {
     try {
       const response = await api.post('/auth/register', { username, email, password, firstName, lastName });
-      const { accessToken, access_token, user } = response.data;
+      const { accessToken, access_token } = response.data;
       const token = accessToken || access_token;
-      
+
       localStorage.setItem('token', token);
       setIsAuthenticated(true);
-      if (user) {
-          setUser(user);
-      }
+      // Always fetch full profile after signup
+      const profile = await api.get('/auth/me');
+      setUser(profile.data);
     } catch (error) {
       console.error('Signup failed:', error);
       throw error;
@@ -95,8 +109,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const updateUser = (data: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...data });
+      // Dispatch custom event for components listening to profile updates
+      window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: data }));
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout, isLoading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout, updateUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,0 +1,53 @@
+import { Controller, Post, Body, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { DuelsService } from './duels.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+
+@ApiTags('Duels')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('duels')
+export class DuelsController {
+  constructor(private readonly duelsService: DuelsService) {}
+
+  @Post('create')
+  @ApiOperation({ summary: 'Crée un duel ou en rejoint un en attente' })
+  async createOrJoinDuel(
+    @CurrentUser('id') userId: string,
+    @Body('difficulty') difficulty: string = 'easy',
+  ) {
+    const myWaitingDuel = await this.duelsService.findMyWaitingDuel(userId);
+    if (myWaitingDuel) return myWaitingDuel;
+
+    const availableDuel = await this.duelsService.findAvailableDuel(difficulty, userId);
+    
+    if (availableDuel) {
+      return this.duelsService.joinDuel(availableDuel.id, userId);
+    }
+
+    return this.duelsService.createDuel(userId, difficulty);
+  }
+
+  @Get('leaderboard')
+  @ApiOperation({ summary: 'Get duels leaderboard' })
+  async getLeaderboard(@Query('limit') limit = '10') {
+    return this.duelsService.getLeaderboard(parseInt(limit));
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Get user duel history' })
+  async getHistory(
+    @CurrentUser('id') userId: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20'
+  ) {
+    return this.duelsService.getUserDuels(userId, parseInt(page), parseInt(limit));
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get active duel state' })
+  async getDuelState(@Param('id') id: string) {
+    return this.duelsService.getDuelState(id);
+  }
+}

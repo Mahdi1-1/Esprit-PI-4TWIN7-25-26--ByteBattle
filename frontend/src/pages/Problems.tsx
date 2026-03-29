@@ -1,39 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '../components/Navbar';
 import { SearchInput, Select } from '../components/Input';
 import { ProblemCard } from '../components/ProblemCard';
-import { mockProblems, mockUser } from '../data/mockData';
-import { Filter } from 'lucide-react';
+
+import { Filter, Loader } from 'lucide-react';
 import { Layout } from '../components/Layout';
+import { challengesService } from '../services/challengesService';
 
 export function Problems() {
   const [search, setSearch] = useState('');
   const [difficulty, setDifficulty] = useState('all');
   const [status, setStatus] = useState('all');
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
 
-  const filteredProblems = mockProblems.filter((problem) => {
-    const matchesSearch = problem.title.toLowerCase().includes(search.toLowerCase()) ||
-      problem.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      setLoading(true);
+      try {
+        const params: any = { page, limit: 20, status: 'published' };
+        if (difficulty !== 'all') params.difficulty = difficulty;
+        if (search) params.search = search;
+        const result = await challengesService.getAll(params);
+        setChallenges(result.data);
+        setTotal(result.total);
+      } catch (error) {
+        console.error('Failed to load challenges:', error);
+        setChallenges([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChallenges();
+  }, [page, difficulty, search]);
+
+  const filteredProblems = challenges;
+  const displayProblems = filteredProblems.filter((problem: any) => {
+    const matchesSearch = !search || problem.title?.toLowerCase().includes(search.toLowerCase()) ||
+      (problem.tags || []).some((tag: string) => tag.toLowerCase().includes(search.toLowerCase()));
     const matchesDifficulty = difficulty === 'all' || problem.difficulty === difficulty;
-    const matchesStatus = status === 'all' || problem.status === status;
-    
-    return matchesSearch && matchesDifficulty && matchesStatus;
+    return matchesSearch && matchesDifficulty;
   });
 
   return (
     <Layout>
-      <Navbar 
-        isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
+      <Navbar
+        isLoggedIn
+
+
       />
 
-      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="mb-2">Problem Catalog</h1>
           <p className="text-[var(--text-secondary)]">
-            {mockProblems.length} problems available to improve your skills
+            {total} problems available to improve your skills
           </p>
         </div>
 
@@ -43,14 +68,15 @@ export function Problems() {
             <Filter className="w-5 h-5 text-[var(--text-muted)]" />
             <h3>Filters</h3>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <SearchInput
+              label="Search"
               placeholder="Search by title or tags..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            
+
             <Select
               label="Difficulty"
               value={difficulty}
@@ -62,7 +88,7 @@ export function Problems() {
                 { value: 'hard', label: 'Hard' },
               ]}
             />
-            
+
             <Select
               label="Status"
               value={status}
@@ -80,35 +106,37 @@ export function Problems() {
         {/* Stats Bar */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <StatCard
-            label="Problems Solved"
-            value={mockProblems.filter(p => p.status === 'solved').length}
-            total={mockProblems.length}
+            label="Total Problems"
+            value={total}
             color="var(--state-success)"
           />
           <StatCard
-            label="In Progress"
-            value={mockProblems.filter(p => p.status === 'attempted').length}
-            total={mockProblems.length}
+            label="Showing"
+            value={displayProblems.length}
+            total={total}
             color="var(--state-warning)"
           />
           <StatCard
-            label="To Do"
-            value={mockProblems.filter(p => p.status === 'new').length}
-            total={mockProblems.length}
+            label="Page"
+            value={page}
+            total={Math.ceil(total / 20)}
             color="var(--text-muted)"
           />
           <StatCard
-            label="Success Rate"
-            value={Math.round((mockProblems.filter(p => p.status === 'solved').length / mockProblems.length) * 100)}
-            suffix="%"
+            label="Filters Active"
+            value={(difficulty !== 'all' ? 1 : 0) + (search ? 1 : 0)}
             color="var(--brand-primary)"
           />
         </div>
 
         {/* Problems List */}
-        {filteredProblems.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+          </div>
+        ) : displayProblems.length > 0 ? (
           <div className="space-y-3">
-            {filteredProblems.map((problem) => (
+            {displayProblems.map((problem: any) => (
               <ProblemCard key={problem.id} {...problem} />
             ))}
           </div>
@@ -120,24 +148,22 @@ export function Problems() {
           </div>
         )}
 
-        {/* Pagination (placeholder) */}
-        {filteredProblems.length > 0 && (
+        {/* Pagination */}
+        {displayProblems.length > 0 && total > 20 && (
           <div className="mt-8 flex items-center justify-center gap-2">
-            <button className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors disabled:opacity-50"
+            >
               Previous
             </button>
-            <div className="flex items-center gap-1">
-              <button className="w-10 h-10 flex items-center justify-center bg-[var(--brand-primary)] text-[var(--bg-primary)] rounded-[var(--radius-md)] font-medium">
-                1
-              </button>
-              <button className="w-10 h-10 flex items-center justify-center bg-[var(--surface-1)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-[var(--radius-md)] hover:border-[var(--brand-primary)] transition-colors">
-                2
-              </button>
-              <button className="w-10 h-10 flex items-center justify-center bg-[var(--surface-1)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-[var(--radius-md)] hover:border-[var(--brand-primary)] transition-colors">
-                3
-              </button>
-            </div>
-            <button className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors">
+            <span className="text-[var(--text-muted)]">Page {page} of {Math.ceil(total / 20)}</span>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= Math.ceil(total / 20)}
+              className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors disabled:opacity-50"
+            >
               Next
             </button>
           </div>
@@ -147,17 +173,17 @@ export function Problems() {
   );
 }
 
-function StatCard({ 
-  label, 
-  value, 
-  total, 
-  suffix = '', 
-  color 
-}: { 
-  label: string; 
-  value: number; 
-  total?: number; 
-  suffix?: string; 
+function StatCard({
+  label,
+  value,
+  total,
+  suffix = '',
+  color
+}: {
+  label: string;
+  value: number;
+  total?: number;
+  suffix?: string;
   color: string;
 }) {
   return (

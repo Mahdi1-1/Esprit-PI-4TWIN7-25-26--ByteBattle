@@ -1,7 +1,7 @@
 import { useTheme } from '../context/ThemeContext';
 import { Layout } from '../components/Layout';
 import { Navbar } from '../components/Navbar';
-import { mockUser } from '../data/mockData';
+ 
 import { Button } from '../components/Button';
 
 export function ThemeShowcase() {
@@ -11,8 +11,8 @@ export function ThemeShowcase() {
     <Layout>
       <Navbar 
         isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
+         
+         
       />
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">

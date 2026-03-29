@@ -5,6 +5,7 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import { useAuth } from "./AuthContext";
 
 export type ThemeName =
   | "cyber"
@@ -42,10 +43,13 @@ export function ThemeProvider({
 }: {
   children: ReactNode;
 }) {
+  const { user } = useAuth();
   const [theme, setThemeState] = useState<ThemeName>("cyber");
   const [colorScheme, setColorScheme] =
     useState<ColorScheme>("dark");
-  const [userLevel, setUserLevel] = useState(115); // Mock level for demo
+
+  // Use real user level from AuthContext, fallback to 1 if not authenticated
+  const userLevel = user?.level ?? 1;
 
   // Calculate unlocked themes based on user level
   const unlockedThemes = Object.entries(

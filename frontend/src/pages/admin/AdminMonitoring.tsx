@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import {
   StatusChip,
@@ -6,13 +6,39 @@ import {
   Breadcrumb,
   CodeViewer
 } from '../../components/admin/AdminComponents';
-import { systemMetrics, jobQueue, JobQueue } from '../../data/adminData';
-import { Activity, Clock, AlertTriangle, CheckCircle, RefreshCw, Eye, X } from 'lucide-react';
+import { type SystemMetric, type JobQueue } from '../../data/adminData';
+import { adminService } from '../../services/adminService';
+import { Activity, Clock, AlertTriangle, CheckCircle, RefreshCw, Eye, X, Loader } from 'lucide-react';
 
 export function AdminMonitoring() {
-  const [jobs] = useState<JobQueue[]>(jobQueue);
+  const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
+  const [jobs, setJobs] = useState<JobQueue[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobQueue | null>(null);
   const [showJobDrawer, setShowJobDrawer] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [metricsRes, jobsRes] = await Promise.allSettled([
+          adminService.getSystemMetrics(),
+          adminService.getJobQueue(),
+        ]);
+        if (metricsRes.status === 'fulfilled') {
+          setSystemMetrics(Array.isArray(metricsRes.value) ? metricsRes.value : []);
+        }
+        if (jobsRes.status === 'fulfilled') {
+          const data = Array.isArray(jobsRes.value) ? jobsRes.value : jobsRes.value?.data || [];
+          setJobs(data);
+        }
+      } catch (err) {
+        console.error('Failed to load monitoring data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const statusCounts = {
     pending: jobs.filter((j) => j.status === 'pending').length,

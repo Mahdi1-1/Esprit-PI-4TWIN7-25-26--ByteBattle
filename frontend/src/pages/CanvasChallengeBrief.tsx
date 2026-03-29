@@ -1,27 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Layout } from '../components/Layout';
 import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { canvasChallenges } from '../data/canvasChallengeData';
-import { mockUser } from '../data/mockData';
-import { ArrowLeft, Clock, Target, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { type CanvasChallenge } from '../data/canvasChallengeData';
+import { canvasService } from '../services/canvasService';
+import { ArrowLeft, Clock, Target, AlertTriangle, CheckCircle2, Loader } from 'lucide-react';
 
 export function CanvasChallengeBrief() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedMode, setSelectedMode] = useState<'solo' | 'duel' | 'hackathon'>('solo');
+  const [challenge, setChallenge] = useState<CanvasChallenge | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const challenge = canvasChallenges.find((c) => c.id === id);
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      try {
+        const res = await canvasService.getChallengeById(id!);
+        setChallenge(res);
+      } catch (err) {
+        console.error('Failed to load challenge:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChallenge();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <Navbar isLoggedIn />
+        <div className="flex items-center justify-center h-64">
+          <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!challenge) {
     return (
       <Layout>
         <Navbar 
           isLoggedIn 
-          userAvatar={mockUser.avatar} 
-          username={mockUser.username} 
+           
+           
         />
         <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
@@ -55,8 +80,8 @@ export function CanvasChallengeBrief() {
     <Layout>
       <Navbar 
         isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
+         
+         
       />
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto space-y-8">
@@ -205,7 +230,7 @@ export function CanvasChallengeBrief() {
                 <div key={idx} className="flex items-start justify-between gap-4 pb-3 border-b border-[var(--border-default)] last:border-0">
                   <div className="flex-1">
                     <div className="font-semibold text-[var(--text-primary)] mb-1">
-                      {item.criterion}
+                      {item.category}
                     </div>
                     <div className="text-sm text-[var(--text-secondary)]">
                       {item.description}

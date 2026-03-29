@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByteBattle - Defeat Animations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Chakra+Petch:wght@400;600;700&family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Press+Start+2P&family=Cinzel:wght@400;600;700&family=Lora:wght@400;500;600&family=Teko:wght@300;400;600;700&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Cyber Arena */
+            --cyber-bg: #0A0A12;
+            --cyber-surface: #0F1118;
+            --cyber-red: #FF1744;
+            --cyber-cyan-dark: #00838F;
+            --cyber-purple-dark: #4A148C;
+            --cyber-gray: #37474F;
+            --cyber-orange: #FF6D00;
+
+            /* Space Ops */
+            --space-bg: #050510;
+            --space-blue-dark: #0D47A1;
+            --space-red: #D50000;
+            --space-orange: #FF6F00;
+            --space-gray: #455A64;
+            --space-cyan-dark: #006064;
+
+            /* Samurai Dojo */
+            --samurai-bg: #070709;
+            --samurai-ivory-faded: #D5D1C8;
+            --samurai-red-blood: #8B0000;
+            --samurai-gold-dull: #8B7355;
+            --samurai-gray: #4A4A4A;
+
+            /* Pixel Arcade */
+            --pixel-bg: #12121F;
+            --pixel-red: #FF006E;
+            --pixel-blue: #3A86FF;
+            --pixel-yellow: #FFBE0B;
+            --pixel-gray: #2A2A3E;
+            --pixel-gameover: #FF0040;
+
+            /* Mythic RPG */
+            --rpg-bg: #0A0F1F;
+            --rpg-purple-dark: #3B0764;
+            --rpg-red-curse: #7F1D1D;
+            --rpg-gold-dull: #92400E;
+            --rpg-parchment-burned: #D4C5A0;
+            --rpg-green-poison: #134E4A;
+            --rpg-blue-ghost: #1E3A5F;
+
+            /* Sports Arena */
+            --sports-bg: #0C0F17;
+            --sports-blue-dark: #1E3A5F;
+            --sports-red-defeat: #B91C1C;
+            --sports-gray: #4B5563;
+            --sports-yellow-dull: #92400E;
+            --sports-white-faded: #9CA3AF;
+        }
+
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.5s ease;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        /* Theme Selector */
+        .theme-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-width: 400px;
+            justify-content: flex-end;
+        }
+
+        .theme-btn {
+            padding: 10px 15px;
+            border: 2px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-btn.active {
+            transform: scale(1.15);
+            box-shadow: 0 0 20px currentColor;
+        }
+
+        .theme-btn:nth-child(1) { border-color: #FF1744; color: #FF1744; background: rgba(255, 23, 68, 0.1); }
+        .theme-btn:nth-child(2) { border-color: #D50000; color: #D50000; background: rgba(213, 0, 0, 0.1); }
+        .theme-btn:nth-child(3) { border-color: #8B0000; color: #8B0000; background: rgba(139, 0, 0, 0.1); }
+        .theme-btn:nth-child(4) { border-color: #FF0040; color: #FF0040; background: rgba(255, 0, 64, 0.1); }
+        .theme-btn:nth-child(5) { border-color: #7F1D1D; color: #7F1D1D; background: rgba(127, 29, 29, 0.1); }
+        .theme-btn:nth-child(6) { border-color: #B91C1C; color: #B91C1C; background: rgba(185, 28, 28, 0.1); }
+
+        /* Main Container */
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 20px;
+            padding-top: 100px;
+        }
+
+        /* Content Wrapper */
+        .content-wrapper {
+            text-align: center;
+            z-index: 100;
+            animation: fadeInUp 1s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Emoji Display */
+        .emoji-display {
+            font-size: clamp(4rem, 12vw, 8rem);
+            margin-bottom: 20px;
+            animation: emojiFall 1.5s ease;
+            position: relative;
+        }
+
+        @keyframes emojiFall {
+            0% { transform: translateY(-100px) scale(0.5); opacity: 0; }
+            50% { transform: translateY(20px) scale(1.1); }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Main Title */
+        .main-title {
+            font-size: clamp(2rem, 8vw, 4.5rem);
+            margin-bottom: 15px;
+            animation: titleImpact 1.2s ease;
+        }
+
+        @keyframes titleImpact {
+            0% { transform: scale(3); opacity: 0; filter: blur(10px); }
+            30% { transform: scale(1.2); opacity: 1; }
+            60% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        /* Subtitle */
+        .subtitle {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            margin-bottom: 30px;
+            animation: glitchText 2s infinite;
+        }
+
+        @keyframes glitchText {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            50% { transform: translateX(2px); }
+            75% { transform: translateX(-1px); }
+        }
+
+        /* Panel */
+        .defeat-panel {
+            padding: 30px 50px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            max-width: 600px;
+            animation: panelAppear 1.5s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes panelAppear {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            70% { transform: scale(1.05) rotate(2deg); }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn-retry, .btn-menu {
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid;
+        }
+
+        .btn-retry {
+            animation: pulseButton 2s infinite;
+        }
+
+        @keyframes pulseButton {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .btn-menu {
+            background: transparent;
+            opacity: 0.8;
+        }
+
+        .btn-menu:hover {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* Motivational Message */
+        .motivational-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            opacity: 0;
+            animation: messageFadeIn 2s ease 2s forwards;
+            backdrop-filter: blur(5px);
+        }
+
+        @keyframes messageFadeIn {
+            to { opacity: 0.9; }
+        }
+
+        /* Particles Container */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            overflow: hidden;
+        }
+
+        /* Debris Particle */
+        .debris {
+            position: absolute;
+            pointer-events: none;
+            animation: debrisFall linear forwards;
+        }
+
+        @keyframes debrisFall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Impact Effect */
+        .impact {
+            position: absolute;
+            border-radius: 50%;
+            animation: impactExpand 0.8s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes impactExpand {
+            0% { transform: scale(0); opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        /* Crack Effect */
+        .crack-line {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            height: 3px;
+            animation: crackGrow 0.5s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes crackGrow {
+            0% { width: 0; opacity: 0; }
+            50% { opacity: 1; }
+            100% { width: 200px; opacity: 0; }
+        }
+
+        /* Screen Shake */
+        .screen-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+        }
+
+        /* Vignette */
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 90;
+            box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Red Flash Overlay */
+        .red-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.3), transparent);
+            pointer-events: none;
+            z-index: 85;
+            opacity: 0;
+            animation: redPulse 2s infinite;
+        }
+
+        @keyframes redPulse {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Noise Overlay */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 80;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            animation: noiseMove 0.5s steps(10) infinite;
+        }
+
+        @keyframes noiseMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(10px, 10px); }
+        }
+
+        /* Grid Background */
+        .grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 23, 68, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 23, 68, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridShake 0.5s infinite;
+        }
+
+        @keyframes gridShake {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(2px, 2px); }
+        }
+
+        /* Cyber Theme - Data Streams */
+        .data-stream {
+            position: absolute;
+            font-family: 'Orbitron';
+            font-size: 14px;
+            color: #FF1744;
+            writing-mode: vertical-rl;
+            animation: streamFall linear infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes streamFall {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        /* Stars Background (Space) */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .star.fading {
+            animation: fadeOut 5s forwards;
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; }
+        }
+
+        /* Debris Space */
+        .space-debris {
+            position: absolute;
+            background: #455A64;
+            animation: debrisFloat linear infinite;
+        }
+
+        @keyframes debrisFloat {
+            0% { transform: translateX(-100px) rotate(0deg); }
+            100% { transform: translateX(calc(100vw + 100px)) rotate(360deg); }
+        }
+
+        /* Rain Effect (Sports) */
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 30px;
+            background: linear-gradient(transparent, rgba(255, 255, 255, 0.3));
+            animation: rainFall linear infinite;
+        }
+
+        @keyframes rainFall {
+            0% { transform: translateY(-50px); }
+            100% { transform: translateY(100vh); }
+        }
+
+        /* Sakura Petals (Samurai) - Dark Version */
+        .sakura-faded {
+            position: absolute;
+            font-size: 20px;
+            animation: sakuraFallDark linear infinite;
+            opacity: 0.4;
+            filter: grayscale(0.5);
+        }
+
+        @keyframes sakuraFallDark {
+            0% { transform: translateY(-50px) rotate(0deg); }
+            100% { transform: translateY(100vh) rotate(360deg); }
+        }
+
+        /* Pixel Blocks (Arcade) */
+        .pixel-block {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            animation: blockFall linear forwards;
+        }
+
+        @keyframes blockFall {
+            0% { transform: translateY(-50px); }
+            100% { transform: translateY(calc(100vh - 30px)); }
+        }
+
+        /* Wisps (RPG) */
+        .wisp {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #1E3A5F;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #1E3A5F;
+            animation: wispFloat linear infinite;
+        }
+
+        @keyframes wispFloat {
+            0% { transform: translateY(50px); opacity: 0; }
+            30% { opacity: 0.8; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+
+        /* Chains (RPG) */
+        .chain {
+            position: absolute;
+            width: 3px;
+            height: 100px;
+            background: linear-gradient(#7F1D1D, transparent);
+            animation: chainSwing 2s ease-in-out infinite;
+        }
+
+        @keyframes chainSwing {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        /* Crowd Silhouettes (Sports) */
+        .crowd-silhouette {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+        }
+
+        .crowd-person {
+            position: absolute;
+            bottom: 20px;
+            width: 30px;
+            height: 60px;
+            background: #1a1a1a;
+            border-radius: 10px 10px 0 0;
+        }
+
+        /* Spotlight (Sports) */
+        .spotlight {
+            position: absolute;
+            width: 200px;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
+            animation: spotlightSweep 5s ease-in-out infinite;
+        }
+
+        @keyframes spotlightSweep {
+            0%, 100% { left: 10%; opacity: 0.3; }
+            50% { left: 60%; opacity: 0.6; }
+        }
+
+        .spotlight.fading {
+            animation: spotlightFade 2s forwards;
+        }
+
+        @keyframes spotlightFade {
+            to { opacity: 0; }
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 2s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Score Counter */
+        .score-display {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            animation: statAppear 0.5s ease backwards;
+        }
+
+        @keyframes statAppear {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Error Messages */
+        .error-message {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin: 5px 0;
+            animation: typeIn 0.5s ease backwards;
+        }
+
+        @keyframes typeIn {
+            from { width: 0; opacity: 0; }
+            to { width: 100%; opacity: 0.7; }
+        }
+
+        /* Checkmark List */
+        .check-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+
+        .check-item {
+            padding: 8px;
+            margin: 5px 0;
+            animation: slideIn 0.5s ease backwards;
+            font-size: 1.1rem;
+        }
+
+        .check-item.success { color: #16A34A; }
+        .check-item.fail { color: #EF4444; }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Theme 1: Cyber Arena */
+        .theme-cyber {
+            background: linear-gradient(135deg, #0A0A12 0%, #0F1118 100%);
+        }
+
+        .theme-cyber .main-title {
+            font-family: 'Orbitron';
+            color: #FF1744;
+            text-shadow: 0 0 30px rgba(255, 23, 68, 0.5), 4px 0 #00E5FF, -4px 0 #FF1744;
+            animation: titleImpact 1.2s ease, glitchCyber 0.5s ease infinite;
+        }
+
+        @keyframes glitchCyber {
+            0%, 100% { transform: translate(0); }
+            10% { transform: translate(-2px, 1px); }
+            20% { transform: translate(2px, -1px); }
+            30% { transform: translate(-1px, 2px); }
+        }
+
+        .theme-cyber .subtitle {
+            font-family: 'Orbitron';
+            color: #FF6D00;
+        }
+
+        .theme-cyber .defeat-panel {
+            background: rgba(15, 17, 24, 0.9);
+            border: 3px solid #FF1744;
+            box-shadow: 0 0 40px rgba(255, 23, 68, 0.3);
+            animation: panelAppear 1.5s ease, borderGlow 2s infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { box-shadow: 0 0 40px rgba(255, 23, 68, 0.3); }
+            50% { box-shadow: 0 0 60px rgba(255, 23, 68, 0.6); }
+        }
+
+        .theme-cyber .btn-retry {
+            background: transparent;
+            border-color: #FF1744;
+            color: #FF1744;
+            font-family: 'Orbitron';
+        }
+
+        .theme-cyber .btn-retry:hover {
+            background: #FF1744;
+            color: #0A0A12;
+        }
+
+        .theme-cyber .btn-menu {
+            border-color: #37474F;
+            color: #37474F;
+        }
+
+        .theme-cyber .motivational-message {
+            background: rgba(255, 23, 68, 0.1);
+            border: 1px solid #FF1744;
+            color: #FF6D00;
+            font-family: 'Rajdhani';
+        }
+
+        /* Theme 2: Space Ops */
+        .theme-space {
+            background: linear-gradient(135deg, #050510 0%, #0a1929 100%);
+        }
+
+        .theme-space .main-title {
+            font-family: 'Chakra Petch';
+            color: #D50000;
+            text-shadow: 0 0 30px rgba(213, 0, 0, 0.5);
+            animation: titleImpact 1.2s ease, vibrate 0.3s infinite;
+        }
+
+        @keyframes vibrate {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(3px); }
+        }
+
+        .theme-space .subtitle {
+            font-family: 'Chakra Petch';
+            color: #FF6F00;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .theme-space .defeat-panel {
+            background: rgba(13, 71, 161, 0.2);
+            border: 2px solid #D50000;
+            box-shadow: 0 0 30px rgba(213, 0, 0, 0.3);
+        }
+
+        .theme-space .btn-retry {
+            background: transparent;
+            border-color: #FF6F00;
+            color: #FF6F00;
+            font-family: 'Chakra Petch';
+        }
+
+        .theme-space .btn-retry:hover {
+            background: #FF6F00;
+            color: #050510;
+        }
+
+        .theme-space .btn-menu {
+            border-color: #455A64;
+            color: #455A64;
+        }
+
+        .theme-space .motivational-message {
+            background: rgba(213, 0, 0, 0.1);
+            border: 1px solid #D50000;
+            color: #FF6F00;
+            font-family: 'Chakra Petch';
+        }
+
+        /* Theme 3: Samurai Dojo */
+        .theme-samurai {
+            background: linear-gradient(135deg, #070709 0%, #1a1510 100%);
+        }
+
+        .theme-samurai .main-title {
+            font-family: 'Noto Serif JP';
+            color: #D5D1C8;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .theme-samurai .subtitle {
+            font-family: 'Noto Sans JP';
+            color: #8B7355;
+        }
+
+        .theme-samurai .defeat-panel {
+            background: rgba(213, 209, 200, 0.05);
+            border: 2px solid #8B7355;
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.2);
+        }
+
+        .theme-samurai .btn-retry {
+            background: transparent;
+            border-color: #8B0000;
+            color: #D5D1C8;
+            font-family: 'Noto Sans JP';
+        }
+
+        .theme-samurai .btn-retry:hover {
+            background: #8B0000;
+            color: #D5D1C8;
+        }
+
+        .theme-samurai .btn-menu {
+            border-color: #8B7355;
+            color: #8B7355;
+        }
+
+        .theme-samurai .motivational-message {
+            background: rgba(139, 0, 0, 0.1);
+            border: 1px solid #8B0000;
+            color: #D5D1C8;
+            font-family: 'Noto Serif JP';
+        }
+
+        /* Kanji Display */
+        .kanji-display {
+            position: absolute;
+            font-size: 12rem;
+            color: #8B0000;
+            opacity: 0.3;
+            font-family: 'Noto Serif JP';
+            animation: kanjiAppear 2s ease;
+            z-index: 5;
+        }
+
+        @keyframes kanjiAppear {
+            0% { transform: scale(3) rotate(-15deg); opacity: 0; filter: blur(10px); }
+            100% { transform: scale(1) rotate(0); opacity: 0.3; filter: blur(0); }
+        }
+
+        /* Theme 4: Pixel Arcade */
+        .theme-pixel {
+            background: linear-gradient(135deg, #12121F 0%, #1a1a2e 100%);
+        }
+
+        .theme-pixel .main-title {
+            font-family: 'Press Start 2P';
+            color: #FF0040;
+            text-shadow: 4px 4px 0 #000, 8px 8px 0 #FF006E;
+            line-height: 1.8;
+            animation: pixelBounce 0.5s ease infinite;
+        }
+
+        @keyframes pixelBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .theme-pixel .subtitle {
+            font-family: 'Press Start 2P';
+            color: #FFBE0B;
+            line-height: 1.8;
+            font-size: 0.8rem;
+            animation: pixelBlink 0.5s steps(2) infinite;
+        }
+
+        @keyframes pixelBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .theme-pixel .defeat-panel {
+            background: #2A2A3E;
+            border: 4px solid #fff;
+            box-shadow: 8px 8px 0 #FF006E;
+        }
+
+        .theme-pixel .btn-retry {
+            background: #3A86FF;
+            border-color: #fff;
+            color: #fff;
+            font-family: 'Press Start 2P';
+            font-size: 0.7rem;
+            box-shadow: 4px 4px 0 #000;
+        }
+
+        .theme-pixel .btn-retry:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 #000;
+        }
+
+        .theme-pixel .btn-menu {
+            border-color: #FF0040;
+            color: #FF0040;
+            font-family: 'Press Start 2P';
+            font-size: 0.6rem;
+        }
+
+        .theme-pixel .motivational-message {
+            background: #2A2A3E;
+            border: 4px solid #FFBE0B;
+            color: #FFBE0B;
+            font-family: 'Press Start 2P';
+            font-size: 0.6rem;
+        }
+
+        /* CRT Scanlines */
+        .crt-scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 85;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+
+        /* Theme 5: Mythic RPG */
+        .theme-rpg {
+            background: linear-gradient(135deg, #0A0F1F 0%, #1a0a1f 100%);
+        }
+
+        .theme-rpg .main-title {
+            font-family: 'Cinzel';
+            color: #D4C5A0;
+            text-shadow: 0 0 20px rgba(127, 29, 29, 0.5);
+            letter-spacing: 3px;
+        }
+
+        .theme-rpg .subtitle {
+            font-family: 'Lora';
+            color: #92400E;
+            font-style: italic;
+        }
+
+        .theme-rpg .defeat-panel {
+            background: linear-gradient(135deg, rgba(59, 7, 100, 0.3), rgba(127, 29, 29, 0.2));
+            border: 3px solid #7F1D1D;
+            box-shadow: 0 0 40px rgba(127, 29, 29, 0.3);
+        }
+
+        .theme-rpg .btn-retry {
+            background: linear-gradient(135deg, #7F1D1D, #3B0764);
+            border-color: #F59E0B;
+            color: #D4C5A0;
+            font-family: 'Cinzel';
+        }
+
+        .theme-rpg .btn-retry:hover {
+            box-shadow: 0 0 30px rgba(127, 29, 29, 0.5);
+        }
+
+        .theme-rpg .btn-menu {
+            border-color: #92400E;
+            color: #92400E;
+            font-family: 'Lora';
+        }
+
+        .theme-rpg .motivational-message {
+            background: rgba(127, 29, 29, 0.2);
+            border: 2px solid #92400E;
+            color: #D4C5A0;
+            font-family: 'Lora';
+        }
+
+        /* Magic Circle */
+        .magic-circle {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 3px solid #7F1D1D;
+            border-radius: 50%;
+            animation: circleRotate 10s linear infinite reverse;
+            opacity: 0.3;
+            z-index: 5;
+        }
+
+        .magic-circle::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            right: 10%;
+            bottom: 10%;
+            border: 2px solid #3B0764;
+            border-radius: 50%;
+            animation: circleRotate 7s linear infinite;
+        }
+
+        @keyframes circleRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Theme 6: Sports Arena */
+        .theme-sports {
+            background: linear-gradient(135deg, #0C0F17 0%, #1a1414 100%);
+        }
+
+        .theme-sports .main-title {
+            font-family: 'Teko';
+            color: #B91C1C;
+            text-shadow: 5px 5px 0 #000;
+            letter-spacing: 5px;
+        }
+
+        .theme-sports .subtitle {
+            font-family: 'Barlow';
+            color: #9CA3AF;
+            font-size: 1.2rem;
+        }
+
+        .theme-sports .defeat-panel {
+            background: rgba(185, 28, 28, 0.1);
+            border: 4px solid #B91C1C;
+            box-shadow: 0 0 30px rgba(185, 28, 28, 0.3);
+        }
+
+        .theme-sports .btn-retry {
+            background: #1E3A5F;
+            border-color: #FBBF24;
+            color: #fff;
+            font-family: 'Teko';
+            font-size: 1.4rem;
+            letter-spacing: 2px;
+        }
+
+        .theme-sports .btn-retry:hover {
+            background: #FBBF24;
+            color: #0C0F17;
+        }
+
+        .theme-sports .btn-menu {
+            border-color: #4B5563;
+            color: #4B5563;
+            font-family: 'Barlow';
+        }
+
+        .theme-sports .motivational-message {
+            background: rgba(185, 28, 28, 0.1);
+            border: 2px solid #B91C1C;
+            color: #9CA3AF;
+            font-family: 'Barlow';
+        }
+
+        /* Score Display Sports */
+        .score-sports {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .team-score {
+            font-family: 'Teko';
+            font-size: 5rem;
+            padding: 20px 40px;
+            border-radius: 15px;
+        }
+
+        .team-score.loser {
+            color: #4B5563;
+            background: rgba(75, 85, 99, 0.2);
+        }
+
+        .team-score.winner {
+            color: #B91C1C;
+            background: rgba(185, 28, 28, 0.2);
+            box-shadow: 0 0 30px rgba(185, 28, 28, 0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .theme-selector {
+                top: 10px;
+                right: 10px;
+                gap: 5px;
+            }
+
+            .theme-btn {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
+
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .defeat-panel {
+                padding: 20px 25px;
+                margin: 15px;
+            }
+
+            .score-sports {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .team-score {
+                font-size: 3rem;
+                padding: 10px 25px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="theme-cyber">
+    <!-- Theme Selector -->
+    <div class="theme-selector">
+        <button class="theme-btn active" data-theme="cyber">💀 Cyber</button>
+        <button class="theme-btn" data-theme="space">🌑 Space</button>
+        <button class="theme-btn" data-theme="samurai">⚔️ Samurai</button>
+        <button class="theme-btn" data-theme="pixel">👾 Pixel</button>
+        <button class="theme-btn" data-theme="rpg">🐉 RPG</button>
+        <button class="theme-btn" data-theme="sports">⚽ Sports</button>
+    </div>
+
+    <!-- Vignette -->
+    <div class="vignette"></div>
+    
+    <!-- Red Flash -->
+    <div class="red-flash"></div>
+    
+    <!-- Noise Overlay -->
+    <div class="noise-overlay"></div>
+
+    <!-- Particles Container -->
+    <div class="particles-container" id="particles"></div>
+
+    <!-- Main Container -->
+    <div class="main-container" id="mainContainer">
+        <!-- Content -->
+        <div class="content-wrapper" id="contentWrapper">
+            <!-- Emoji Display -->
+            <div class="emoji-display" id="emojiDisplay">💀</div>
+            
+            <!-- Main Title -->
+            <h1 class="main-title" id="mainTitle">SYSTEM FAILURE</h1>
+            
+            <!-- Subtitle -->
+            <p class="subtitle" id="subtitle">ERROR 0x8F2A // COMPILATION FAILED</p>
+            
+            <!-- Defeat Panel -->
+            <div class="defeat-panel" id="defeatPanel">
+                <div id="panelContent">
+                    <h2 style="color: #FF1744; margin-bottom: 15px; font-family: 'Orbitron'; font-size: 1.5rem;">⚠️ RUNTIME ERROR</h2>
+                    <div class="score-display" style="color: #FF6D00; font-family: 'Orbitron';">
+                        <span id="scoreCounter">0</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="background: linear-gradient(90deg, #FF1744, #FF6D00); width: 37%;"></div>
+                    </div>
+                    <ul class="check-list" id="checkList">
+                        <li class="check-item success">✓ Test 1 - Initialisation</li>
+                        <li class="check-item success">✓ Test 2 - Connection</li>
+                        <li class="check-item success">✓ Test 3 - Data Load</li>
+                        <li class="check-item fail" style="animation-delay: 0.5s;">✗ Test 4 - Processing</li>
+                        <li class="check-item fail" style="animation-delay: 0.7s;">✗ Test 5 - Validation</li>
+                    </ul>
+                    <div class="error-message">>> stack overflow detected...</div>
+                    <div class="error-message" style="animation-delay: 0.3s;">>> memory corruption at 0x4F2B...</div>
+                    <div class="error-message" style="animation-delay: 0.6s;">>> process terminated</div>
+                </div>
+            </div>
+            
+            <!-- Button Group -->
+            <div class="button-group">
+                <button class="btn-retry" id="btnRetry" onclick="triggerDefeat()">⚡ RECOMPILE</button>
+                <button class="btn-menu" id="btnMenu">🔙 BACK TO MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Motivational Message -->
+    <div class="motivational-message" id="motivationalMessage">
+        "Every bug is a lesson. Debug and retry!"
+    </div>
+
+    <!-- CRT Scanlines for Pixel Theme -->
+    <div class="crt-scanlines" id="crtScanlines" style="display: none;"></div>
+
+    <script>
+        // Theme Configuration
+        const themes = {
+            cyber: {
+                emoji: '💀',
+                title: 'SYSTEM FAILURE',
+                subtitle: 'ERROR 0x8F2A // COMPILATION FAILED',
+                bgClass: 'theme-cyber',
+                scoreColor: '#FF6D00',
+                progressColor: 'linear-gradient(90deg, #FF1744, #FF6D00)',
+                motivational: '"Every bug is a lesson. Debug and retry!"',
+                btnRetryText: '⚡ RECOMPILE',
+                btnMenuText: '🔙 BACK TO MENU'
+            },
+            space: {
+                emoji: '🌑',
+                title: 'MISSION FAILED',
+                subtitle: 'SIGNAL LOST — ALL UNITS REPORT',
+                bgClass: 'theme-space',
+                scoreColor: '#FF6F00',
+                progressColor: 'linear-gradient(90deg, #D50000, #FF6F00)',
+                motivational: '"Even the best pilots crash. Recalibrate."',
+                btnRetryText: '🔄 RESTART MISSION',
+                btnMenuText: '📡 RETURN TO BASE'
+            },
+            samurai: {
+                emoji: '⚔️',
+                title: 'HONOR IN DEFEAT',
+                subtitle: '道は続く — Le chemin continue',
+                bgClass: 'theme-samurai',
+                scoreColor: '#8B7355',
+                progressColor: 'linear-gradient(90deg, #8B0000, #D4AF37)',
+                motivational: '"七転び八起き — Fall seven times, stand up eight."',
+                btnRetryText: '🗡️ TRAIN AGAIN',
+                btnMenuText: '🏯 RETURN TO DOJO'
+            },
+            pixel: {
+                emoji: '💀',
+                title: 'GAME OVER',
+                subtitle: 'CONTINUE? 9...8...7...',
+                bgClass: 'theme-pixel',
+                scoreColor: '#FFBE0B',
+                progressColor: 'linear-gradient(90deg, #FF0040, #FF006E)',
+                motivational: '"Game Over doesn\'t mean Give Up!"',
+                btnRetryText: 'CONTINUE? [YES]',
+                btnMenuText: '[NO] QUIT'
+            },
+            rpg: {
+                emoji: '🐉',
+                title: 'QUEST FAILED',
+                subtitle: 'Les ténèbres s\'étendent...',
+                bgClass: 'theme-rpg',
+                scoreColor: '#92400E',
+                progressColor: 'linear-gradient(90deg, #7F1D1D, #3B0764)',
+                motivational: '"Every hero falls. True heroes rise again."',
+                btnRetryText: '⚔️ RETRY QUEST',
+                btnMenuText: '🏚️ RETURN TO TAVERN'
+            },
+            sports: {
+                emoji: '😞',
+                title: 'DEFEATED',
+                subtitle: 'FULL TIME — BETTER LUCK NEXT TIME',
+                bgClass: 'theme-sports',
+                scoreColor: '#B91C1C',
+                progressColor: 'linear-gradient(90deg, #B91C1C, #EF4444)',
+                motivational: '"Champions are made in rematches."',
+                btnRetryText: '🔄 REMATCH',
+                btnMenuText: '🏠 MAIN MENU'
+            }
+        };
+
+        let currentTheme = 'cyber';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initThemeButtons();
+            initKeyboardNav();
+            initClickEffects();
+            triggerDefeat();
+            createBackgroundElements();
+        });
+
+        // Theme Buttons
+        function initThemeButtons() {
+            const buttons = document.querySelectorAll('.theme-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const theme = btn.dataset.theme;
+                    setTheme(theme);
+                });
+            });
+        }
+
+        // Set Theme
+        function setTheme(themeName) {
+            currentTheme = themeName;
+            const theme = themes[themeName];
+            const body = document.body;
+            
+            // Update active button
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.theme === themeName) btn.classList.add('active');
+            });
+
+            // Change theme class
+            body.className = theme.bgClass;
+
+            // Update content
+            document.getElementById('emojiDisplay').textContent = theme.emoji;
+            document.getElementById('mainTitle').textContent = theme.title;
+            document.getElementById('subtitle').textContent = theme.subtitle;
+            document.getElementById('motivationalMessage').innerHTML = theme.motivational;
+            document.getElementById('btnRetry').textContent = theme.btnRetryText;
+            document.getElementById('btnMenu').textContent = theme.btnMenuText;
+
+            // Update progress bar
+            document.getElementById('progressFill').style.background = theme.progressColor;
+
+            // Show/Hide CRT scanlines
+            document.getElementById('crtScanlines').style.display = themeName === 'pixel' ? 'block' : 'none';
+
+            // Reset animations
+            resetAnimations();
+
+            // Trigger defeat animation
+            triggerDefeat();
+
+            // Create theme-specific backgrounds
+            createBackgroundElements();
+        }
+
+        // Reset Animations
+        function resetAnimations() {
+            const content = document.getElementById('contentWrapper');
+            const emoji = document.getElementById('emojiDisplay');
+            const title = document.getElementById('mainTitle');
+            const panel = document.getElementById('defeatPanel');
+
+            content.style.animation = 'none';
+            emoji.style.animation = 'none';
+            title.style.animation = 'none';
+            panel.style.animation = 'none';
+
+            setTimeout(() => {
+                content.style.animation = 'fadeInUp 1s ease';
+                emoji.style.animation = 'emojiFall 1.5s ease';
+                title.style.animation = 'titleImpact 1.2s ease';
+                panel.style.animation = 'panelAppear 1.5s ease';
+            }, 10);
+        }
+
+        // Trigger Defeat Animation
+        function triggerDefeat() {
+            // Screen shake
+            document.body.classList.add('screen-shake');
+            setTimeout(() => document.body.classList.remove('screen-shake'), 300);
+
+            // Animate score counter
+            animateScore();
+
+            // Create debris
+            createDebris();
+
+            // Create impact effects
+            setTimeout(() => createImpact(), 200);
+            setTimeout(() => createImpact(), 500);
+            setTimeout(() => createImpact(), 800);
+
+            // Theme specific effects
+            triggerThemeEffects();
+        }
+
+        // Animate Score Counter
+        function animateScore() {
+            const scoreEl = document.getElementById('scoreCounter');
+            let score = 100;
+            const targetScore = getTargetScore();
+            
+            const interval = setInterval(() => {
+                score -= Math.floor(Math.random() * 5) + 1;
+                if (score <= targetScore) {
+                    score = targetScore;
+                    clearInterval(interval);
+                }
+                scoreEl.textContent = score;
+            }, 50);
+        }
+
+        function getTargetScore() {
+            switch(currentTheme) {
+                case 'cyber': return 37;
+                case 'space': return 25;
+                case 'samurai': return 40;
+                case 'pixel': return 12;
+                case 'rpg': return 30;
+                case 'sports': return 35;
+                default: return 50;
+            }
+        }
+
+        // Create Debris Particles
+        function createDebris() {
+            const container = document.getElementById('particles');
+            const colors = getDebrisColors();
+
+            for (let i = 0; i < 80; i++) {
+                setTimeout(() => {
+                    const debris = document.createElement('div');
+                    debris.className = 'debris';
+                    
+                    // Random shape
+                    const shapeType = Math.random();
+                    if (shapeType < 0.4) {
+                        // Rectangle
+                        debris.style.width = Math.random() * 15 + 8 + 'px';
+                        debris.style.height = Math.random() * 8 + 4 + 'px';
+                        debris.style.borderRadius = '2px';
+                    } else if (shapeType < 0.7) {
+                        // Circle
+                        debris.style.width = Math.random() * 10 + 5 + 'px';
+                        debris.style.height = debris.style.width;
+                        debris.style.borderRadius = '50%';
+                    } else {
+                        // Triangle (using border trick)
+                        debris.style.width = '0';
+                        debris.style.height = '0';
+                        debris.style.borderLeft = (Math.random() * 10 + 5) + 'px solid transparent';
+                        debris.style.borderRight = (Math.random() * 10 + 5) + 'px solid transparent';
+                        debris.style.borderBottom = (Math.random() * 15 + 8) + 'px solid ' + colors[Math.floor(Math.random() * colors.length)];
+                        debris.style.background = 'transparent';
+                    }
+
+                    if (shapeType < 0.7) {
+                        debris.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    }
+
+                    debris.style.left = Math.random() * 100 + '%';
+                    debris.style.animationDuration = Math.random() * 4 + 3 + 's';
+                    debris.style.opacity = Math.random() * 0.5 + 0.3;
+
+                    container.appendChild(debris);
+
+                    // Remove after animation
+                    setTimeout(() => debris.remove(), 7000);
+                }, i * 30);
+            }
+        }
+
+        function getDebrisColors() {
+            switch(currentTheme) {
+                case 'cyber': return ['#FF1744', '#FF6D00', '#00E5FF', '#4A148C', '#37474F'];
+                case 'space': return ['#D50000', '#FF6F00', '#455A64', '#0D47A1', '#1a237e'];
+                case 'samurai': return ['#8B0000', '#8B7355', '#4A4A4A', '#D5D1C8', '#1a1510'];
+                case 'pixel': return ['#FF0040', '#FF006E', '#3A86FF', '#FFBE0B', '#2A2A3E'];
+                case 'rpg': return ['#7F1D1D', '#3B0764', '#92400E', '#134E4A', '#1E3A5F'];
+                case 'sports': return ['#B91C1C', '#4B5563', '#1E3A5F', '#92400E', '#1a1414'];
+                default: return ['#666', '#888', '#555'];
+            }
+        }
+
+        // Create Impact Effect
+        function createImpact() {
+            const container = document.getElementById('particles');
+            const colors = getDebrisColors();
+            
+            const impact = document.createElement('div');
+            impact.className = 'impact';
+            impact.style.left = Math.random() * 80 + 10 + '%';
+            impact.style.top = Math.random() * 60 + 20 + '%';
+            impact.style.width = '100px';
+            impact.style.height = '100px';
+            impact.style.background = `radial-gradient(circle, ${colors[0]}, transparent)`;
+            impact.style.border = `3px solid ${colors[1]}`;
+            
+            container.appendChild(impact);
+            setTimeout(() => impact.remove(), 800);
+
+            // Create crack lines
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const crack = document.createElement('div');
+                    crack.className = 'crack-line';
+                    crack.style.left = parseFloat(impact.style.left) + '%';
+                    crack.style.top = parseFloat(impact.style.top) + Math.random() * 50 + '%';
+                    crack.style.color = colors[Math.floor(Math.random() * colors.length)];
+                    crack.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    container.appendChild(crack);
+                    setTimeout(() => crack.remove(), 500);
+                }, i * 100);
+            }
+        }
+
+        // Theme Specific Effects
+        function triggerThemeEffects() {
+            const container = document.getElementById('particles');
+            
+            switch(currentTheme) {
+                case 'cyber':
+                    createDataStreams(container);
+                    break;
+                case 'space':
+                    createSpaceDebris(container);
+                    break;
+                case 'samurai':
+                    createSakuraDark(container);
+                    break;
+                case 'pixel':
+                    createPixelBlocks(container);
+                    break;
+                case 'rpg':
+                    createWisps(container);
+                    break;
+                case 'sports':
+                    createRain(container);
+                    break;
+            }
+        }
+
+        function createDataStreams(container) {
+            const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            for (let i = 0; i < 10; i++) {
+                const stream = document.createElement('div');
+                stream.className = 'data-stream';
+                stream.textContent = Array(20).fill(0).map(() => chars[Math.floor(Math.random() * chars.length)]).join('');
+                stream.style.left = Math.random() * 100 + '%';
+                stream.style.animationDuration = Math.random() * 5 + 4 + 's';
+                container.appendChild(stream);
+                setTimeout(() => stream.remove(), 9000);
+            }
+        }
+
+        function createSpaceDebris(container) {
+            for (let i = 0; i < 8; i++) {
+                const debris = document.createElement('div');
+                debris.className = 'space-debris';
+                debris.style.width = Math.random() * 30 + 15 + 'px';
+                debris.style.height = Math.random() * 10 + 5 + 'px';
+                debris.style.top = Math.random() * 70 + 15 + '%';
+                debris.style.animationDuration = Math.random() * 8 + 6 + 's';
+                container.appendChild(debris);
+                setTimeout(() => debris.remove(), 14000);
+            }
+        }
+
+        function createSakuraDark(container) {
+            for (let i = 0; i < 20; i++) {
+                const sakura = document.createElement('div');
+                sakura.className = 'sakura-faded';
+                sakura.textContent = '🌸';
+                sakura.style.left = Math.random() * 100 + '%';
+                sakura.style.animationDuration = Math.random() * 6 + 5 + 's';
+                sakura.style.fontSize = Math.random() * 15 + 15 + 'px';
+                container.appendChild(sakura);
+                setTimeout(() => sakura.remove(), 11000);
+            }
+        }
+
+        function createPixelBlocks(container) {
+            const colors = ['#FF0040', '#3A86FF', '#FFBE0B', '#06FFA5', '#8338EC'];
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const block = document.createElement('div');
+                    block.className = 'pixel-block';
+                    block.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    block.style.left = Math.random() * 90 + 5 + '%';
+                    block.style.animationDuration = Math.random() * 3 + 2 + 's';
+                    container.appendChild(block);
+                    setTimeout(() => block.remove(), 5000);
+                }, i * 200);
+            }
+        }
+
+        function createWisps(container) {
+            for (let i = 0; i < 15; i++) {
+                const wisp = document.createElement('div');
+                wisp.className = 'wisp';
+                wisp.style.left = Math.random() * 100 + '%';
+                wisp.style.bottom = '0';
+                wisp.style.animationDuration = Math.random() * 5 + 4 + 's';
+                wisp.style.background = ['#1E3A5F', '#3B0764', '#134E4A'][Math.floor(Math.random() * 3)];
+                wisp.style.boxShadow = `0 0 15px ${['#1E3A5F', '#3B0764', '#134E4A'][Math.floor(Math.random() * 3)]}`;
+                container.appendChild(wisp);
+                setTimeout(() => wisp.remove(), 9000);
+            }
+        }
+
+        function createRain(container) {
+            for (let i = 0; i < 50; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDuration = Math.random() * 1 + 0.5 + 's';
+                drop.style.height = Math.random() * 30 + 20 + 'px';
+                container.appendChild(drop);
+                setTimeout(() => drop.remove(), 1500);
+            }
+        }
+
+        // Create Background Elements
+        function createBackgroundElements() {
+            const container = document.getElementById('mainContainer');
+            
+            // Clear old elements
+            container.querySelectorAll('.grid-bg, .star, .crowd-silhouette, .spotlight, .magic-circle, .kanji-display').forEach(el => el.remove());
+
+            switch(currentTheme) {
+                case 'cyber':
+                    createCyberGrid(container);
+                    break;
+                case 'space':
+                    createStars(container);
+                    break;
+                case 'samurai':
+                    createKanji(container);
+                    break;
+                case 'pixel':
+                    createCyberGrid(container);
+                    break;
+                case 'rpg':
+                    createMagicCircle(container);
+                    break;
+                case 'sports':
+                    createSportsElements(container);
+                    break;
+            }
+        }
+
+        function createCyberGrid(container) {
+            const grid = document.createElement('div');
+            grid.className = 'grid-bg';
+            container.appendChild(grid);
+        }
+
+        function createStars(container) {
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star' + (Math.random() > 0.7 ? ' fading' : '');
+                star.style.width = Math.random() * 4 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(star);
+            }
+        }
+
+        function createKanji(container) {
+            const kanji = document.createElement('div');
+            kanji.className = 'kanji-display';
+            kanji.textContent = '敗';
+            kanji.style.left = '50%';
+            kanji.style.top = '50%';
+            kanji.style.transform = 'translate(-50%, -50%)';
+            container.appendChild(kanji);
+        }
+
+        function createMagicCircle(container) {
+            const circle = document.createElement('div');
+            circle.className = 'magic-circle';
+            circle.style.left = '50%';
+            circle.style.top = '50%';
+            circle.style.transform = 'translate(-50%, -50%)';
+            container.appendChild(circle);
+        }
+
+        function createSportsElements(container) {
+            // Crowd
+            const crowd = document.createElement('div');
+            crowd.className = 'crowd-silhouette';
+            
+            for (let i = 0; i < 30; i++) {
+                const person = document.createElement('div');
+                person.className = 'crowd-person';
+                person.style.left = i * 3.5 + '%';
+                person.style.height = Math.random() * 50 + 40 + 'px';
+                crowd.appendChild(person);
+            }
+            container.appendChild(crowd);
+
+            // Spotlight
+            const spotlight = document.createElement('div');
+            spotlight.className = 'spotlight';
+            container.appendChild(spotlight);
+        }
+
+        // Keyboard Navigation
+        function initKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                const themeKeys = ['cyber', 'space', 'samurai', 'pixel', 'rpg', 'sports'];
+                
+                if (e.key >= '1' && e.key <= '6') {
+                    const index = parseInt(e.key) - 1;
+                    setTheme(themeKeys[index]);
+                } else if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    triggerDefeat();
+                }
+            });
+        }
+
+        // Click Effects
+        function initClickEffects() {
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('.theme-selector') || e.target.closest('.button-group')) return;
+                
+                createClickEffect(e.clientX, e.clientY);
+            });
+        }
+
+        function createClickEffect(x, y) {
+            const container = document.getElementById('particles');
+            const colors = getDebrisColors();
+
+            // Main impact
+            const impact = document.createElement('div');
+            impact.className = 'impact';
+            impact.style.position = 'fixed';
+            impact.style.left = x - 50 + 'px';
+            impact.style.top = y - 50 + 'px';
+            impact.style.width = '100px';
+            impact.style.height = '100px';
+            impact.style.background = `radial-gradient(circle, ${colors[0]}, transparent)`;
+            impact.style.border = `2px solid ${colors[1]}`;
+            container.appendChild(impact);
+            setTimeout(() => impact.remove(), 800);
+
+            // Crack lines
+            for (let i = 0; i < 6; i++) {
+                const crack = document.createElement('div');
+                crack.className = 'crack-line';
+                crack.style.position = 'fixed';
+                crack.style.left = x - 100 + 'px';
+                crack.style.top = y + Math.random() * 60 - 30 + 'px';
+                crack.style.color = colors[Math.floor(Math.random() * colors.length)];
+                crack.style.transform = `rotate(${Math.random() * 360}deg)`;
+                crack.style.width = '200px';
+                container.appendChild(crack);
+                setTimeout(() => crack.remove(), 500);
+            }
+
+            // Small particles
+            for (let i = 0; i < 10; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.width = '8px';
+                particle.style.height = '8px';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '1000';
+                
+                const angle = (i / 10) * Math.PI * 2;
+                const velocity = 100 + Math.random() * 100;
+                const vx = Math.cos(angle) * velocity;
+                const vy = Math.sin(angle) * velocity;
+                
+                container.appendChild(particle);
+                
+                let posX = x;
+                let posY = y;
+                let opacity = 1;
+                let gravity = 0;
+                
+                const animate = () => {
+                    gravity += 2;
+                    posX += vx * 0.02;
+                    posY += vy * 0.02 + gravity;
+                    opacity -= 0.02;
+                    
+                    particle.style.left = posX + 'px';
+                    particle.style.top = posY + 'px';
+                    particle.style.opacity = opacity;
+                    
+                    if (opacity > 0) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        particle.remove();
+                    }
+                };
+                requestAnimationFrame(animate);
+            }
+
+            // Screen shake
+            document.body.classList.add('screen-shake');
+            setTimeout(() => document.body.classList.remove('screen-shake'), 200);
+        }
+    </script>
+</body>
+</html>
