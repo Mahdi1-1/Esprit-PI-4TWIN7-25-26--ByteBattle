@@ -98,28 +98,29 @@ export function Settings() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Sidebar - Tabs on mobile */}
-          <div className="lg:col-span-1">
+            <div className="lg:col-span-1">
             <div className="bg-[var(--surface)] border border-[var(--border-default)] rounded-lg p-1.5 sm:p-2">
-              <div className="flex overflow-x-auto sm:overflow-visible gap-1 sm:gap-0 -mx-1.5 sm:mx-0 px-1.5 sm:px-0 pb-1.5 sm:pb-0 sm:flex-col">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      shrink-0 sm:shrink flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-left transition-colors min-h-[44px]
-                      ${activeTab === tab.id
-                        ? 'bg-[var(--brand-primary)] text-white'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
-                      }
-                    `}
-                  >
-                    <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span className="font-medium text-sm sm:text-base">{tab.label}</span>
-                  </button>
-                ))}
-              </div>
+              <ul className="flex flex-col gap-1">
+              {tabs.map((tab) => (
+                <li key={tab.id}>
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                  w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors min-h-[44px]
+                  ${activeTab === tab.id
+                    ? 'bg-[var(--brand-primary)] text-white'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
+                  }
+                  `}
+                >
+                  <tab.icon className="w-5 h-5" />
+                  <span className="font-medium text-base">{tab.label}</span>
+                </button>
+                </li>
+              ))}
+              </ul>
             </div>
-          </div>
+            </div>
 
           {/* Content */}
           <div className="lg:col-span-3 space-y-4 sm:space-y-6">

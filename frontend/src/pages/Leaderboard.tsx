@@ -155,6 +155,7 @@ export function Leaderboard() {
                     <img
                       src={currentUserEntry.avatar}
                       alt={currentUserEntry.username}
+                      referrerPolicy="no-referrer"
                       className="w-12 h-12 rounded-full border-2 border-[var(--brand-primary)]"
                     />
                     <div>
@@ -256,6 +257,7 @@ export function Leaderboard() {
                             <img
                               src={entry.avatar}
                               alt={entry.username}
+                              referrerPolicy="no-referrer"
                               className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-[var(--border-default)]"
                             />
                             <span className="font-medium text-[var(--text-primary)] truncate max-w-[120px] sm:max-w-none">
@@ -356,6 +358,7 @@ function PodiumCard({
       <img
         src={avatar}
         alt={username}
+        referrerPolicy="no-referrer"
         className={`
           mx-auto mb-3 rounded-full
           ${highlight

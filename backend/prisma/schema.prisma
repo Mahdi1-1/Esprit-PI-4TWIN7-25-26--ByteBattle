@@ -69,6 +69,7 @@ model User {
 
   notificationsReceived Notification[] @relation("UserNotifications")
   notificationsActed    Notification[] @relation("UserNotificationActors")
+  revisions             DiscussionRevision[] @relation("UserRevisions")
 }
 
 enum UserRole {
@@ -341,9 +342,11 @@ model HackathonTeam {
   name           String
   members        HackathonTeamMember[]
   joinCode       String
-  isCheckedIn    Boolean               @default(false)
-  isDisqualified Boolean               @default(false)
-  solvedCount    Int                   @default(0)
+  isCheckedIn          Boolean               @default(false)
+  isDisqualified       Boolean               @default(false)
+  anticheatViolations  Int                   @default(0)
+  problemStartTimes    Json?                 // Q5: { "challengeId": "ISO timestamp", ... } team-wide timer sync
+  solvedCount          Int                   @default(0)
   penaltyTime    Int                   @default(0)
   score          Int                   @default(0)
   type           String                // "open" | "enterprise"
@@ -487,11 +490,26 @@ model Discussion {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  comments Comment[]
+  comments  Comment[]
+  revisions DiscussionRevision[]
 
   @@index([tags])
   @@index([category])
   @@index([createdAt(sort: Desc)])
+}
+
+model DiscussionRevision {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  discussionId String   @db.ObjectId
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  editorId     String   @db.ObjectId
+  editor       User     @relation("UserRevisions", fields: [editorId], references: [id])
+  title        String
+  content      String
+  tags         String[]
+  createdAt    DateTime @default(now())
+
+  @@index([discussionId, createdAt(sort: Desc)])
 }
 
 model Comment {

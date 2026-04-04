@@ -24,6 +24,8 @@ import { CanvasResult } from './pages/CanvasResult';
 import { CanvasGallery } from './pages/CanvasGallery';
 import { DiscussionPage } from './pages/DiscussionPage';
 import { DiscussionDetailPage } from './pages/DiscussionDetailPage';
+import { NewDiscussionPage } from './pages/NewDiscussionPage';
+import { EditDiscussionPage } from './pages/EditDiscussionPage';
 import { AIInterviewPage } from './pages/AIInterviewPage';
 import { DataStructuresPage } from './pages/DataStructuresPage';
 import { SketchpadPage } from './pages/SketchpadPage';
@@ -189,6 +191,14 @@ export const router = createBrowserRouter([
   {
     path: '/discussion',
     element: <RoleRoute allowedRoles={['user']}><DiscussionPage /></RoleRoute>,
+  },
+  {
+    path: '/discussion/new',
+    element: <RoleRoute allowedRoles={['user']}><NewDiscussionPage /></RoleRoute>,
+  },
+  {
+    path: '/discussion/edit/:id',
+    element: <RoleRoute allowedRoles={['user']}><EditDiscussionPage /></RoleRoute>,
   },
   {
     path: '/discussion/:id',

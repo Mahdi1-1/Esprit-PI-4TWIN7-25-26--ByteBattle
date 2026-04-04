@@ -163,6 +163,7 @@ export function Dashboard() {
                 <img
                   src={profileService.getPhotoUrl(user?.profileImage, user?.username)}
                   alt={user?.username}
+                  referrerPolicy="no-referrer"
                   className="w-16 h-16 rounded-full border-4 border-[var(--brand-primary)] glow"
                 />
                 <div className="flex-1">

@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 import { AiService } from '../ai/ai.service';
 import { DUEL_SCORING } from './duels.constants';
-import { computeDuelStatsBatch } from './duel-stats.util';
+import { computeDuelStats, computeDuelStatsBatch } from './duel-stats.util';
 
 export interface DuelPlayerState {
   id: string;
@@ -607,5 +607,97 @@ export class DuelsService {
     ]);
 
     return { data: duels, total, page, limit };
+  }
+
+  /**
+   * 📊 Queue stats: online players + waiting duels count
+   */
+  async getQueueStats() {
+    const waitingDuels = await this.prisma.duel.count({
+      where: { status: 'waiting' },
+    });
+
+    const activeDuels = await this.prisma.duel.count({
+      where: { status: 'active' },
+    });
+
+    // Estimate online players: 2 per active duel + 1 per waiting duel + some margin
+    const estimatedOnline = activeDuels * 2 + waitingDuels;
+
+    // Estimated wait time based on queue: more waiting = longer wait
+    const estimatedWaitSeconds = waitingDuels > 0 ? Math.max(5, 30 - waitingDuels * 5) : 30;
+
+    return {
+      waitingDuels,
+      activeDuels,
+      playersOnline: estimatedOnline,
+      estimatedWaitSeconds,
+    };
+  }
+
+  /**
+   * 📊 Get duel stats for a specific user
+   */
+  async getUserStats(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, elo: true },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    const stats = await computeDuelStats(this.prisma, userId);
+
+    // Get recent form (last 5 duels)
+    const recentDuels = await this.prisma.duel.findMany({
+      where: {
+        OR: [{ player1Id: userId }, { player2Id: userId }],
+        status: 'completed',
+      },
+      select: { winnerId: true },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    const recentForm = recentDuels.map(d =>
+      d.winnerId === userId ? 'W' : d.winnerId ? 'L' : 'D',
+    );
+
+    // Current streak
+    let streak = 0;
+    let streakType: 'W' | 'L' | null = null;
+    for (const result of recentForm) {
+      if (result === 'D') break;
+      if (!streakType) streakType = result as 'W' | 'L';
+      if (result === streakType) streak++;
+      else break;
+    }
+
+    return {
+      ...user,
+      ...stats,
+      recentForm,
+      streak,
+      streakType,
+    };
+  }
+
+  /**
+   * 🏆 Get duel result with full details
+   */
+  async getDuelResult(duelId: string) {
+    const duel = await this.prisma.duel.findUnique({
+      where: { id: duelId },
+      include: {
+        player1: { select: { id: true, username: true, elo: true, profileImage: true } },
+        player2: { select: { id: true, username: true, elo: true, profileImage: true } },
+        challenge: { select: { id: true, title: true, difficulty: true } },
+        winner: { select: { id: true, username: true } },
+      },
+    });
+
+    if (!duel) throw new NotFoundException('Duel not found');
+
+    return duel;
   }
 }

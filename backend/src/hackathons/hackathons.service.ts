@@ -104,6 +104,132 @@ export class HackathonsService {
     return hackathon;
   }
 
+  /**
+   * Get hackathon challenges with sequential unlock logic.
+   * A team can only see the NEXT unsolved problem.
+   * Time limit per problem depends on difficulty:
+   *   easy → 15 min, medium → 25 min, hard → 40 min
+   */
+  async getHackathonChallenges(hackathonId: string, teamId?: string) {
+    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    if (hackathon.challengeIds.length === 0) return [];
+
+    // Fetch all challenge details
+    const challenges = await this.prisma.challenge.findMany({
+      where: { id: { in: hackathon.challengeIds } },
+      select: {
+        id: true,
+        title: true,
+        difficulty: true,
+        descriptionMd: true,
+        tags: true,
+        constraints: true,
+        hints: true,
+        examples: true,
+        tests: true,
+        allowedLanguages: true,
+        category: true,
+      },
+    });
+
+    // Maintain original order from challengeIds
+    const orderedChallenges = hackathon.challengeIds
+      .map((cId) => challenges.find((c) => c.id === cId))
+      .filter(Boolean);
+
+    // Time limits per difficulty (in minutes)
+    const TIME_LIMITS: Record<string, number> = {
+      easy: 15,
+      medium: 25,
+      hard: 40,
+    };
+
+    // If no team, return all with metadata (admin view)
+    if (!teamId) {
+      return orderedChallenges.map((c: any, i: number) => ({
+        ...c,
+        order: i,
+        label: String.fromCharCode(65 + i),
+        timeLimitMinutes: TIME_LIMITS[c.difficulty] || 25,
+        tests: c.tests?.filter((t: any) => !t.isHidden) || [],
+        locked: false,
+        solved: false,
+      }));
+    }
+
+    // Get team's accepted submissions
+    const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
+    if (!team) throw new NotFoundException('Team not found');
+
+    const teamACSubs = await this.prisma.hackathonSubmission.findMany({
+      where: {
+        hackathonId,
+        teamId,
+        verdict: 'AC',
+      },
+      distinct: ['challengeId'],
+      select: { challengeId: true, submittedAt: true },
+    });
+
+    const solvedChallengeIds = new Set(teamACSubs.map((s) => s.challengeId));
+
+    // Sequential unlock: find the first unsolved problem index
+    let firstUnsolvedIndex = orderedChallenges.length; // all solved
+    for (let i = 0; i < orderedChallenges.length; i++) {
+      if (!solvedChallengeIds.has(orderedChallenges[i]!.id)) {
+        firstUnsolvedIndex = i;
+        break;
+      }
+    }
+
+    // Q5: Team-wide problem timer — auto-start timer for current unlocked unsolved problem
+    const problemStartTimes: Record<string, string> = (team.problemStartTimes as Record<string, string>) || {};
+    let timersUpdated = false;
+
+    if (firstUnsolvedIndex < orderedChallenges.length) {
+      const currentChallengeId = orderedChallenges[firstUnsolvedIndex]!.id;
+      if (!problemStartTimes[currentChallengeId]) {
+        problemStartTimes[currentChallengeId] = new Date().toISOString();
+        timersUpdated = true;
+      }
+    }
+
+    // Persist updated timers if changed
+    if (timersUpdated) {
+      await this.prisma.hackathonTeam.update({
+        where: { id: teamId },
+        data: { problemStartTimes },
+      });
+    }
+
+    return orderedChallenges.map((c: any, i: number) => {
+      const solved = solvedChallengeIds.has(c.id);
+      const locked = i > firstUnsolvedIndex; // Can only see solved + current
+      return {
+        id: c.id,
+        order: i,
+        label: String.fromCharCode(65 + i),
+        title: locked ? `Problem ${String.fromCharCode(65 + i)}` : c.title,
+        difficulty: c.difficulty,
+        descriptionMd: locked ? '' : c.descriptionMd,
+        tags: locked ? [] : c.tags,
+        constraints: locked ? null : c.constraints,
+        hints: locked ? [] : c.hints,
+        examples: locked ? [] : c.examples,
+        tests: locked ? [] : (c.tests?.filter((t: any) => !t.isHidden) || []),
+        allowedLanguages: c.allowedLanguages,
+        category: c.category,
+        timeLimitMinutes: TIME_LIMITS[c.difficulty] || 25,
+        locked,
+        solved,
+        // Q5: Team-wide timer — startedAt is the same for all team members
+        startedAt: problemStartTimes[c.id] || null,
+      };
+    });
+  }
+
   async update(id: string, dto: UpdateHackathonDto) {
     const hackathon = await this.prisma.hackathon.findUnique({ where: { id } });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -167,6 +293,14 @@ export class HackathonsService {
   async transitionStatus(hackathonId: string, newStatus: string, adminId: string) {
     const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    // Auto-check-in all registered teams when admin starts the competition
+    if (newStatus === 'active') {
+      await this.prisma.hackathonTeam.updateMany({
+        where: { hackathonId: hackathon.id, isCheckedIn: false },
+        data: { isCheckedIn: true },
+      });
+    }
 
     await this.validateTransition(hackathon, newStatus);
 

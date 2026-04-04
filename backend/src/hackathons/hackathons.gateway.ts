@@ -15,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { HackathonChatService } from './hackathon-chat.service';
 import { HackathonClarificationService } from './hackathon-clarification.service';
 import { HackathonYjsService } from './hackathon-yjs.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -35,6 +36,7 @@ export class HackathonsGateway implements OnGatewayConnection, OnGatewayDisconne
     private readonly chatService: HackathonChatService,
     private readonly clarificationService: HackathonClarificationService,
     private readonly yjsService: HackathonYjsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // ────────────────────────────────────────────────────────
@@ -166,6 +168,48 @@ export class HackathonsGateway implements OnGatewayConnection, OnGatewayDisconne
     @ConnectedSocket() client: Socket,
   ) {
     client.to(`team:${data.teamId}`).emit('collab:awareness', data.awareness);
+  }
+
+  // ────────────────────────────────────────────────────────
+  // T066b — Anti-cheat event logging
+  // ────────────────────────────────────────────────────────
+
+  @SubscribeMessage('anticheat_event')
+  async handleAnticheatEvent(
+    @MessageBody() data: { hackathonId: string; teamId: string; eventType: string; details?: any },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userId = this.clientMaps.get(client.id);
+    if (!userId) return;
+
+    const event = {
+      userId,
+      teamId: data.teamId,
+      eventType: data.eventType, // 'tab_switch' | 'copy_attempt' | 'paste_attempt' | 'blur' | 'fullscreen_exit'
+      details: data.details,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.logger.warn(`🚨 ANTICHEAT [${data.eventType}] User=${userId} Team=${data.teamId} Hackathon=${data.hackathonId}`);
+
+    // Q3: Persist violation count server-side
+    try {
+      const updated = await this.prisma.hackathonTeam.update({
+        where: { id: data.teamId },
+        data: { anticheatViolations: { increment: 1 } },
+        select: { anticheatViolations: true },
+      });
+      // Include persisted count in the event for admin + client
+      (event as any).totalViolations = updated.anticheatViolations;
+    } catch (err) {
+      this.logger.error(`Failed to persist anticheat violation: ${err.message}`);
+    }
+
+    // Notify admins in real-time
+    this.server.to(`admin:${data.hackathonId}`).emit('admin:anticheat_alert', event);
+
+    // Send back the persisted violation count to the reporter
+    client.emit('anticheat:violation_count', { totalViolations: (event as any).totalViolations });
   }
 
   // ────────────────────────────────────────────────────────

@@ -30,9 +30,9 @@ const ThemeContext = createContext<
 >(undefined);
 
 const THEME_LEVEL_REQUIREMENTS: Record<ThemeName, number> = {
-  cyber: 1,
+  samurai: 1,
   space: 20,
-  samurai: 40,
+  cyber: 40,
   pixel: 60,
   mythic: 80,
   sports: 100,
@@ -44,7 +44,7 @@ export function ThemeProvider({
   children: ReactNode;
 }) {
   const { user } = useAuth();
-  const [theme, setThemeState] = useState<ThemeName>("cyber");
+  const [theme, setThemeState] = useState<ThemeName>("samurai");
   const [colorScheme, setColorScheme] =
     useState<ColorScheme>("dark");
 

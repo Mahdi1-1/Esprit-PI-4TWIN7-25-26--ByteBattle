@@ -141,6 +141,7 @@ export const DuelResult: React.FC = () => {
                 <img
                   src={duelData.player1.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${duelData.player1.username}`}
                   alt={duelData.player1.username}
+                  referrerPolicy="no-referrer"
                   className="w-12 h-12 rounded-full border-2 border-[var(--brand-primary)]"
                 />
                 <div>
@@ -184,6 +185,7 @@ export const DuelResult: React.FC = () => {
                 <img
                   src={duelData.player2.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${duelData.player2.username}`}
                   alt={duelData.player2.username}
+                  referrerPolicy="no-referrer"
                   className="w-12 h-12 rounded-full border-2 border-[var(--brand-primary)]"
                 />
                 <div>

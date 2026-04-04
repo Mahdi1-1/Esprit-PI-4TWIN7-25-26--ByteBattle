@@ -29,6 +29,12 @@ export class DuelsController {
     return this.duelsService.createDuel(userId, difficulty);
   }
 
+  @Get('queue/stats')
+  @ApiOperation({ summary: 'Get duel queue stats (online players, waiting duels)' })
+  async getQueueStats() {
+    return this.duelsService.getQueueStats();
+  }
+
   @Get('leaderboard')
   @ApiOperation({ summary: 'Get duels leaderboard' })
   async getLeaderboard(@Query('limit') limit = '10') {
@@ -45,9 +51,21 @@ export class DuelsController {
     return this.duelsService.getUserDuels(userId, parseInt(page), parseInt(limit));
   }
 
+  @Get('my-stats')
+  @ApiOperation({ summary: 'Get current user duel stats' })
+  async getMyStats(@CurrentUser('id') userId: string) {
+    return this.duelsService.getUserStats(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get active duel state' })
   async getDuelState(@Param('id') id: string) {
     return this.duelsService.getDuelState(id);
+  }
+
+  @Get(':id/result')
+  @ApiOperation({ summary: 'Get duel result' })
+  async getDuelResult(@Param('id') id: string) {
+    return this.duelsService.getDuelResult(id);
   }
 }

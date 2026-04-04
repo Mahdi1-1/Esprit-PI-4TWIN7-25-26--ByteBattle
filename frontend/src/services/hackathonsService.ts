@@ -12,6 +12,12 @@ export const hackathonsService = {
     return data;
   },
 
+  async getHackathonChallenges(hackathonId: string, teamId?: string) {
+    const params = teamId ? { teamId } : {};
+    const { data } = await api.get(`/hackathons/${hackathonId}/challenges`, { params });
+    return data;
+  },
+
   // ── Scoreboard ─────────────────────────────────────────
   async getScoreboard(id: string) {
     const { data } = await api.get(`/hackathons/${id}/scoreboard`);

@@ -409,6 +409,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                     <img
                       src={displayAvatar}
                       alt={displayUsername}
+                      referrerPolicy="no-referrer"
                       className="
                         w-8 h-8 sm:w-9 sm:h-9
                         rounded-full

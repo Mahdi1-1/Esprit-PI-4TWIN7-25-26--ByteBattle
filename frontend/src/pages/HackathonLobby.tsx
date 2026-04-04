@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { CountdownTimer } from '../components/Timer';
 import { Layout } from '../components/Layout';
-import { Users, Copy, Check, LogOut, Loader, UserPlus } from 'lucide-react';
+import { Users, Copy, Check, LogOut, Loader, UserPlus, Rocket } from 'lucide-react';
 import { hackathonsService } from '../services/hackathonsService';
 import { HackathonPageSkeleton, HackathonError } from '../components/HackathonSkeletons';
+import { io, Socket } from 'socket.io-client';
 
 export function HackathonLobby() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,9 @@ export function HackathonLobby() {
   const [joinCode, setJoinCode] = useState('');
   const [codeCopied, setCodeCopied] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [launchCountdown, setLaunchCountdown] = useState<number | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -27,6 +31,10 @@ export function HackathonLobby() {
         const data = await hackathonsService.getById(id);
         setHackathon(data);
         setError(null);
+        // If the hackathon is already active (user refreshed), go straight to workspace
+        if (data?.status === 'active') {
+          navigate(`/hackathon/${id}/workspace`, { replace: true });
+        }
       } catch (err) {
         console.error(err);
         setError('Failed to load hackathon');
@@ -36,6 +44,48 @@ export function HackathonLobby() {
     };
     fetch();
   }, [id]);
+
+  // ── WebSocket: listen for status_change and auto-open workspace ──
+  useEffect(() => {
+    if (!id) return;
+    const token = localStorage.getItem('token');
+    const socket = io('http://localhost:4001/hackathons', {
+      auth: { token: token ? `Bearer ${token}` : undefined },
+      transports: ['websocket'],
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join_hackathon', { hackathonId: id });
+    });
+
+    socket.on('hackathon:status_change', (payload: { hackathonId: string; newStatus: string }) => {
+      if (payload.hackathonId !== id) return;
+
+      if (payload.newStatus === 'active') {
+        // Show a 3-second countdown then navigate to workspace
+        setLaunchCountdown(3);
+        let count = 3;
+        countdownRef.current = setInterval(() => {
+          count -= 1;
+          setLaunchCountdown(count);
+          if (count <= 0) {
+            clearInterval(countdownRef.current!);
+            navigate(`/hackathon/${id}/workspace`, { replace: true });
+          }
+        }, 1000);
+      }
+
+      if (payload.newStatus === 'ended') {
+        navigate(`/hackathon/${id}/results`, { replace: true });
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [id, navigate]);
 
   const myTeam = useMemo(() => {
     if (!hackathon?.hackathonTeams) return null;
@@ -145,7 +195,8 @@ export function HackathonLobby() {
   const isCheckinPhase = hackathon.status === 'checkin';
 
   return (
-    <Layout>
+    <>
+      <Layout>
       <Navbar />
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
@@ -293,5 +344,18 @@ export function HackathonLobby() {
         )}
       </div>
     </Layout>
+
+    {/* ── Launch countdown overlay ── */}
+    {launchCountdown !== null && (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+        <Rocket className="w-16 h-16 text-[var(--brand-primary)] mb-6 animate-bounce" />
+        <h2 className="text-white text-3xl font-bold mb-2">🚀 Hackathon is starting!</h2>
+        <p className="text-[var(--text-muted)] mb-6">Opening workspace in…</p>
+        <div className="w-24 h-24 rounded-full border-4 border-[var(--brand-primary)] flex items-center justify-center">
+          <span className="text-5xl font-bold text-[var(--brand-primary)]">{launchCountdown}</span>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

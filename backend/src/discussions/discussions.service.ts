@@ -50,15 +50,32 @@ export class DiscussionsService {
       where.category = query.category;
     }
 
+    // Tags filter (from category sidebar)
     if (query.tags) {
       where.tags = { hasSome: query.tags.split(',') };
     }
 
+    // Search filter — searches in title, content, and tags
     if (query.search) {
-      where.OR = [
-        { title: { contains: query.search, mode: 'insensitive' } },
-        { content: { contains: query.search, mode: 'insensitive' } }
-      ];
+      const searchTerm = query.search.trim();
+      if (searchTerm) {
+        // If tags filter is also active, wrap everything in AND
+        const searchOR = [
+          { title: { contains: searchTerm, mode: 'insensitive' as const } },
+          { content: { contains: searchTerm, mode: 'insensitive' as const } },
+          { tags: { hasSome: [searchTerm] } },
+        ];
+        if (where.tags) {
+          // Both tags filter + search: use AND to combine
+          where.AND = [
+            { tags: where.tags },
+            { OR: searchOR },
+          ];
+          delete where.tags;
+        } else {
+          where.OR = searchOR;
+        }
+      }
     }
 
     let orderBy: any = { createdAt: 'desc' };
@@ -176,6 +193,17 @@ export class DiscussionsService {
     if (!discussion) throw new NotFoundException('Discussion not found');
     if (discussion.authorId !== userId) throw new ForbiddenException('Not the author');
 
+    // Save the current state as a revision before applying the update
+    await this.prisma.discussionRevision.create({
+      data: {
+        discussionId: id,
+        editorId: userId,
+        title: discussion.title,
+        content: discussion.content,
+        tags: discussion.tags,
+      },
+    });
+
     return this.prisma.discussion.update({
       where: { id },
       data: dto,
@@ -183,6 +211,21 @@ export class DiscussionsService {
         author: { select: { id: true, username: true, profileImage: true } },
       },
     });
+  }
+
+  async getRevisions(discussionId: string) {
+    const discussion = await this.prisma.discussion.findUnique({ where: { id: discussionId } });
+    if (!discussion) throw new NotFoundException('Discussion not found');
+
+    const revisions = await this.prisma.discussionRevision.findMany({
+      where: { discussionId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        editor: { select: { id: true, username: true, profileImage: true } },
+      },
+    });
+
+    return revisions;
   }
 
   async deleteDiscussion(id: string, userId: string) {

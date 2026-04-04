@@ -98,6 +98,7 @@ export function Profile() {
                   <img
                     src={profileService.getPhotoUrl(user.profileImage, user.username)}
                     alt={user.username}
+                    referrerPolicy="no-referrer"
                     className="w-20 h-20 rounded-full border-4 border-[var(--brand-primary)] object-cover bg-[var(--surface-2)]"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`;

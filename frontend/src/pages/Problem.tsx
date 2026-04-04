@@ -30,9 +30,299 @@ import { toast } from 'react-hot-toast';
 const LANGUAGES = [
   { value: 'python', label: 'Python 3' },
   { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
   { value: 'cpp', label: 'C++' },
+  { value: 'c', label: 'C' },
   { value: 'java', label: 'Java' },
+  { value: 'go', label: 'Go' },
+  { value: 'rust', label: 'Rust' },
 ];
+
+const LANG_EXTENSIONS: Record<string, string> = {
+  python: 'py',
+  javascript: 'js',
+  typescript: 'ts',
+  cpp: 'cpp',
+  c: 'c',
+  java: 'java',
+  go: 'go',
+  rust: 'rs',
+};
+
+const CODE_TEMPLATES: Record<string, string> = {
+  python: `import sys
+
+def solution():
+    # Votre code ici
+    data = sys.stdin.read().split()
+    pass
+
+if __name__ == "__main__":
+    solution()
+`,
+  javascript: `const readline = require('readline');
+
+function solution() {
+  // Votre code ici
+}
+
+// Lecture de l'entrée
+const rl = readline.createInterface({ input: process.stdin });
+const lines = [];
+rl.on('line', (line) => lines.push(line));
+rl.on('close', () => {
+  solution(lines);
+});
+`,
+  typescript: `import * as readline from 'readline';
+
+function solution(lines: string[]): void {
+  // Votre code ici
+}
+
+const rl = readline.createInterface({ input: process.stdin });
+const lines: string[] = [];
+rl.on('line', (line: string) => lines.push(line));
+rl.on('close', () => {
+  solution(lines);
+});
+`,
+  cpp: `#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    // Votre code ici
+
+    return 0;
+}
+`,
+  c: `#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+    // Votre code ici
+
+    return 0;
+}
+`,
+  java: `import java.util.*;
+
+public class Solution {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        // Votre code ici
+
+        sc.close();
+    }
+}
+`,
+  go: `package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
+
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+	_ = reader
+	// Votre code ici
+	fmt.Println()
+}
+`,
+  rust: `use std::io::{self, BufRead};
+
+fn main() {
+    let stdin = io::stdin();
+    let mut lines = stdin.lock().lines();
+    // Votre code ici
+}
+`,
+};
+
+const LANG_COMPLETIONS: Record<string, { label: string; kind: string; insertText: string; detail?: string }[]> = {
+  python: [
+    { label: 'print', kind: 'Function', insertText: 'print(${1})', detail: 'Print to stdout' },
+    { label: 'input', kind: 'Function', insertText: 'input(${1})', detail: 'Read from stdin' },
+    { label: 'range', kind: 'Function', insertText: 'range(${1})', detail: 'Generate a range' },
+    { label: 'len', kind: 'Function', insertText: 'len(${1})', detail: 'Length of iterable' },
+    { label: 'int', kind: 'Function', insertText: 'int(${1})', detail: 'Convert to integer' },
+    { label: 'str', kind: 'Function', insertText: 'str(${1})', detail: 'Convert to string' },
+    { label: 'float', kind: 'Function', insertText: 'float(${1})', detail: 'Convert to float' },
+    { label: 'list', kind: 'Function', insertText: 'list(${1})', detail: 'Create a list' },
+    { label: 'dict', kind: 'Function', insertText: 'dict(${1})', detail: 'Create a dict' },
+    { label: 'set', kind: 'Function', insertText: 'set(${1})', detail: 'Create a set' },
+    { label: 'sorted', kind: 'Function', insertText: 'sorted(${1})', detail: 'Return sorted list' },
+    { label: 'enumerate', kind: 'Function', insertText: 'enumerate(${1})', detail: 'Enumerate iterable' },
+    { label: 'zip', kind: 'Function', insertText: 'zip(${1})', detail: 'Zip iterables' },
+    { label: 'map', kind: 'Function', insertText: 'map(${1})', detail: 'Map function' },
+    { label: 'filter', kind: 'Function', insertText: 'filter(${1})', detail: 'Filter iterable' },
+    { label: 'sum', kind: 'Function', insertText: 'sum(${1})', detail: 'Sum of iterable' },
+    { label: 'min', kind: 'Function', insertText: 'min(${1})', detail: 'Minimum value' },
+    { label: 'max', kind: 'Function', insertText: 'max(${1})', detail: 'Maximum value' },
+    { label: 'abs', kind: 'Function', insertText: 'abs(${1})', detail: 'Absolute value' },
+    { label: 'isinstance', kind: 'Function', insertText: 'isinstance(${1}, ${2})', detail: 'Check type' },
+    { label: 'append', kind: 'Method', insertText: 'append(${1})', detail: 'Append to list' },
+    { label: 'extend', kind: 'Method', insertText: 'extend(${1})', detail: 'Extend list' },
+    { label: 'split', kind: 'Method', insertText: 'split(${1})', detail: 'Split string' },
+    { label: 'join', kind: 'Method', insertText: 'join(${1})', detail: 'Join strings' },
+    { label: 'strip', kind: 'Method', insertText: 'strip()', detail: 'Strip whitespace' },
+    { label: 'replace', kind: 'Method', insertText: 'replace(${1}, ${2})', detail: 'Replace in string' },
+    { label: 'for', kind: 'Keyword', insertText: 'for ${1:item} in ${2:iterable}:\n\t${3}', detail: 'for loop' },
+    { label: 'while', kind: 'Keyword', insertText: 'while ${1:condition}:\n\t${2}', detail: 'while loop' },
+    { label: 'if', kind: 'Keyword', insertText: 'if ${1:condition}:\n\t${2}', detail: 'if statement' },
+    { label: 'elif', kind: 'Keyword', insertText: 'elif ${1:condition}:\n\t${2}', detail: 'elif clause' },
+    { label: 'else', kind: 'Keyword', insertText: 'else:\n\t${1}', detail: 'else clause' },
+    { label: 'def', kind: 'Keyword', insertText: 'def ${1:name}(${2:params}):\n\t${3}', detail: 'function definition' },
+    { label: 'class', kind: 'Keyword', insertText: 'class ${1:Name}:\n\tdef __init__(self${2:, params}):\n\t\t${3}', detail: 'class definition' },
+    { label: 'return', kind: 'Keyword', insertText: 'return ${1}', detail: 'return statement' },
+    { label: 'import', kind: 'Keyword', insertText: 'import ${1}', detail: 'import module' },
+    { label: 'from', kind: 'Keyword', insertText: 'from ${1} import ${2}', detail: 'from import' },
+    { label: 'try', kind: 'Keyword', insertText: 'try:\n\t${1}\nexcept ${2:Exception} as e:\n\t${3}', detail: 'try/except block' },
+    { label: 'lambda', kind: 'Keyword', insertText: 'lambda ${1:x}: ${2}', detail: 'lambda expression' },
+    { label: 'with', kind: 'Keyword', insertText: 'with ${1} as ${2}:\n\t${3}', detail: 'with statement' },
+    { label: 'collections', kind: 'Module', insertText: 'from collections import ${1:deque}', detail: 'collections module' },
+    { label: 'heapq', kind: 'Module', insertText: 'import heapq', detail: 'heapq module' },
+    { label: 'bisect', kind: 'Module', insertText: 'import bisect', detail: 'bisect module' },
+    { label: 'itertools', kind: 'Module', insertText: 'import itertools', detail: 'itertools module' },
+    { label: 'math', kind: 'Module', insertText: 'import math', detail: 'math module' },
+    { label: 'sys', kind: 'Module', insertText: 'import sys', detail: 'sys module' },
+  ],
+  cpp: [
+    { label: 'cout', kind: 'Function', insertText: 'cout << ${1} << endl;', detail: 'Print to stdout' },
+    { label: 'cin', kind: 'Function', insertText: 'cin >> ${1};', detail: 'Read from stdin' },
+    { label: 'endl', kind: 'Keyword', insertText: 'endl', detail: 'End line' },
+    { label: 'vector', kind: 'Class', insertText: 'vector<${1:int}> ${2:v};', detail: 'std::vector' },
+    { label: 'string', kind: 'Class', insertText: 'string ${1:s};', detail: 'std::string' },
+    { label: 'map', kind: 'Class', insertText: 'map<${1:string}, ${2:int}> ${3:m};', detail: 'std::map' },
+    { label: 'unordered_map', kind: 'Class', insertText: 'unordered_map<${1:string}, ${2:int}> ${3:m};', detail: 'std::unordered_map' },
+    { label: 'set', kind: 'Class', insertText: 'set<${1:int}> ${2:s};', detail: 'std::set' },
+    { label: 'unordered_set', kind: 'Class', insertText: 'unordered_set<${1:int}> ${2:s};', detail: 'std::unordered_set' },
+    { label: 'queue', kind: 'Class', insertText: 'queue<${1:int}> ${2:q};', detail: 'std::queue' },
+    { label: 'stack', kind: 'Class', insertText: 'stack<${1:int}> ${2:s};', detail: 'std::stack' },
+    { label: 'priority_queue', kind: 'Class', insertText: 'priority_queue<${1:int}> ${2:pq};', detail: 'std::priority_queue' },
+    { label: 'pair', kind: 'Class', insertText: 'pair<${1:int}, ${2:int}> ${3:p};', detail: 'std::pair' },
+    { label: 'sort', kind: 'Function', insertText: 'sort(${1:v}.begin(), ${1:v}.end());', detail: 'Sort container' },
+    { label: 'reverse', kind: 'Function', insertText: 'reverse(${1:v}.begin(), ${1:v}.end());', detail: 'Reverse container' },
+    { label: 'push_back', kind: 'Method', insertText: 'push_back(${1});', detail: 'Add to end' },
+    { label: 'size', kind: 'Method', insertText: 'size()', detail: 'Container size' },
+    { label: 'empty', kind: 'Method', insertText: 'empty()', detail: 'Check if empty' },
+    { label: 'begin', kind: 'Method', insertText: 'begin()', detail: 'Iterator begin' },
+    { label: 'end', kind: 'Method', insertText: 'end()', detail: 'Iterator end' },
+    { label: 'for', kind: 'Keyword', insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n\t${3}\n}', detail: 'for loop' },
+    { label: 'foreach', kind: 'Keyword', insertText: 'for (auto& ${1:x} : ${2:container}) {\n\t${3}\n}', detail: 'range-based for' },
+    { label: 'while', kind: 'Keyword', insertText: 'while (${1:condition}) {\n\t${2}\n}', detail: 'while loop' },
+    { label: 'if', kind: 'Keyword', insertText: 'if (${1:condition}) {\n\t${2}\n}', detail: 'if statement' },
+    { label: 'include', kind: 'Keyword', insertText: '#include <${1:iostream}>', detail: '#include directive' },
+    { label: 'main', kind: 'Function', insertText: 'int main() {\n\t${1}\n\treturn 0;\n}', detail: 'main function' },
+  ],
+  c: [
+    { label: 'printf', kind: 'Function', insertText: 'printf("${1:%s}\\n", ${2});', detail: 'Print to stdout' },
+    { label: 'scanf', kind: 'Function', insertText: 'scanf("${1:%d}", &${2});', detail: 'Read from stdin' },
+    { label: 'malloc', kind: 'Function', insertText: 'malloc(${1:size} * sizeof(${2:int}))', detail: 'Allocate memory' },
+    { label: 'free', kind: 'Function', insertText: 'free(${1:ptr});', detail: 'Free memory' },
+    { label: 'strlen', kind: 'Function', insertText: 'strlen(${1:s})', detail: 'String length' },
+    { label: 'strcmp', kind: 'Function', insertText: 'strcmp(${1:s1}, ${2:s2})', detail: 'Compare strings' },
+    { label: 'strcpy', kind: 'Function', insertText: 'strcpy(${1:dest}, ${2:src});', detail: 'Copy string' },
+    { label: 'memset', kind: 'Function', insertText: 'memset(${1:ptr}, ${2:0}, ${3:size});', detail: 'Set memory' },
+    { label: 'memcpy', kind: 'Function', insertText: 'memcpy(${1:dest}, ${2:src}, ${3:size});', detail: 'Copy memory' },
+    { label: 'sizeof', kind: 'Keyword', insertText: 'sizeof(${1:type})', detail: 'Size of type' },
+    { label: 'for', kind: 'Keyword', insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n\t${3}\n}', detail: 'for loop' },
+    { label: 'while', kind: 'Keyword', insertText: 'while (${1:condition}) {\n\t${2}\n}', detail: 'while loop' },
+    { label: 'if', kind: 'Keyword', insertText: 'if (${1:condition}) {\n\t${2}\n}', detail: 'if statement' },
+    { label: 'struct', kind: 'Keyword', insertText: 'typedef struct {\n\t${1}\n} ${2:Name};', detail: 'struct definition' },
+    { label: 'include', kind: 'Keyword', insertText: '#include <${1:stdio.h}>', detail: '#include directive' },
+    { label: 'main', kind: 'Function', insertText: 'int main() {\n\t${1}\n\treturn 0;\n}', detail: 'main function' },
+  ],
+  java: [
+    { label: 'sout', kind: 'Function', insertText: 'System.out.println(${1});', detail: 'Print to stdout' },
+    { label: 'System.out.println', kind: 'Function', insertText: 'System.out.println(${1});', detail: 'Print to stdout' },
+    { label: 'Scanner', kind: 'Class', insertText: 'Scanner ${1:sc} = new Scanner(System.in);', detail: 'Scanner for input' },
+    { label: 'nextInt', kind: 'Method', insertText: 'nextInt()', detail: 'Read integer' },
+    { label: 'nextLine', kind: 'Method', insertText: 'nextLine()', detail: 'Read line' },
+    { label: 'nextDouble', kind: 'Method', insertText: 'nextDouble()', detail: 'Read double' },
+    { label: 'ArrayList', kind: 'Class', insertText: 'ArrayList<${1:Integer}> ${2:list} = new ArrayList<>();', detail: 'ArrayList' },
+    { label: 'HashMap', kind: 'Class', insertText: 'HashMap<${1:String}, ${2:Integer}> ${3:map} = new HashMap<>();', detail: 'HashMap' },
+    { label: 'HashSet', kind: 'Class', insertText: 'HashSet<${1:Integer}> ${2:set} = new HashSet<>();', detail: 'HashSet' },
+    { label: 'LinkedList', kind: 'Class', insertText: 'LinkedList<${1:Integer}> ${2:list} = new LinkedList<>();', detail: 'LinkedList' },
+    { label: 'PriorityQueue', kind: 'Class', insertText: 'PriorityQueue<${1:Integer}> ${2:pq} = new PriorityQueue<>();', detail: 'PriorityQueue' },
+    { label: 'Stack', kind: 'Class', insertText: 'Stack<${1:Integer}> ${2:stack} = new Stack<>();', detail: 'Stack' },
+    { label: 'Arrays.sort', kind: 'Function', insertText: 'Arrays.sort(${1:arr});', detail: 'Sort array' },
+    { label: 'Collections.sort', kind: 'Function', insertText: 'Collections.sort(${1:list});', detail: 'Sort collection' },
+    { label: 'Math.max', kind: 'Function', insertText: 'Math.max(${1:a}, ${2:b})', detail: 'Maximum' },
+    { label: 'Math.min', kind: 'Function', insertText: 'Math.min(${1:a}, ${2:b})', detail: 'Minimum' },
+    { label: 'Math.abs', kind: 'Function', insertText: 'Math.abs(${1:a})', detail: 'Absolute value' },
+    { label: 'String.valueOf', kind: 'Function', insertText: 'String.valueOf(${1})', detail: 'Convert to string' },
+    { label: 'Integer.parseInt', kind: 'Function', insertText: 'Integer.parseInt(${1})', detail: 'Parse integer' },
+    { label: 'for', kind: 'Keyword', insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n\t${3}\n}', detail: 'for loop' },
+    { label: 'foreach', kind: 'Keyword', insertText: 'for (${1:int} ${2:x} : ${3:arr}) {\n\t${4}\n}', detail: 'enhanced for' },
+    { label: 'while', kind: 'Keyword', insertText: 'while (${1:condition}) {\n\t${2}\n}', detail: 'while loop' },
+    { label: 'if', kind: 'Keyword', insertText: 'if (${1:condition}) {\n\t${2}\n}', detail: 'if statement' },
+    { label: 'main', kind: 'Function', insertText: 'public static void main(String[] args) {\n\t${1}\n}', detail: 'main method' },
+  ],
+  go: [
+    { label: 'fmt.Println', kind: 'Function', insertText: 'fmt.Println(${1})', detail: 'Print line' },
+    { label: 'fmt.Printf', kind: 'Function', insertText: 'fmt.Printf("${1}\\n", ${2})', detail: 'Formatted print' },
+    { label: 'fmt.Scanf', kind: 'Function', insertText: 'fmt.Scanf("${1}", &${2})', detail: 'Scan input' },
+    { label: 'fmt.Scan', kind: 'Function', insertText: 'fmt.Scan(&${1})', detail: 'Scan input' },
+    { label: 'fmt.Sprintf', kind: 'Function', insertText: 'fmt.Sprintf("${1}", ${2})', detail: 'Format string' },
+    { label: 'make', kind: 'Function', insertText: 'make(${1:[]int}, ${2:0})', detail: 'Make slice/map/chan' },
+    { label: 'append', kind: 'Function', insertText: 'append(${1:slice}, ${2:elem})', detail: 'Append to slice' },
+    { label: 'len', kind: 'Function', insertText: 'len(${1})', detail: 'Length' },
+    { label: 'cap', kind: 'Function', insertText: 'cap(${1})', detail: 'Capacity' },
+    { label: 'sort.Ints', kind: 'Function', insertText: 'sort.Ints(${1})', detail: 'Sort ints' },
+    { label: 'sort.Strings', kind: 'Function', insertText: 'sort.Strings(${1})', detail: 'Sort strings' },
+    { label: 'sort.Slice', kind: 'Function', insertText: 'sort.Slice(${1:s}, func(i, j int) bool {\n\treturn ${1:s}[i] < ${1:s}[j]\n})', detail: 'Sort slice' },
+    { label: 'strconv.Atoi', kind: 'Function', insertText: 'strconv.Atoi(${1})', detail: 'String to int' },
+    { label: 'strconv.Itoa', kind: 'Function', insertText: 'strconv.Itoa(${1})', detail: 'Int to string' },
+    { label: 'strings.Split', kind: 'Function', insertText: 'strings.Split(${1:s}, "${2: "})' , detail: 'Split string' },
+    { label: 'strings.Join', kind: 'Function', insertText: 'strings.Join(${1:slice}, "${2:,}")', detail: 'Join strings' },
+    { label: 'for', kind: 'Keyword', insertText: 'for ${1:i} := 0; ${1:i} < ${2:n}; ${1:i}++ {\n\t${3}\n}', detail: 'for loop' },
+    { label: 'forrange', kind: 'Keyword', insertText: 'for ${1:i}, ${2:v} := range ${3:slice} {\n\t${4}\n}', detail: 'for range' },
+    { label: 'if', kind: 'Keyword', insertText: 'if ${1:condition} {\n\t${2}\n}', detail: 'if statement' },
+    { label: 'func', kind: 'Keyword', insertText: 'func ${1:name}(${2:params}) ${3:returnType} {\n\t${4}\n}', detail: 'function' },
+    { label: 'iferr', kind: 'Keyword', insertText: 'if err != nil {\n\t${1}\n}', detail: 'if err != nil' },
+    { label: 'bufio.NewReader', kind: 'Function', insertText: 'bufio.NewReader(os.Stdin)', detail: 'Buffered reader' },
+    { label: 'bufio.NewScanner', kind: 'Function', insertText: 'bufio.NewScanner(os.Stdin)', detail: 'Scanner' },
+  ],
+  rust: [
+    { label: 'println!', kind: 'Function', insertText: 'println!("${1}", ${2});', detail: 'Print line' },
+    { label: 'print!', kind: 'Function', insertText: 'print!("${1}", ${2});', detail: 'Print' },
+    { label: 'eprintln!', kind: 'Function', insertText: 'eprintln!("${1}", ${2});', detail: 'Print to stderr' },
+    { label: 'format!', kind: 'Function', insertText: 'format!("${1}", ${2})', detail: 'Format string' },
+    { label: 'vec!', kind: 'Function', insertText: 'vec![${1}]', detail: 'Create Vec' },
+    { label: 'String::new', kind: 'Function', insertText: 'String::new()', detail: 'New String' },
+    { label: 'String::from', kind: 'Function', insertText: 'String::from("${1}")', detail: 'String from str' },
+    { label: 'Vec::new', kind: 'Function', insertText: 'Vec::new()', detail: 'New Vec' },
+    { label: 'HashMap::new', kind: 'Function', insertText: 'HashMap::new()', detail: 'New HashMap' },
+    { label: 'HashSet::new', kind: 'Function', insertText: 'HashSet::new()', detail: 'New HashSet' },
+    { label: 'read_line', kind: 'Method', insertText: 'read_line(&mut ${1:input})', detail: 'Read line from stdin' },
+    { label: 'parse', kind: 'Method', insertText: 'parse::<${1:i32}>()', detail: 'Parse string' },
+    { label: 'trim', kind: 'Method', insertText: 'trim()', detail: 'Trim whitespace' },
+    { label: 'split_whitespace', kind: 'Method', insertText: 'split_whitespace()', detail: 'Split by whitespace' },
+    { label: 'collect', kind: 'Method', insertText: 'collect::<${1:Vec<_>}>()', detail: 'Collect iterator' },
+    { label: 'iter', kind: 'Method', insertText: 'iter()', detail: 'Iterator' },
+    { label: 'map', kind: 'Method', insertText: 'map(|${1:x}| ${2})', detail: 'Map iterator' },
+    { label: 'filter', kind: 'Method', insertText: 'filter(|${1:x}| ${2})', detail: 'Filter iterator' },
+    { label: 'unwrap', kind: 'Method', insertText: 'unwrap()', detail: 'Unwrap Result/Option' },
+    { label: 'push', kind: 'Method', insertText: 'push(${1});', detail: 'Push to Vec' },
+    { label: 'len', kind: 'Method', insertText: 'len()', detail: 'Length' },
+    { label: 'sort', kind: 'Method', insertText: 'sort();', detail: 'Sort' },
+    { label: 'for', kind: 'Keyword', insertText: 'for ${1:item} in ${2:iter} {\n\t${3}\n}', detail: 'for loop' },
+    { label: 'while', kind: 'Keyword', insertText: 'while ${1:condition} {\n\t${2}\n}', detail: 'while loop' },
+    { label: 'if', kind: 'Keyword', insertText: 'if ${1:condition} {\n\t${2}\n}', detail: 'if statement' },
+    { label: 'let', kind: 'Keyword', insertText: 'let ${1:name} = ${2};', detail: 'Variable binding' },
+    { label: 'letmut', kind: 'Keyword', insertText: 'let mut ${1:name} = ${2};', detail: 'Mutable binding' },
+    { label: 'fn', kind: 'Keyword', insertText: 'fn ${1:name}(${2:params}) -> ${3:ReturnType} {\n\t${4}\n}', detail: 'Function' },
+    { label: 'match', kind: 'Keyword', insertText: 'match ${1:value} {\n\t${2:pattern} => ${3},\n\t_ => ${4},\n}', detail: 'Match expression' },
+    { label: 'readinput', kind: 'Keyword', insertText: 'let mut input = String::new();\nio::stdin().read_line(&mut input).unwrap();\nlet input = input.trim();', detail: 'Read stdin line' },
+  ],
+};
 
 type Tab = 'statement' | 'tests' | 'submissions' | 'editorial';
 
@@ -71,16 +361,9 @@ export function Problem() {
         // Set default code template based on selected language
         if (data.allowedLanguages?.length > 0) {
           const firstLang = data.allowedLanguages[0];
-          setLanguage(firstLang);
-          if (firstLang === 'python') {
-            setCode(`def solution():\n    # Votre code ici\n    pass`);
-          } else if (firstLang === 'javascript') {
-            setCode(`function solution() {\n  // Votre code ici\n}`);
-          } else {
-            setCode(`// Votre code ici`);
-          }
+          setCode(CODE_TEMPLATES[firstLang] || '// Votre code ici\n');
         } else {
-          setCode(`// Votre code ici`);
+          setCode(CODE_TEMPLATES[language] || '// Votre code ici\n');
         }
       } catch (err) {
         toast.error('Erreur lors du chargement du problème');
@@ -401,7 +684,11 @@ export function Problem() {
             <div className="mb-4 flex items-center justify-between">
               <Select
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
+                onChange={(e) => {
+                  const newLang = e.target.value;
+                  setLanguage(newLang);
+                  setCode(CODE_TEMPLATES[newLang] || '// Votre code ici\n');
+                }}
                 options={allowedLanguagesOptions}
               />
               <div className="flex items-center gap-2">
@@ -472,7 +759,7 @@ export function Problem() {
                   <div className="w-3 h-3 rounded-full bg-[var(--state-success)]" />
                 </div>
                 <span className="text-caption text-[var(--text-muted)] ml-2 font-code">
-                  solution.{language === 'python' ? 'py' : language === 'javascript' ? 'js' : language === 'cpp' ? 'cpp' : 'java'}
+                  solution.{LANG_EXTENSIONS[language] || language}
                 </span>
               </div>
 
@@ -482,6 +769,40 @@ export function Problem() {
                 theme="vs-dark"
                 value={code}
                 onChange={(value) => setCode(value || '')}
+                beforeMount={(monaco) => {
+                  // Register autocomplete providers for all languages
+                  const kindMap: Record<string, number> = {
+                    Function: monaco.languages.CompletionItemKind.Function,
+                    Method: monaco.languages.CompletionItemKind.Method,
+                    Class: monaco.languages.CompletionItemKind.Class,
+                    Keyword: monaco.languages.CompletionItemKind.Keyword,
+                    Module: monaco.languages.CompletionItemKind.Module,
+                    Snippet: monaco.languages.CompletionItemKind.Snippet,
+                  };
+                  Object.entries(LANG_COMPLETIONS).forEach(([lang, completions]) => {
+                    monaco.languages.registerCompletionItemProvider(lang, {
+                      provideCompletionItems: (model, position) => {
+                        const word = model.getWordUntilPosition(position);
+                        const range = {
+                          startLineNumber: position.lineNumber,
+                          endLineNumber: position.lineNumber,
+                          startColumn: word.startColumn,
+                          endColumn: word.endColumn,
+                        };
+                        return {
+                          suggestions: completions.map((c) => ({
+                            label: c.label,
+                            kind: kindMap[c.kind] || monaco.languages.CompletionItemKind.Text,
+                            insertText: c.insertText,
+                            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                            detail: c.detail || '',
+                            range,
+                          })),
+                        };
+                      },
+                    });
+                  });
+                }}
                 onMount={(editor) => {
                   editor.updateOptions({ contextmenu: false });
                   editor.onKeyDown((e) => {

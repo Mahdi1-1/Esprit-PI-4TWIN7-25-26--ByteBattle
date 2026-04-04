@@ -89,6 +89,11 @@ export const discussionsService = {
     return data;
   },
 
+  async getRevisions(id: string) {
+    const { data } = await api.get(`/discussions/${id}/revisions`);
+    return data;
+  },
+
   // Comments
   async addComment(discussionId: string, comment: { content: string; parentCommentId?: string }) {
     const { data } = await api.post(`/discussions/${discussionId}/comments`, comment);

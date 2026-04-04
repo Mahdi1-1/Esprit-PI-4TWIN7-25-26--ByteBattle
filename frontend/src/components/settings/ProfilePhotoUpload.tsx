@@ -126,6 +126,7 @@ export function ProfilePhotoUpload({ onFileSelect, clearPreviewSignal }: Profile
                     <img
                         src={preview || currentPhotoUrl}
                         alt="Profile"
+                        referrerPolicy="no-referrer"
                         className="w-full h-full object-cover"
                         onError={(e) => {
                             if (user?.username && !preview) {
