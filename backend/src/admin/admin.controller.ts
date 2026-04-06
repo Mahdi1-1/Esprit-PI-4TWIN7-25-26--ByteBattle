@@ -1,11 +1,15 @@
 import {
   Controller, Get, Post, Patch, Param, Query, Body,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { CreateReportDto, UpdateReportStatusDto } from './dto/admin.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
+const ALLOWED_ROLES = ['user', 'moderator', 'admin'] as const;
+type AllowedRole = typeof ALLOWED_ROLES[number];
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -20,6 +24,23 @@ export class AdminController {
     return this.adminService.getDashboardStats();
   }
 
+  // ─── User Role Management ─────────────────────────────────────────
+  @Patch('users/:id/role')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Change user role (admin only)' })
+  @ApiBody({ schema: { properties: { role: { type: 'string', enum: ['user', 'moderator', 'admin'] } } } })
+  async changeUserRole(
+    @Param('id') targetId: string,
+    @Body('role') role: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    if (!ALLOWED_ROLES.includes(role as AllowedRole)) {
+      throw new BadRequestException(`Invalid role. Allowed: ${ALLOWED_ROLES.join(', ')}`);
+    }
+    return this.adminService.changeUserRole(actorId, targetId, role as AllowedRole);
+  }
+
+  // ─── Reports ─────────────────────────────────────────────────────
   @Get('reports')
   @Roles('admin')
   @ApiOperation({ summary: 'List reports' })
@@ -39,7 +60,8 @@ export class AdminController {
   }
 
   @Post('reports')
-  @ApiOperation({ summary: 'Create a report' })
+  @Roles('user')
+  @ApiOperation({ summary: 'Create a report (any authenticated user)' })
   createReport(@CurrentUser('id') userId: string, @Body() dto: CreateReportDto) {
     return this.adminService.createReport(userId, dto);
   }

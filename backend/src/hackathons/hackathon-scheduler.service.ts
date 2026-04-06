@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { HackathonsService } from './hackathons.service';
 import { HackathonScoreboardService } from './hackathon-scoreboard.service';
+import { HackathonsGateway } from './hackathons.gateway';
 
 /**
  * T019d — Scheduler for automatic hackathon lifecycle transitions.
@@ -28,6 +29,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
     private prisma: PrismaService,
     private hackathonsService: HackathonsService,
     private scoreboardService: HackathonScoreboardService,
+    private gateway: HackathonsGateway,
   ) {}
 
   onModuleInit() {
@@ -58,6 +60,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
       for (const h of lobbyToCheckin) {
         try {
           await this.hackathonsService.transitionStatus(h.id, 'checkin', 'system');
+          this.gateway.emitStatusChange(h.id, 'checkin', 'lobby');
           this.logger.log(`Auto-transitioned hackathon ${h.id} to checkin`);
         } catch (err) {
           this.logger.warn(`Failed auto-transition ${h.id} lobby→checkin: ${err.message}`);
@@ -74,7 +77,9 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
       for (const h of checkinToActive) {
         try {
           await this.hackathonsService.transitionStatus(h.id, 'active', 'system');
-          this.logger.log(`Auto-transitioned hackathon ${h.id} to active`);
+          // 🚀 Notify all connected clients to open the workspace
+          this.gateway.emitStatusChange(h.id, 'active', 'checkin');
+          this.logger.log(`Auto-transitioned hackathon ${h.id} to active — workspace open broadcast sent`);
         } catch (err) {
           this.logger.warn(`Failed auto-transition ${h.id} checkin→active: ${err.message}`);
         }
@@ -90,8 +95,8 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
       for (const h of activeToFrozen) {
         try {
           await this.hackathonsService.transitionStatus(h.id, 'frozen', 'system');
-          // Cache frozen scoreboard (Decision #17)
           await this.scoreboardService.freezeScoreboard(h.id);
+          this.gateway.emitStatusChange(h.id, 'frozen', 'active');
           this.logger.log(`Auto-transitioned hackathon ${h.id} to frozen + cached scoreboard`);
         } catch (err) {
           this.logger.warn(`Failed auto-transition ${h.id} active→frozen: ${err.message}`);
@@ -108,6 +113,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
       for (const h of frozenToEnded) {
         try {
           await this.hackathonsService.transitionStatus(h.id, 'ended', 'system');
+          this.gateway.emitStatusChange(h.id, 'ended', 'frozen');
           this.logger.log(`Auto-transitioned hackathon ${h.id} to ended`);
         } catch (err) {
           this.logger.warn(`Failed auto-transition ${h.id} frozen→ended: ${err.message}`);
@@ -125,6 +131,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
       for (const h of activeToEnded) {
         try {
           await this.hackathonsService.transitionStatus(h.id, 'ended', 'system');
+          this.gateway.emitStatusChange(h.id, 'ended', 'active');
           this.logger.log(`Auto-transitioned hackathon ${h.id} to ended (no freeze)`);
         } catch (err) {
           this.logger.warn(`Failed auto-transition ${h.id} active→ended: ${err.message}`);

@@ -25,14 +25,15 @@ export function AdminHackathons() {
       try {
         const res = await hackathonsService.getAll();
         const data = Array.isArray(res) ? res : res.data || [];
+        console.log('🔍 Hackathons data:', data);
         setHackathons(data.map((h: any) => ({
           id: h.id,
           title: h.title,
-          startDate: new Date(h.startDate),
-          endDate: new Date(h.endDate),
+          startDate: new Date(h.startTime || h.startDate),
+          endDate: new Date(h.endTime || h.endDate),
           status: h.status || 'UPCOMING',
-          teams: h.teams?.length || h.teamCount || 0,
-          problems: h.problems?.length || h.problemCount || 0,
+          teams: h._count?.hackathonTeams || h.teams?.length || h.teamCount || 0,
+          problems: h.challengeIds?.length || h.problems?.length || h.problemCount || 0,
           participants: h.participantCount || 0,
         })));
       } catch (err) {
@@ -102,7 +103,7 @@ export function AdminHackathons() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
-                      {hackathon.participants} participants
+                      {hackathon.teams} participants
                     </span>
                     <span>{hackathon.problems} problems</span>
                   </div>

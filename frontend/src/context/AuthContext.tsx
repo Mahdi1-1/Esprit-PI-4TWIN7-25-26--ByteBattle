@@ -17,7 +17,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Start as false if no token exists — avoids blocking render for unauthenticated users
+  const [isLoading, setIsLoading] = useState<boolean>(() => !!localStorage.getItem('token'));
 
   // Global event listener for profile updates (like avatar creation)
   useEffect(() => {

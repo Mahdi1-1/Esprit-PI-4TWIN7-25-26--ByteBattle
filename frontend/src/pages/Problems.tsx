@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Navbar } from '../components/Navbar';
 import { SearchInput, Select } from '../components/Input';
 import { ProblemCard } from '../components/ProblemCard';
 
@@ -20,7 +19,7 @@ export function Problems() {
     const fetchChallenges = async () => {
       setLoading(true);
       try {
-        const params: any = { page, limit: 20, status: 'published' };
+        const params: any = { page, limit: 20, status: 'published', kind: 'CODE' };
         if (difficulty !== 'all') params.difficulty = difficulty;
         if (search) params.search = search;
         const result = await challengesService.getAll(params);
@@ -47,12 +46,7 @@ export function Problems() {
 
   return (
     <Layout>
-      <Navbar
-        isLoggedIn
-
-
-      />
-
+      
       <div className="w-full px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="mb-8">

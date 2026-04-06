@@ -9,6 +9,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ChangeEmailDto } from './dto/change-email.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
@@ -48,10 +49,65 @@ export class UsersController {
     return this.usersService.getHistory(userId, +page, +limit);
   }
 
+  @Get('me/activity')
+  @Roles('user')
+  @ApiOperation({ summary: 'Get recent activity feed for current user' })
+  @ApiQuery({ name: 'limit', required: false })
+  getMyActivity(
+    @CurrentUser('id') userId: string,
+    @Query('limit') limit = 20,
+  ) {
+    return this.usersService.getRecentActivity(userId, +limit);
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
+  @Roles('user')
+  @ApiOperation({ summary: 'Get user public profile by ID' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
+  }
+
+  // ─── Public Profile (no auth) ─────────────────────────────────
+
+  @Get('username/:username')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get public profile by username (no auth required)' })
+  @ApiResponse({ status: 200, description: 'Public user profile' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  getPublicProfile(@Param('username') username: string) {
+    return this.usersService.getPublicProfile(username);
+  }
+
+  @Get('username/:username/stats')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get public stats by username (no auth required)' })
+  @ApiResponse({ status: 200, description: 'Public user stats' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  getPublicStats(@Param('username') username: string) {
+    return this.usersService.getPublicStats(username);
+  }
+
+  @Get('username/:username/activity')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get public activity by username (no auth required)' })
+  @ApiResponse({ status: 200, description: 'Public user activity' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  getPublicActivity(@Param('username') username: string, @Query('limit') limit = 15) {
+    return this.usersService.getPublicActivity(username, +limit);
+  }
+
+  @Get('search/public')
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Search users by username (public, no auth required)' })
+  @ApiQuery({ name: 'q', required: true, description: 'Username search query (min 2 chars)' })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'List of matching users (public fields only)' })
+  searchUsers(@Query('q') query: string, @Query('limit') limit = 8) {
+    return this.usersService.searchByUsername(query, +limit);
   }
 
   @Patch('me')
@@ -63,7 +119,7 @@ export class UsersController {
 
   @Patch(':id/role')
   @Roles('admin')
-  @ApiOperation({ summary: 'Update user role (admin)' })
+  @ApiOperation({ summary: '[Deprecated] Use PATCH /admin/users/:id/role instead — this endpoint lacks audit logging', deprecated: true })
   updateRole(@Param('id') id: string, @Body('role') role: string) {
     return this.usersService.updateRole(id, role);
   }
@@ -114,7 +170,14 @@ export class UsersController {
   @ApiOperation({ summary: 'Get profile photo' })
   @ApiResponse({ status: 200, description: 'Profile photo' })
   async getPhoto(@Param('filename') filename: string, @Res({ passthrough: true }) res: Response) {
-    const filePath = path.join('./uploads/avatars', filename);
+    // Sanitize filename — prevent path traversal
+    const sanitized = path.basename(filename);
+    if (sanitized !== filename || filename.includes('..')) {
+      res.status(400);
+      return { error: 'Invalid filename' };
+    }
+
+    const filePath = path.join('./uploads/avatars', sanitized);
 
     if (!fs.existsSync(filePath)) {
       res.status(404);

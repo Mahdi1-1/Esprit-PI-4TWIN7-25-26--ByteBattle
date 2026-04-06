@@ -1,16 +1,57 @@
 import api from '../api/axios';
+import { type CanvasChallenge } from '../data/canvasChallengeData';
+
+/**
+ * Normalise un challenge brut du backend vers la structure CanvasChallenge
+ * attendue par le frontend.
+ */
+function normalizeChallenge(raw: any): CanvasChallenge {
+  const constraints = raw.constraints ?? {};
+
+  // Construire un tableau lisible des contraintes (ex: "Temps: 45 min")
+  const constraintsList: string[] = [
+    constraints.timeLimit       ? `⏱ Temps : ${constraints.timeLimit} min`       : null,
+    constraints.maxElements     ? `📐 Max éléments : ${constraints.maxElements}`  : null,
+    constraints.budget          ? `💰 Budget : ${constraints.budget}`             : null,
+    constraints.throughput      ? `📊 Throughput : ${constraints.throughput}`     : null,
+    constraints.dataVolume      ? `💾 Volume : ${constraints.dataVolume}`         : null,
+    constraints.gitops          ? `🔁 GitOps : ${constraints.gitops}`            : null,
+    constraints.minimum         ? `✅ Minimum : ${constraints.minimum}`           : null,
+    constraints.level           ? `🎯 Niveau : ${constraints.level}`              : null,
+  ].filter(Boolean) as string[];
+
+  return {
+    id:             raw.id,
+    title:          raw.title,
+    description:    raw.descriptionMd ?? raw.description ?? '',
+    type:           raw.category ?? 'architecture',
+    difficulty:     raw.difficulty,
+    duration:       constraints.timeLimit ?? raw.duelTimeLimit ?? 45,
+    requirements:   constraints.requiredComponents ?? [],
+    constraints:    constraintsList,
+    deliverables:   raw.deliverables ? [raw.deliverables] : [],
+    successCriteria: [],
+    tags:           raw.tags ?? [],
+    rubric:         Array.isArray(raw.rubric) ? raw.rubric : [],
+    hints:          raw.hints ?? [],
+    status:         raw.status === 'published' ? 'new' : raw.status,
+    isDuelEnabled:  raw.isDuelEnabled,
+    duelTimeLimit:  raw.duelTimeLimit,
+  };
+}
 
 export const canvasService = {
   async getChallenges(params?: { type?: string; difficulty?: string }) {
     const { data } = await api.get('/challenges', {
       params: { ...params, kind: 'CANVAS' },
     });
-    return data;
+    const items: any[] = data?.data ?? data ?? [];
+    return { data: items.map(normalizeChallenge) };
   },
 
-  async getChallengeById(id: string) {
+  async getChallengeById(id: string): Promise<CanvasChallenge> {
     const { data } = await api.get(`/challenges/${id}`);
-    return data;
+    return normalizeChallenge(data?.data ?? data);
   },
 
   async submitChallenge(id: string, submission: {

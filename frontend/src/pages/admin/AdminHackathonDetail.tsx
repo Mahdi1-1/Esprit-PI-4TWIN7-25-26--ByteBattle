@@ -47,6 +47,9 @@ export function AdminHackathonDetail() {
         hackathonsService.getById(id),
         hackathonsService.getAuditLog(id).catch(() => ({ data: [] })),
       ]);
+      console.log('🔍 Hackathon data received:', h);
+      console.log('🔍 Teams count:', h?.hackathonTeams?.length);
+      console.log('🔍 Teams data:', h?.hackathonTeams);
       setHackathon(h);
       setAuditLog(Array.isArray(logs) ? logs : logs.data || []);
     } catch (err) {
@@ -179,6 +182,8 @@ export function AdminHackathonDetail() {
   const canCancel = hackathon && !['active', 'frozen', 'cancelled', 'archived'].includes(hackathon.status);
   const canDelete = hackathon && !['active', 'frozen'].includes(hackathon.status);
 
+  const allTeams = [...(hackathon?.hackathonTeams || []), ...(hackathon?.teams || [])];
+
   return (
     <AdminLayout>
       <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -189,7 +194,7 @@ export function AdminHackathonDetail() {
             <div className="flex items-center gap-3 mt-1">
               <Badge variant={hackathon?.status}>{hackathon?.status}</Badge>
               <span className="text-sm text-[var(--text-muted)]">
-                {hackathon?.hackathonTeams?.length || 0} teams
+                {allTeams.length} teams
               </span>
             </div>
           </div>
@@ -249,31 +254,39 @@ export function AdminHackathonDetail() {
 
         {/* Teams */}
         <div className="p-4 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg">
-          <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">Teams</h3>
+          <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">
+            Teams ({allTeams.length})
+          </h3>
           <div className="space-y-2">
-            {hackathon?.hackathonTeams?.map((team: any) => (
-              <div key={team.id} className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded">
-                <div>
-                  <span className="font-medium">{team.name}</span>
-                  <span className="text-xs text-[var(--text-muted)] ml-2">
-                    {team.members?.length} members | {team.solvedCount || 0} solved
-                  </span>
-                  {team.isDisqualified && <Badge variant="default" className="ml-2">DQ</Badge>}
-                  {team.isCheckedIn && <Badge variant="ongoing" className="ml-2">✓</Badge>}
+            {allTeams.length === 0 ? (
+              <p className="text-sm text-[var(--text-muted)] py-4 text-center">
+                No teams registered yet
+              </p>
+            ) : (
+              allTeams.map((team: any) => (
+                <div key={team.id} className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded">
+                  <div>
+                    <span className="font-medium">{team.name}</span>
+                    <span className="text-xs text-[var(--text-muted)] ml-2">
+                      {team.members?.length} members | {team.solvedCount || 0} solved
+                    </span>
+                    {team.isDisqualified && <Badge variant="default" className="ml-2">DQ</Badge>}
+                    {team.isCheckedIn && <Badge variant="ongoing" className="ml-2">✓</Badge>}
+                  </div>
+                  <div className="flex gap-1">
+                    {!team.isDisqualified ? (
+                      <Button variant="ghost" size="sm" onClick={() => handleDisqualify(team.id)}>
+                        <Shield className="w-3 h-3" /> DQ
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => handleReinstate(team.id)}>
+                        <RefreshCw className="w-3 h-3" /> Reinstate
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  {!team.isDisqualified ? (
-                    <Button variant="ghost" size="sm" onClick={() => handleDisqualify(team.id)}>
-                      <Shield className="w-3 h-3" /> DQ
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" size="sm" onClick={() => handleReinstate(team.id)}>
-                      <RefreshCw className="w-3 h-3" /> Reinstate
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

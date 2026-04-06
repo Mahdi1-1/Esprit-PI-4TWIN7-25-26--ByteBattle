@@ -50,6 +50,39 @@ export class DiscussionsController {
     });
   }
 
+  // ─── Stats & Tags ──────────────────────────────────
+  @Public()
+  @Get('stats')
+  @ApiOperation({ summary: 'Get discussion forum stats' })
+  getStats() {
+    return this.discussionsService.getStats();
+  }
+
+  @Public()
+  @Get('tags/popular')
+  @ApiOperation({ summary: 'Get popular tags' })
+  getPopularTags() {
+    return this.discussionsService.getPopularTags();
+  }
+
+  @Get('my-posts')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my discussions' })
+  getMyPosts(
+    @CurrentUser('id') userId: string,
+    @Query('status') status?: string,
+  ) {
+    return this.discussionsService.getMyPosts(userId, status);
+  }
+
+  @Public()
+  @Get(':id/revisions')
+  @ApiOperation({ summary: 'Get edit history of a discussion' })
+  getRevisions(@Param('id') id: string) {
+    return this.discussionsService.getRevisions(id);
+  }
+
   @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get discussion with comments' })
@@ -60,21 +93,21 @@ export class DiscussionsController {
   @Patch(':id')
   @Roles('user')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update own discussion' })
+  @ApiOperation({ summary: 'Update discussion (author, moderator, or admin)' })
   update(
     @Param('id') id: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser() user: { id: string; role: string },
     @Body() dto: UpdateDiscussionDto,
   ) {
-    return this.discussionsService.updateDiscussion(id, userId, dto);
+    return this.discussionsService.updateDiscussion(id, user.id, dto, user.role);
   }
 
   @Delete(':id')
   @Roles('user')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete own discussion' })
-  remove(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    return this.discussionsService.deleteDiscussion(id, userId);
+  @ApiOperation({ summary: 'Delete discussion (author, moderator, or admin)' })
+  remove(@Param('id') id: string, @CurrentUser() user: { id: string; role: string }) {
+    return this.discussionsService.deleteDiscussion(id, user.id, user.role);
   }
 
   @Post(':id/vote')
@@ -87,6 +120,22 @@ export class DiscussionsController {
     @Body('type') type: 'upvote' | 'downvote',
   ) {
     return this.discussionsService.voteDiscussion(id, userId, type);
+  }
+
+  @Patch(':id/solve')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle solved on own discussion' })
+  toggleSolved(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.discussionsService.toggleSolved(id, userId);
+  }
+
+  @Post(':id/flag')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Flag a discussion' })
+  flagDiscussion(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.discussionsService.flagDiscussion(id, userId);
   }
 
   // ─── Comments ──────────────────────────────────
@@ -105,24 +154,24 @@ export class DiscussionsController {
   @Patch('comments/:commentId')
   @Roles('user')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Edit own comment' })
+  @ApiOperation({ summary: 'Edit comment (author, moderator, or admin)' })
   updateComment(
     @Param('commentId') commentId: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser() user: { id: string; role: string },
     @Body() dto: UpdateCommentDto,
   ) {
-    return this.discussionsService.updateComment(commentId, userId, dto);
+    return this.discussionsService.updateComment(commentId, user.id, dto, user.role);
   }
 
   @Delete('comments/:commentId')
   @Roles('user')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete own comment and its replies' })
+  @ApiOperation({ summary: 'Delete comment and replies (author, moderator, or admin)' })
   deleteComment(
     @Param('commentId') commentId: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.discussionsService.deleteComment(commentId, userId);
+    return this.discussionsService.deleteComment(commentId, user.id, user.role);
   }
 
   @Post('comments/:commentId/vote')
@@ -135,5 +184,27 @@ export class DiscussionsController {
     @Body('type') type: 'upvote' | 'downvote',
   ) {
     return this.discussionsService.voteComment(commentId, userId, type);
+  }
+
+  @Patch('comments/:commentId/best-answer')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle best answer on a comment' })
+  toggleBestAnswer(
+    @Param('commentId') commentId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.discussionsService.toggleBestAnswer(commentId, userId);
+  }
+
+  @Post('comments/:commentId/flag')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Flag a comment' })
+  flagComment(
+    @Param('commentId') commentId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.discussionsService.flagComment(commentId, userId);
   }
 }

@@ -196,15 +196,23 @@ export function useVoiceRecorder({ sessionId, settings, onMessageSent }: UseVoic
       let finalTranscript = transcript || '';
       let replyAudioUrl: string | undefined = undefined;
 
-      // If server mode OR browser mode failed/unavailable, use server STT
-      if (settings.sttMode === 'server' || (!transcript && audioBlob.size > 0)) {
-        const res = await interviewsService.sendVoiceMessage(sessionId, audioBlob, settings.languageCode);
-        finalTranscript = res.userMessage?.transcript || '';
-        replyAudioUrl = res.audioUrl; // If we use server mode, it sends to AI immediately
+      if (settings.sttMode === 'server') {
+        // Server mode: always use server STT
+        try {
+          const res = await interviewsService.sendVoiceMessage(sessionId, audioBlob, settings.languageCode);
+          finalTranscript = res.userMessage?.transcript || '';
+          replyAudioUrl = res.audioUrl;
+        } catch (sttErr: any) {
+          console.warn('Server STT failed:', sttErr);
+          setError("Le service de transcription vocale n'est pas disponible. Tapez votre message à la place.");
+          setState('idle');
+          return;
+        }
       }
+      // In browser mode, we use the transcript from SpeechRecognition — no server fallback
 
       if (!finalTranscript.trim()) {
-        setError("La transcription est vide. Veuillez réessayer.");
+        setError("Aucun texte détecté. Parlez clairement près du micro, ou tapez votre message.");
         setState('idle');
         return;
       }

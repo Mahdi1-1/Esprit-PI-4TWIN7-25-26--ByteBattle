@@ -7,7 +7,7 @@ import { DeleteAccountDto } from './dto/delete-account.dto';
 import { computeDuelStats } from '../duels/duel-stats.util';
 import * as fs from 'fs';
 import * as path from 'path';
-import sharp from 'sharp';
+import * as sharp from 'sharp';
 import * as bcrypt from 'bcryptjs';
 import { CacheService } from '../cache/cache.service';
 
@@ -66,7 +66,13 @@ export class UsersService {
     return profile;
   }
 
+  private static readonly VALID_ROLES = ['user', 'moderator', 'admin'];
+  private static readonly VALID_STATUSES = ['active', 'suspended', 'banned'];
+
   async updateRole(id: string, role: string) {
+    if (!UsersService.VALID_ROLES.includes(role)) {
+      throw new BadRequestException(`Invalid role. Allowed: ${UsersService.VALID_ROLES.join(', ')}`);
+    }
     return this.prisma.user.update({
       where: { id },
       data: { role: role as any },
@@ -74,6 +80,9 @@ export class UsersService {
   }
 
   async updateStatus(id: string, status: string) {
+    if (!UsersService.VALID_STATUSES.includes(status)) {
+      throw new BadRequestException(`Invalid status. Allowed: ${UsersService.VALID_STATUSES.join(', ')}`);
+    }
     return this.prisma.user.update({
       where: { id },
       data: { status: status as any },
@@ -98,7 +107,7 @@ export class UsersService {
   }
 
   /**
-   * Upload and resize profile photo
+   * Upload and resize profile photo — stored as Base64 data URI in DB
    */
   async uploadProfilePhoto(userId: string, file: Express.Multer.File) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -115,31 +124,31 @@ export class UsersService {
       throw new BadRequestException('File is too large. Maximum size is 5MB.');
     }
 
-    // Delete old photo if exists
-    if (user.profileImage) {
+    // Delete old local file if one exists (migration cleanup)
+    if (user.profileImage && !user.profileImage.startsWith('http') && !user.profileImage.startsWith('data:')) {
       const oldFilePath = path.join('./uploads/avatars', user.profileImage);
       if (fs.existsSync(oldFilePath)) {
         fs.unlinkSync(oldFilePath);
       }
     }
 
-    // Resize to 200x200 and save as WebP
-    const filename = `${userId}.webp`;
-    const outputPath = path.join('./uploads/avatars', filename);
-
-    await sharp(file.buffer)
+    // Resize to 200x200, convert to WebP, get as Buffer
+    const resizedBuffer = await sharp(file.buffer)
       .resize(200, 200, { fit: 'cover' })
-      .webp({ quality: 85 })
-      .toFile(outputPath);
+      .webp({ quality: 80 })
+      .toBuffer();
 
-    // Update user profileImage
+    // Convert to Base64 data URI and store in DB
+    const base64 = resizedBuffer.toString('base64');
+    const dataUri = `data:image/webp;base64,${base64}`;
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { profileImage: filename },
+      data: { profileImage: dataUri },
     });
 
     const { passwordHash, ...profile } = updated;
-    
+
     await this.cache.del(`user:profile:${userId}`);
     return profile;
   }
@@ -151,16 +160,16 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    // Delete file if exists
-    if (user.profileImage) {
+    // Cleanup legacy local file if one still exists on disk
+    if (user.profileImage && !user.profileImage.startsWith('http') && !user.profileImage.startsWith('data:')) {
       const filePath = path.join('./uploads/avatars', user.profileImage);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
     }
 
-    // Update user profileImage to null
-    const updated = await this.prisma.user.update({
+    // Clear profileImage in DB
+    await this.prisma.user.update({
       where: { id: userId },
       data: { profileImage: null },
     });
@@ -327,5 +336,184 @@ export class UsersService {
     await this.prisma.user.delete({ where: { id: userId } });
 
     return { success: true };
+  }
+
+  /**
+   * Get recent activity feed for a user
+   * Merges: AC submissions + duel wins + discussions created
+   */
+  async getRecentActivity(userId: string, limit = 20) {
+    const [submissions, duels, discussions] = await Promise.all([
+      // Last AC submissions
+      this.prisma.submission.findMany({
+        where: { userId, verdict: 'AC' },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        include: {
+          challenge: { select: { title: true, difficulty: true } },
+        },
+      }),
+      // Last completed duels
+      this.prisma.duel.findMany({
+        where: {
+          status: 'completed',
+          OR: [{ player1Id: userId }, { player2Id: userId }],
+        },
+        orderBy: { endedAt: 'desc' },
+        take: limit,
+        include: {
+          player1: { select: { username: true } },
+          player2: { select: { username: true } },
+        },
+      }),
+      // Last discussions created
+      this.prisma.discussion.findMany({
+        where: { authorId: userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: { id: true, title: true, createdAt: true },
+      }),
+    ]);
+
+    const events: { type: string; date: string; [k: string]: any }[] = [];
+
+    for (const s of submissions) {
+      events.push({
+        type: 'solved',
+        problem: s.challenge?.title ?? 'Unknown',
+        difficulty: s.challenge?.difficulty ?? 'unknown',
+        language: s.language,
+        date: s.createdAt.toISOString(),
+      });
+    }
+
+    for (const d of duels) {
+      const won = d.winnerId === userId;
+      const isPlayer1 = d.player1Id === userId;
+      const opponent = isPlayer1 ? d.player2?.username : d.player1?.username;
+      events.push({
+        type: won ? 'duel_won' : 'duel_lost',
+        opponent: opponent ?? 'Unknown',
+        date: (d.endedAt ?? d.createdAt).toISOString(),
+      });
+    }
+
+    for (const disc of discussions) {
+      events.push({
+        type: 'discussion',
+        title: disc.title,
+        id: disc.id,
+        date: disc.createdAt.toISOString(),
+      });
+    }
+
+    // Sort by date desc and take top N
+    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return events.slice(0, limit);
+  }
+
+  // ─── Public Profile Methods (no auth) ──────────────────────────
+
+  /**
+   * Resolve a username to a userId, throw 404 if not found
+   */
+  private async resolveUsername(username: string): Promise<string> {
+    const user = await this.prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user.id;
+  }
+
+  /**
+   * Get public profile by username — safe fields only (no email, no passwordHash)
+   */
+  async getPublicProfile(username: string) {
+    const cacheKey = `user:public:${username.toLowerCase()}`;
+    const cached = await this.cache.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const user = await this.prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
+      include: {
+        _count: { select: { submissions: true, discussions: true } },
+        earnedBadges: {
+          include: { badge: true },
+          orderBy: { earnedAt: 'desc' },
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const profile = {
+      id: user.id,
+      username: user.username,
+      profileImage: user.profileImage,
+      bio: user.bio,
+      level: user.level,
+      xp: user.xp,
+      elo: user.elo,
+      createdAt: user.createdAt.toISOString(),
+      _count: user._count,
+      badges: user.earnedBadges.map((ub) => ({
+        key: ub.badge.key,
+        name: ub.badge.name,
+        ruleText: ub.badge.ruleText,
+        iconUrl: ub.badge.iconUrl,
+        rarity: ub.badge.rarity,
+        earnedAt: ub.earnedAt.toISOString(),
+      })),
+    };
+
+    await this.cache.set(cacheKey, profile, 300); // 5 min cache
+    return profile;
+  }
+
+  /**
+   * Get public stats by username — reuses getProfileStats logic
+   */
+  async getPublicStats(username: string) {
+    const userId = await this.resolveUsername(username);
+    return this.getProfileStats(userId);
+  }
+
+  /**
+   * Get public activity feed by username — reuses getRecentActivity logic
+   */
+  async getPublicActivity(username: string, limit = 15) {
+    const userId = await this.resolveUsername(username);
+    return this.getRecentActivity(userId, limit);
+  }
+
+  /**
+   * Search users by username (public — returns safe fields only)
+   */
+  async searchByUsername(query: string, limit = 8) {
+    if (!query || query.trim().length < 2) return [];
+
+    const q = query.trim();
+    const cacheKey = `user:search:${q.toLowerCase()}:${limit}`;
+    const cached = await this.cache.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        username: { contains: q, mode: 'insensitive' },
+        status: 'active',
+      },
+      select: {
+        id: true,
+        username: true,
+        profileImage: true,
+        level: true,
+        elo: true,
+      },
+      orderBy: { elo: 'desc' },
+      take: Math.min(limit, 20),
+    });
+
+    await this.cache.set(cacheKey, users, 60); // 1 min cache
+    return users;
   }
 }

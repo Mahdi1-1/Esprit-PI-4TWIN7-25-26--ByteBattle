@@ -67,12 +67,15 @@ model User {
   duelsAsPlayer2 Duel[]    @relation("DuelPlayer2")
   wonDuels       Duel[]    @relation("DuelWinner")
 
-  notificationsReceived Notification[] @relation("UserNotifications")
-  notificationsActed    Notification[] @relation("UserNotificationActors")
+  notificationsReceived  Notification[]         @relation("UserNotifications")
+  notificationPreference NotificationPreference?
+  revisions              DiscussionRevision[]   @relation("UserRevisions")
+  earnedBadges           UserBadge[]
 }
 
 enum UserRole {
   user
+  moderator
   admin
 }
 
@@ -341,9 +344,11 @@ model HackathonTeam {
   name           String
   members        HackathonTeamMember[]
   joinCode       String
-  isCheckedIn    Boolean               @default(false)
-  isDisqualified Boolean               @default(false)
-  solvedCount    Int                   @default(0)
+  isCheckedIn          Boolean               @default(false)
+  isDisqualified       Boolean               @default(false)
+  anticheatViolations  Int                   @default(0)
+  problemStartTimes    Json?                 // Q5: { "challengeId": "ISO timestamp", ... } team-wide timer sync
+  solvedCount          Int                   @default(0)
   penaltyTime    Int                   @default(0)
   score          Int                   @default(0)
   type           String                // "open" | "enterprise"
@@ -487,11 +492,26 @@ model Discussion {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  comments Comment[]
+  comments  Comment[]
+  revisions DiscussionRevision[]
 
   @@index([tags])
   @@index([category])
   @@index([createdAt(sort: Desc)])
+}
+
+model DiscussionRevision {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  discussionId String   @db.ObjectId
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  editorId     String   @db.ObjectId
+  editor       User     @relation("UserRevisions", fields: [editorId], references: [id])
+  title        String
+  content      String
+  tags         String[]
+  createdAt    DateTime @default(now())
+
+  @@index([discussionId, createdAt(sort: Desc)])
 }
 
 model Comment {
@@ -514,19 +534,47 @@ model Comment {
 }
 
 model Notification {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  recipientId String   @db.ObjectId
-  recipient   User     @relation("UserNotifications", fields: [recipientId], references: [id])
-  actorId     String   @db.ObjectId
-  actor       User     @relation("UserNotificationActors", fields: [actorId], references: [id])
-  type        String   // "like-post" | "like-comment" | "new-comment" | "reply-comment" | "best-answer"
-  targetId    String   @db.ObjectId  // discussionId or commentId
-  targetType  String   // "discussion" | "comment"
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  recipientId String    @db.ObjectId
+  recipient   User      @relation("UserNotifications", fields: [recipientId], references: [id])
+  type        String    // 32 types across 7 categories — see specs/011-notification-system/data-model.md
+  category    String    // hackathon | duel | discussion | submission | canvas | achievement | system
+  priority    String    @default("medium") // critical | high | medium | low
+  title       String
+  message     String
+  actionUrl   String?
+  entityId    String?
+  entityType  String?
+  senderId    String?   // snapshot — NOT a FK relation
+  senderName  String?
+  senderPhoto String?
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  isArchived  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
 
-  @@index([recipientId, createdAt(sort: Desc)])
-  @@index([recipientId, isRead])
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
+  @@index([recipientId, category, createdAt(sort: Desc)])
+  @@index([recipientId, type, entityId, createdAt(sort: Desc)])
+}
+
+model NotificationPreference {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @unique @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id])
+  hackathon   Boolean   @default(true)
+  duel        Boolean   @default(true)
+  discussion  Boolean   @default(true)
+  submission  Boolean   @default(true)
+  canvas      Boolean   @default(true)
+  achievement Boolean   @default(true)
+  system      Boolean   @default(true)
+  inApp       Boolean   @default(true)
+  email       Boolean   @default(false)
+  push        Boolean   @default(false)
+  quietStart  String?   // "HH:mm" e.g. "22:00"
+  quietEnd    String?   // "HH:mm" e.g. "08:00"
+  updatedAt   DateTime  @updatedAt
 }
 
 model InterviewSession {
@@ -563,9 +611,22 @@ type AIMessage {
 model Badge {
   id       String @id @default(auto()) @map("_id") @db.ObjectId
   name     String @unique
-  rarity   String
+  key      String @unique   // e.g. "first_blood", "speed_demon"
+  rarity   String           // common | rare | epic | legendary
   ruleText String
   iconUrl  String
+  earnedBy UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String   @db.ObjectId
+  user     User     @relation(fields: [userId], references: [id])
+  badgeId  String   @db.ObjectId
+  badge    Badge    @relation(fields: [badgeId], references: [id])
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
 }
 
 model Report {
@@ -628,6 +689,10 @@ model Duel {
   // Langages utilisés par chaque joueur
   player1Language String?
   player2Language String?
+
+  // Code source final de chaque joueur (persisté à la fin du duel)
+  player1Code    String?
+  player2Code    String?
 
   // Metadata
   startedAt     DateTime?

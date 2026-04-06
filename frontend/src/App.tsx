@@ -1,14 +1,37 @@
-import React from 'react';
-import { RouterProvider } from 'react-router';
+import React, { Suspense, lazy } from 'react';
+import { RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { FontSizeProvider } from './context/FontSizeContext';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { EditorThemeProvider } from './context/EditorThemeContext';
-import { router } from './routes';
-import { Toaster } from 'react-hot-toast';
+import { NotificationProvider } from './context/NotificationContext';
+import { router } from './router';
+// import { LoadingSpinner } from './components/LoadingSpinner';
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
+// ─── Fallback de chargement global ───
+// NOTE: min-h-0 intentional — avoids CLS from height reservation during lazy load
+export function PageLoader() {
+  return (
+    <div
+      className="flex items-center justify-center"
+      style={{ minHeight: '100vh', contain: 'layout' }}
+      aria-busy="true"
+      aria-label="Loading page"
+    >
+      <div
+        className="w-8 h-8 rounded-full border-2 border-[var(--brand-primary)] border-t-transparent animate-spin"
+        role="status"
+      />
+    </div>
+  );
+}
+
+// ─── Error Boundary ───
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -53,12 +76,13 @@ export default function App() {
         <LanguageProvider>
           <FontSizeProvider>
             <AuthProvider>
-              <ThemeProvider>
-                <EditorThemeProvider>
-                  <RouterProvider router={router} />
-                  <Toaster position="bottom-right" />
-                </EditorThemeProvider>
-              </ThemeProvider>
+              <NotificationProvider>
+                <ThemeProvider>
+                  <EditorThemeProvider>
+                    <RouterProvider router={router} />
+                  </EditorThemeProvider>
+                </ThemeProvider>
+              </NotificationProvider>
             </AuthProvider>
           </FontSizeProvider>
         </LanguageProvider>

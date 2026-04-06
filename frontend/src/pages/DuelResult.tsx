@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { EndGameScreen } from '../components/EndGameScreen/EndGameScreen';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Loader, Trophy, Zap, Clock, Target } from 'lucide-react';
 import { duelsService } from '../services/duelsService';
 
@@ -69,7 +68,7 @@ export const DuelResult: React.FC = () => {
   if (loading) {
     return (
       <Layout>
-        <Navbar />
+
         <div className="w-full h-screen flex items-center justify-center">
           <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
         </div>
@@ -101,7 +100,7 @@ export const DuelResult: React.FC = () => {
 
   return (
     <Layout>
-      <Navbar />
+
       <div className="w-full min-h-screen bg-gradient-to-b from-[var(--surface-1)] to-[var(--surface-2)] px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-8">
 
@@ -141,6 +140,7 @@ export const DuelResult: React.FC = () => {
                 <img
                   src={duelData.player1.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${duelData.player1.username}`}
                   alt={duelData.player1.username}
+                  referrerPolicy="no-referrer"
                   className="w-12 h-12 rounded-full border-2 border-[var(--brand-primary)]"
                 />
                 <div>
@@ -184,6 +184,7 @@ export const DuelResult: React.FC = () => {
                 <img
                   src={duelData.player2.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${duelData.player2.username}`}
                   alt={duelData.player2.username}
+                  referrerPolicy="no-referrer"
                   className="w-12 h-12 rounded-full border-2 border-[var(--brand-primary)]"
                 />
                 <div>

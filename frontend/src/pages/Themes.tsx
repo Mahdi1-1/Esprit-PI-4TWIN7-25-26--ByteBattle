@@ -1,6 +1,6 @@
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
-import { useTheme, ThemeName, THEME_LEVEL_REQUIREMENTS } from '../context/ThemeContext';
+import { useTheme, ThemeName } from '../context/ThemeContext';
+import { THEME_LEVEL_REQUIREMENTS } from '../context/themeConstants';
  
 import { Lock, Check, Sparkles } from 'lucide-react';
 import { Layout } from '../components/Layout';
@@ -49,12 +49,7 @@ export function Themes() {
 
   return (
     <Layout>
-      <Navbar 
-        isLoggedIn 
-         
-         
-      />
-
+      
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {/* Header */}
         <div className="mb-8">

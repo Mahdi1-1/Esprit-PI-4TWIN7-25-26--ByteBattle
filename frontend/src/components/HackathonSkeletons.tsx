@@ -8,7 +8,6 @@ import { Skeleton } from './ui/skeleton';
 export function HackathonPageSkeleton() {
   return (
     <Layout>
-      <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         {/* Header skeleton */}
         <div className="flex items-center justify-between">

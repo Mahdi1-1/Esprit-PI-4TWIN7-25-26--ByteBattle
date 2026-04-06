@@ -85,6 +85,18 @@ export class HackathonsController {
     return this.scoreboardService.getScoreboard(id, false);
   }
 
+  @Get(':id/challenges')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get hackathon challenges with sequential unlock' })
+  @ApiQuery({ name: 'teamId', required: false })
+  getHackathonChallenges(
+    @Param('id') hackathonId: string,
+    @Query('teamId') teamId?: string,
+  ) {
+    return this.hackathonsService.getHackathonChallenges(hackathonId, teamId);
+  }
+
   @Public()
   @Get(':id/announcements')
   @ApiOperation({ summary: 'Get hackathon announcements' })

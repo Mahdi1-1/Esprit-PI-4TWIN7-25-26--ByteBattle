@@ -48,6 +48,11 @@ const LANGUAGE_MAP: Record<string, LangConfig> = {
         fileExt: '.js',
         buildCmd: (f) => [f],                        // node <file>
     },
+    typescript: {
+        image: 'bytebattle-sandbox-typescript',
+        fileExt: '.ts',
+        buildCmd: (f) => [f],                        // ts-node <file>
+    },
     python: {
         image: 'bytebattle-sandbox-python',
         fileExt: '.py',
@@ -56,7 +61,27 @@ const LANGUAGE_MAP: Record<string, LangConfig> = {
     cpp: {
         image: 'bytebattle-sandbox-cpp',
         fileExt: '.cpp',
-        buildCmd: (f) => [`g++ -o /tmp/a.out ${f} && /tmp/a.out`],
+        buildCmd: (f) => [`g++ -O2 -std=c++17 -o /tmp/a.out ${f} && /tmp/a.out`],
+    },
+    c: {
+        image: 'bytebattle-sandbox-c',
+        fileExt: '.c',
+        buildCmd: (f) => [`gcc -O2 -std=c17 -o /tmp/a.out ${f} -lm && /tmp/a.out`],
+    },
+    java: {
+        image: 'bytebattle-sandbox-java',
+        fileExt: '.java',
+        buildCmd: (f) => [`cp ${f} /tmp/Solution.java && javac /tmp/Solution.java && java -cp /tmp Solution`],
+    },
+    go: {
+        image: 'bytebattle-sandbox-go',
+        fileExt: '.go',
+        buildCmd: (f) => [`cp ${f} /tmp/main.go && cd /tmp && go run main.go`],
+    },
+    rust: {
+        image: 'bytebattle-sandbox-rust',
+        fileExt: '.rs',
+        buildCmd: (f) => [`rustc -o /tmp/a.out ${f} && /tmp/a.out`],
     },
 };
 
@@ -70,11 +95,21 @@ const DANGEROUS_PATTERNS: { pattern: RegExp; description: string }[] = [
     { pattern: /\/dev\/tcp\//, description: 'TCP device access (reverse shell)' },
     { pattern: /socket\s*\.\s*connect/i, description: 'Socket connect (network access)' },
     { pattern: /net\.connect|net\.createConnection/, description: 'Node.js net module usage' },
-    // Process/system escape
+    // Process/system escape — JavaScript / TypeScript
     { pattern: /child_process/, description: 'child_process module (sandbox escape)' },
     { pattern: /require\s*\(\s*['"]child_process/, description: 'Requiring child_process' },
+    // Process/system escape — Python
     { pattern: /os\s*\.\s*system\s*\(/, description: 'os.system() call (Python)' },
     { pattern: /subprocess/, description: 'subprocess module (Python)' },
+    // Process/system escape — Java
+    { pattern: /Runtime\s*\.\s*getRuntime\s*\(\s*\)\s*\.\s*exec/, description: 'Runtime.exec() (Java sandbox escape)' },
+    { pattern: /ProcessBuilder/, description: 'ProcessBuilder (Java sandbox escape)' },
+    // Process/system escape — Go
+    { pattern: /os\/exec/, description: 'os/exec package (Go sandbox escape)' },
+    { pattern: /syscall\./, description: 'syscall package (Go sandbox escape)' },
+    // Process/system escape — Rust
+    { pattern: /std::process::Command/, description: 'std::process::Command (Rust sandbox escape)' },
+    // Shell commands
     { pattern: /exec\s*\(\s*['"].*rm\s/, description: 'Shell exec with rm command' },
     // File system escape
     { pattern: /\/etc\/passwd/, description: 'Attempt to read /etc/passwd' },
@@ -223,17 +258,31 @@ export class SandboxService {
 
     /** Resolve a language string to its Docker configuration. */
     private getLangConfig(language: string): LangConfig {
-        const key = language.toLowerCase().replace(/\+\+/g, 'pp').replace(/^c$/, 'cpp');
+        const key = language.toLowerCase().trim();
         // Normalise common aliases
-        const normalised =
-            key === 'js' || key === 'node' || key === 'nodejs' ? 'javascript' :
-                key === 'py' || key === 'python3' ? 'python' :
-                    key === 'c++' || key === 'cxx' || key === 'cpp' ? 'cpp' :
-                        key;
+        const aliasMap: Record<string, string> = {
+            // JavaScript
+            'js': 'javascript', 'node': 'javascript', 'nodejs': 'javascript',
+            // TypeScript
+            'ts': 'typescript',
+            // Python
+            'py': 'python', 'python3': 'python',
+            // C++
+            'c++': 'cpp', 'cxx': 'cpp', 'cplusplus': 'cpp',
+            // C
+            'gcc': 'c',
+            // Java
+            'java': 'java',
+            // Go
+            'golang': 'go',
+            // Rust
+            'rs': 'rust',
+        };
 
+        const normalised = aliasMap[key] || key;
         const cfg = LANGUAGE_MAP[normalised];
         if (!cfg) {
-            throw new Error(`Unsupported language: ${language}. Supported: ${Object.keys(LANGUAGE_MAP).join(', ')}`);
+            throw new Error(`Unsupported language: "${language}". Supported: ${Object.keys(LANGUAGE_MAP).join(', ')}`);
         }
         return cfg;
     }

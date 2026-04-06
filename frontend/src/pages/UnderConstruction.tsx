@@ -1,7 +1,6 @@
 import { Link } from 'react-router';
 import { Construction, Home, ArrowLeft } from 'lucide-react';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 
 interface UnderConstructionProps {
   feature?: string;
@@ -14,7 +13,7 @@ export function UnderConstruction({ feature = 'This feature', context = 'fo' }: 
 
   return (
     <Layout>
-      {context === 'fo' && <Navbar />}
+      {context === 'fo' &&}
       <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-64px)]">
         <div className="text-center max-w-md">
           <div className="mb-6">

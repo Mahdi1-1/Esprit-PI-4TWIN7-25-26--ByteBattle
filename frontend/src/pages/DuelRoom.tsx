@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { io, Socket } from 'socket.io-client';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { DifficultyBadge } from '../components/Badge';
 import { useEditorTheme, defineMonacoThemes } from '../context/EditorThemeContext';
@@ -96,7 +95,7 @@ export function DuelRoom() {
 
       const isWinner = data.winnerId === user?.id;
 
-      navigate('/duel/result', {
+      navigate('/duel/${duel.id}/result', {
         state: {
           endGameData: {
             result: isWinner ? GameResult.VICTORY : GameResult.DEFEAT,
@@ -190,7 +189,7 @@ export function DuelRoom() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
-      <Navbar isLoggedIn />
+
 
       {/* Breadcrumb / Top Bar */}
       <div className="border-b border-[var(--border-default)] bg-[var(--surface-1)]">

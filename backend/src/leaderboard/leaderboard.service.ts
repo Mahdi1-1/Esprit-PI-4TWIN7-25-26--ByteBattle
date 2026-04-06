@@ -39,7 +39,7 @@ export class LeaderboardService {
       
       if (userIds.size > 0) {
         const usersInfo = await this.prisma.user.findMany({
-          where: { id: { in: Array.from(userIds) } },
+          where: { id: { in: Array.from(userIds) }, role: 'user' },
           select: { id: true, username: true, profileImage: true, elo: true, xp: true, level: true }
         });
         
@@ -104,7 +104,7 @@ export class LeaderboardService {
 
     const [allUsers, total] = await Promise.all([
       this.prisma.user.findMany({
-        where: { status: 'active' },
+        where: { status: 'active', role: 'user' },
         ...(isDbSort ? { skip, take: limit, orderBy } : {}),
         select: {
           id: true,
@@ -116,7 +116,7 @@ export class LeaderboardService {
           _count: { select: { submissions: true } },
         },
       }),
-      this.prisma.user.count({ where: { status: 'active' } }),
+      this.prisma.user.count({ where: { status: 'active', role: 'user' } }),
     ]);
 
     // Compute duel stats dynamically for all fetched users
@@ -180,7 +180,7 @@ export class LeaderboardService {
     if (!user) return null;
 
     const rankByElo = await this.prisma.user.count({
-      where: { status: 'active', elo: { gt: user.elo } },
+      where: { status: 'active', role: 'user', elo: { gt: user.elo } },
     });
 
     // Calculate duel stats dynamically

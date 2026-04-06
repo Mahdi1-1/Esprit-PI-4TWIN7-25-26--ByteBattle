@@ -55,6 +55,7 @@ export interface Account {
   createdAt: Date;
   lastLoginAt?: Date | null;
   googleId?: string | null;       // ✅ added for OAuth users
+  editorTheme?: string | null;    // ✅ code editor theme preference
   avatar?: {                      // ✅ 3D RPM avatar (optional)
     thumbnailUrl?: string | null;
     localImageUrl?: string | null;

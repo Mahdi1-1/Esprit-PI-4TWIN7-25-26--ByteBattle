@@ -18,7 +18,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   server: Server;
 
   private readonly logger = new Logger(NotificationsGateway.name);
-  private clientMaps = new Map<string, string[]>();
+  private clientMaps = new Map<string, string[]>(); // userId -> socketIds
+  private userRoles = new Map<string, string>();     // userId -> role
 
   constructor(
     private readonly jwtService: JwtService,
@@ -43,10 +44,12 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       });
       
       const userId = payload.sub;
+      const role = payload.role || 'user';
       if (!this.clientMaps.has(userId)) {
         this.clientMaps.set(userId, []);
       }
       this.clientMaps.get(userId)!.push(client.id);
+      this.userRoles.set(userId, role);
 
       this.logger.log(`Client connected to /notifications: ${client.id} (User: ${userId})`);
     } catch (e) {
@@ -62,6 +65,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         sockets.splice(idx, 1);
         if (sockets.length === 0) {
           this.clientMaps.delete(userId);
+          this.userRoles.delete(userId);
         }
         this.logger.log(`Client disconnected from /notifications: ${client.id} (User: ${userId})`);
         break;
@@ -76,5 +80,22 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         this.server.to(socketId).emit(event, data);
       });
     }
+  }
+
+  emitBroadcast(event: string, data: any) {
+    this.server.emit(event, data);
+  }
+
+  /**
+   * Returns the number of unique non-admin users currently connected.
+   */
+  getOnlineUserCount(): number {
+    let count = 0;
+    for (const [userId] of this.clientMaps) {
+      if (this.userRoles.get(userId) !== 'admin') {
+        count++;
+      }
+    }
+    return count;
   }
 }
