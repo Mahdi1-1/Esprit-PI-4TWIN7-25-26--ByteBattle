@@ -31,6 +31,10 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { avatarService } from '../services/avatarService';
 import { profileService } from '../services/profileService';
+import { NotificationBell } from './NotificationBell';
+import { UserSearchBar } from './UserSearchBar';
+import { useNotifications } from '../context/NotificationContext';
+import { Bell } from 'lucide-react';
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -74,12 +78,15 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
   const displayUsername = user?.username || username;
 
+  // ─── Notifications ───
+  const { unreadCount } = useNotifications();
+
   // ─── Navigation Links ───
   const userLinks: NavLink[] = [
     { to: '/problems', icon: <Code2 className="w-10 h-7" />, label: t('nav.problems') },
     { to: '/canvas', icon: <PenTool className="w-10 h-7" />, label: t('nav.canvas') },
     { to: '/sketchpad', icon: <Pencil className="w-10 h-7" />, label: t('nav.drawing') },
-    { to: '/discussion', icon: <MessageSquare className="w-10 h-7" />, label: t('nav.discussion') },
+    { to: '/forum', icon: <MessageSquare className="w-10 h-7" />, label: t('nav.discussion') },
     { to: '/data-structures', icon: <Layers className="w-10 h-7" />, label: t('nav.dataStructures') },
     { to: '/interview', icon: <Bot className="w-10 h-7" />, label: t('nav.interview') },
     { to: '/duel', icon: <Swords className="w-10 h-7" />, label: t('nav.duel') },
@@ -89,7 +96,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   ];
 
   const adminLinks: NavLink[] = [
-    { to: '/admin/dashboard', icon: <Shield className="w-10 h-7" />, label: 'Dashboard' },
+    { to: '/admin', icon: <Shield className="w-10 h-7" />, label: 'Dashboard' },
     { to: '/admin/users', icon: <Users className="w-10 h-7" />, label: 'Users' },
     { to: '/admin/problems', icon: <Code2 className="w-10 h-7" />, label: 'Problems' },
     { to: '/admin/submissions', icon: <Layers className="w-10 h-7" />, label: 'Submissions' },
@@ -168,25 +175,65 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   };
 
   // ─── Reusable Desktop Nav Link ───
-  const DesktopNavLink = ({ to, icon, label }: NavLink) => (
-    <Link
-      to={to}
-      className="
-        flex items-center gap-1.5
-        px-2 py-1.5
-        text-sm
-        text-[var(--text-secondary)]
-        hover:text-[var(--brand-primary)]
-        rounded-[var(--radius-md)]
-        hover:bg-[var(--surface-2)]
-        transition-all duration-200
-        whitespace-nowrap
-      "
-    >
-      {icon}
-      <span className="hidden xl:inline">{label}</span>
-    </Link>
-  );
+  const DesktopNavLink = ({ to, icon, label }: NavLink) => {
+    const [hovered, setHovered] = useState(false);
+    return (
+      <Link
+        to={to}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="
+          relative
+          flex items-center justify-center
+          w-9 h-9
+          rounded-[var(--radius-md)]
+          transition-colors duration-150
+        "
+        style={{
+          color: hovered ? 'var(--brand-primary)' : 'var(--text-secondary)',
+          background: hovered ? 'var(--surface-2)' : 'transparent',
+        }}
+        aria-label={label}
+      >
+        {/* Icon */}
+        {icon}
+
+        {/* Tooltip */}
+        <span
+          className="
+            pointer-events-none
+            absolute top-full left-1/2 -translate-x-1/2 mt-2
+            px-2.5 py-1
+            text-xs font-semibold whitespace-nowrap
+            rounded-[var(--radius-sm)]
+            shadow-lg
+            z-[9999]
+            transition-all duration-150
+          "
+          style={{
+            background: 'var(--surface-1)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-default)',
+            opacity: hovered ? 1 : 0,
+            transform: hovered
+              ? 'translateX(-50%) translateY(0)'
+              : 'translateX(-50%) translateY(-4px)',
+          }}
+        >
+          {/* Arrow */}
+          <span
+            className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45"
+            style={{
+              background: 'var(--surface-1)',
+              borderLeft: '1px solid var(--border-default)',
+              borderTop: '1px solid var(--border-default)',
+            }}
+          />
+          {label}
+        </span>
+      </Link>
+    );
+  };
 
   // ─── Reusable Mobile Nav Link ───
   const MobileNavLink = ({ to, icon, label }: NavLink) => (
@@ -229,7 +276,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
         text-[var(--text-secondary)]
         hover:bg-[var(--surface-2)]
         hover:text-[var(--brand-primary)]
-        transition-all duration-200
+        transition-[opacity,transform,box-shadow] duration-200
         ${active ? 'bg-[var(--surface-2)] text-[var(--brand-primary)]' : ''}
       `}
       aria-label={label}
@@ -240,7 +287,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-[var(--surface-1)]/95 border-b border-[var(--border-default)] backdrop-blur-md">
+      <nav className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-default)]">
         <div className="w-full px-3 sm:px-4 lg:px-6 xl:px-10">
           <div className="flex items-center justify-between h-20 sm:h-24">
 
@@ -265,7 +312,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
             {/* ═══ Desktop Navigation (lg+) ═══ */}
             {loggedIn && activeLinks.length > 0 && (
-              <div className="hidden lg:flex items-center gap-1 xl:gap-2 mx-4 overflow-x-auto scrollbar-hide">
+              <div className="hidden lg:flex items-center gap-1 mx-4">
                 {activeLinks.map((link) => (
                   <DesktopNavLink key={link.to} {...link} />
                 ))}
@@ -382,6 +429,11 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 )}
               </div>
 
+              {/* User Search */}
+              <div className="hidden sm:block">
+                <UserSearchBar />
+              </div>
+
               {/* Theme Toggle */}
               <IconButton onClick={toggleColorScheme} label="Toggle theme">
                 {colorScheme === 'dark' ? (
@@ -390,6 +442,9 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                   <Moon className="w-10 h-7 sm:w-6 sm:h-6" />
                 )}
               </IconButton>
+
+              {/* Notification Bell — only when logged in */}
+              {loggedIn && <NotificationBell />}
 
               {/* User Menu / Auth Buttons */}
               {loggedIn ? (
@@ -486,7 +541,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
                       {isAdmin && (
                         <Link
-                          to="/admin/dashboard"
+                          to="/admin"
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
                           onClick={() => setShowUserMenu(false)}
                         >
@@ -617,6 +672,11 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                 </div>
               </div>
 
+              {/* Mobile search */}
+              <div className="px-4 py-2">
+                <UserSearchBar />
+              </div>
+
               {/* Section Label */}
               <div className="px-4 py-2">
                 <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
@@ -654,6 +714,20 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                     to="/settings"
                     icon={<SettingsIcon className="w-10 h-7" />}
                     label={t('nav.settings')}
+                  />
+                  <MobileNavLink
+                    to="/notifications"
+                    icon={
+                      <div className="relative">
+                        <Bell className="w-10 h-7" />
+                        {unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[1rem] h-4 px-0.5 text-[10px] font-bold text-white bg-[var(--state-error)] rounded-full">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    }
+                    label="Notifications"
                   />
                 </>
               )}

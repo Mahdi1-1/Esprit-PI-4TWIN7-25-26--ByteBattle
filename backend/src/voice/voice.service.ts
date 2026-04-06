@@ -300,4 +300,41 @@ export class VoiceService {
         const nanos = parseInt(time.nanos || '0', 10);
         return seconds + nanos / 1e9;
     }
+
+    async speechToTextFromMulterFile(audio: Express.Multer.File, languageCode: string): Promise<string> {
+        this.logger.debug(`STT request: size=${audio.size}bytes, lang=${languageCode}`);
+        this.logger.debug(`Credentials: ${process.env.GOOGLE_APPLICATION_CREDENTIALS}`);
+
+        if (!this.sttClient) {
+            throw new Error('Google Speech-to-Text client is not initialized. Check GOOGLE_APPLICATION_CREDENTIALS.');
+        }
+
+        const audioBytes = audio.buffer.toString('base64');
+
+        const config = {
+            encoding: 'WEBM_OPUS' as const,
+            sampleRateHertz: 48000,
+            languageCode,
+            enableAutomaticPunctuation: true,
+            model: 'latest_long',
+            useEnhanced: true,
+        };
+
+        this.logger.debug(`Sending to Google STT: ${audioBytes.length} base64 chars`);
+
+        const [response] = await this.sttClient.recognize({
+            audio: { content: audioBytes },
+            config,
+        });
+
+        this.logger.debug(`Google STT raw response: ${JSON.stringify(response.results)}`);
+
+        const transcript = response.results
+            ?.map(r => r.alternatives?.[0]?.transcript)
+            .filter(Boolean)
+            .join(' ') ?? '';
+
+        this.logger.debug(`Final transcript: "${transcript}"`);
+        return transcript;
+    }
 }

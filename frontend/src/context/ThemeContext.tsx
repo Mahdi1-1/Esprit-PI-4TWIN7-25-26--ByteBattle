@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
+import { THEME_LEVEL_REQUIREMENTS } from "./themeConstants";
 
 export type ThemeName =
   | "cyber"
@@ -28,15 +29,6 @@ interface ThemeContextType {
 const ThemeContext = createContext<
   ThemeContextType | undefined
 >(undefined);
-
-const THEME_LEVEL_REQUIREMENTS: Record<ThemeName, number> = {
-  samurai: 1,
-  space: 20,
-  cyber: 40,
-  pixel: 60,
-  mythic: 80,
-  sports: 100,
-};
 
 export function ThemeProvider({
   children,
@@ -123,5 +115,3 @@ export function useTheme() {
   }
   return context;
 }
-
-export { THEME_LEVEL_REQUIREMENTS };

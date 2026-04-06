@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { CountdownTimer } from '../components/Timer';
@@ -37,7 +36,7 @@ export function Hackathon() {
 
   return (
     <Layout>
-      <Navbar />
+
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {loading ? (

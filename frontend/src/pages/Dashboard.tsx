@@ -1,10 +1,8 @@
 import { Link } from 'react-router';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { XPBar } from '../components/ProgressBar';
 import { ProblemCard } from '../components/ProblemCard';
 import { MatchCard } from '../components/MatchCard';
-import { RarityBadge } from '../components/Badge';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Swords, Play, Users, TrendingUp, Loader } from 'lucide-react';
@@ -12,6 +10,7 @@ import { Layout } from '../components/Layout';
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { profileService } from '../services/profileService';
+import { BadgeGrid, BadgeData } from '../components/BadgeCard';
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -19,6 +18,7 @@ export function Dashboard() {
 
   const [recommendedProblems, setRecommendedProblems] = useState<any[]>([]);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
+  const [badges, setBadges] = useState<BadgeData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,17 +26,29 @@ export function Dashboard() {
       try {
         // En attendant que ces routes backend soient créées conformément aux spécifications
         // On effectue des requêtes réelles. Si elles échouent (404), on set des tableaux vides
-        const [problemsRes, matchesRes] = await Promise.allSettled([
+        const [problemsRes, matchesRes, badgesRes] = await Promise.allSettled([
           api.get('/challenges/recommended'), // Route for upcoming FR-07
-          api.get('/users/me/history') // Route for upcoming E2 - User Profile history
+          api.get('/users/me/history'), // Route for upcoming E2 - User Profile history
+          api.get('/badges/user/me'),
         ]);
 
         if (problemsRes.status === 'fulfilled') {
-          setRecommendedProblems(problemsRes.value.data.slice(0, 3));
+          const data = problemsRes.value.data;
+          // Backend may return a paginated object { data: [...] } or a plain array
+          const arr = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+          setRecommendedProblems(arr.slice(0, 3));
         }
 
         if (matchesRes.status === 'fulfilled') {
-          setRecentMatches(matchesRes.value.data.slice(0, 3));
+          const data = matchesRes.value.data;
+          const arr = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+          setRecentMatches(arr.slice(0, 3));
+        }
+
+        if (badgesRes.status === 'fulfilled') {
+          const data = badgesRes.value.data;
+          const arr = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+          setBadges(arr);
         }
 
       } catch (error) {
@@ -51,7 +63,7 @@ export function Dashboard() {
 
   return (
     <Layout>
-      <Navbar />
+
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -219,33 +231,20 @@ export function Dashboard() {
 
             {/* Badges */}
             <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-              <h3 className="mb-4">{t('dashboard.badges')}</h3>
-              <div className="space-y-3">
-                {[
-                  { name: 'First Blood', rarity: 'rare' as const, description: 'Solved your first challenge' },
-                  { name: 'Speed Demon', rarity: 'epic' as const, description: 'Solved a challenge in under 5 minutes' },
-                ].map((badge) => (
-                  <div
-                    key={badge.name}
-                    className="flex items-start gap-3 p-3 bg-[var(--surface-2)] rounded-[var(--radius-md)]"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center glow">
-                      🏆
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-[var(--text-primary)]">
-                          {badge.name}
-                        </span>
-                        <RarityBadge rarity={badge.rarity} />
-                      </div>
-                      <p className="text-caption text-[var(--text-muted)]">
-                        {badge.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-4">
+                <h3>{t('dashboard.badges')}</h3>
+                {badges.length > 0 && (
+                  <Link to="/profile" className="text-xs text-[var(--brand-primary)] hover:underline">
+                    View all {badges.length} →
+                  </Link>
+                )}
               </div>
+              <BadgeGrid
+                badges={badges}
+                size="sm"
+                limit={6}
+                emptyMessage="Complete challenges to earn badges!"
+              />
             </div>
           </div>
         </div>

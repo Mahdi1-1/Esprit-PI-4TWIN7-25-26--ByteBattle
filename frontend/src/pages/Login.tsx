@@ -2,25 +2,36 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '../components/Button';
 import { Input, PasswordInput } from '../components/Input';
-import { Code2, Github } from 'lucide-react';
+import { Github } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { BBLogo } from '../components/BBLogo';
+import { useAuth } from '../context/AuthContext';
 
 export function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await login(email, password);
       navigate('/dashboard');
-    }, 1000);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Email ou mot de passe incorrect.';
+      setError(Array.isArray(message) ? message.join(', ') : message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -100,6 +111,12 @@ export function Login() {
                   Mot de passe oublié ?
                 </a>
               </div>
+
+              {error && (
+                <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-[var(--radius-sm)] px-3 py-2">
+                  {error}
+                </p>
+              )}
 
               <Button
                 type="submit"

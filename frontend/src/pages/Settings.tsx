@@ -1,17 +1,19 @@
 // Settings Page - Complete User Profile & Settings
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { profileService } from '../services/profileService';
-import { User, Bell, Shield, Palette, Globe, Trash2, Save, AlertTriangle, Sun, Moon } from 'lucide-react';
+import { User, Bell, Shield, Palette, Globe, Trash2, Save, AlertTriangle, Sun, Moon, Trophy, Swords, MessageSquare, Code2, Medal, Megaphone, Check } from 'lucide-react';
 import { ProfilePhotoUpload } from '../components/settings/ProfilePhotoUpload';
 import { PasswordChangeForm } from '../components/settings/PasswordChangeForm';
 import { EmailChangeForm } from '../components/settings/EmailChangeForm';
 import { EditorThemeSelector } from '../components/settings/EditorThemeSelector';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useTheme } from '../context/ThemeContext';
+import { notificationsService } from '../services/notificationsService';
+import type { NotificationPreference } from '../types/notification.types';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '../types/notification.types';
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
@@ -25,6 +27,7 @@ export function Settings() {
   const [photoClearSignal, setPhotoClearSignal] = useState(0);
   const [bioSaving, setBioSaving] = useState(false);
   const [bioSuccess, setBioSuccess] = useState(false);
+  const [bioError, setBioError] = useState<string | null>(null);
 
   // Delete account state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -32,6 +35,36 @@ export function Settings() {
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Notification preferences state
+  const [prefs, setPrefs] = useState<NotificationPreference>(DEFAULT_NOTIFICATION_PREFERENCES as unknown as NotificationPreference);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  const [prefsSuccess, setPrefsSuccess] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'notifications') {
+      notificationsService.getPreferences().then(p => {
+        if (p) setPrefs(p);
+      }).catch(() => {});
+    }
+  }, [activeTab]);
+
+  const handleSavePrefs = async () => {
+    setPrefsSaving(true);
+    try {
+      await notificationsService.updatePreferences(prefs);
+      setPrefsSuccess(true);
+      setTimeout(() => setPrefsSuccess(false), 3000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPrefsSaving(false);
+    }
+  };
+
+  const togglePref = (key: keyof NotificationPreference) => {
+    setPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const tabs = [
     { id: 'profile', label: t('settings.profile'), icon: User },
@@ -44,6 +77,7 @@ export function Settings() {
   const handleSaveProfile = async () => {
     setBioSaving(true);
     setBioSuccess(false);
+    setBioError(null);
     try {
       if (selectedPhoto) {
         const result = await profileService.uploadPhoto(selectedPhoto);
@@ -56,8 +90,16 @@ export function Settings() {
       updateUser({ bio });
       setBioSuccess(true);
       setTimeout(() => setBioSuccess(false), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save profile:', error);
+      const serverMsg: string = error?.response?.data?.message ?? '';
+      if (serverMsg) {
+        setBioError(serverMsg);
+      } else if (error?.response?.status === 500) {
+        setBioError('Erreur serveur lors de la sauvegarde. Veuillez réessayer.');
+      } else {
+        setBioError('Une erreur est survenue. Veuillez réessayer.');
+      }
     } finally {
       setBioSaving(false);
     }
@@ -92,7 +134,7 @@ export function Settings() {
 
   return (
     <Layout>
-      <Navbar />
+
       <div className="w-full px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-4 sm:mb-6">{t('settings.title')}</h1>
 
@@ -165,6 +207,9 @@ export function Settings() {
                     {bioSuccess && (
                       <span className="text-xs text-[var(--state-success)]">Saved!</span>
                     )}
+                    {bioError && (
+                      <span className="text-xs text-[var(--state-error)]">{bioError}</span>
+                    )}
                   </div>
                 </div>
 
@@ -181,27 +226,113 @@ export function Settings() {
 
             {/* Notifications Settings */}
             {activeTab === 'notifications' && (
-              <div className="bg-[var(--surface)] border border-[var(--border-default)] rounded-lg p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-bold text-[var(--text-primary)] mb-4">{t('settings.notifications')}</h2>
-                <div className="space-y-4">
-                  {[
-                    { id: 'email_duels', label: 'Duel invitations', description: 'Get notified when someone challenges you' },
-                    { id: 'email_hackathons', label: 'Hackathon updates', description: 'News about upcoming hackathons' },
-                    { id: 'email_problems', label: 'New problems', description: 'Weekly digest of new problems' },
-                    { id: 'email_achievements', label: 'Achievements', description: 'When you unlock badges or level up' }
-                  ].map((item) => (
-                    <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3 border-b border-[var(--border-default)] last:border-0 gap-3">
-                      <div className="flex-1">
-                        <div className="font-medium text-[var(--text-primary)]">{item.label}</div>
-                        <div className="text-sm text-[var(--text-muted)]">{item.description}</div>
+              <div className="bg-[var(--surface)] border border-[var(--border-default)] rounded-lg p-4 sm:p-6 space-y-6">
+                <h2 className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{t('settings.notifications')}</h2>
+
+                {/* Category toggles */}
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Notification Categories</h3>
+                  <div className="space-y-3">
+                    {([
+                      { key: 'hackathon', label: 'Hackathon', desc: 'Team joins, status changes, results', icon: <Trophy className="w-4 h-4" /> },
+                      { key: 'duel', label: 'Duel', desc: 'Opponent matched, duel results, ELO milestones', icon: <Swords className="w-4 h-4" /> },
+                      { key: 'discussion', label: 'Discussion', desc: 'Replies, mentions, votes on your posts', icon: <MessageSquare className="w-4 h-4" /> },
+                      { key: 'submission', label: 'Submission', desc: 'Grading results for your submissions', icon: <Code2 className="w-4 h-4" /> },
+                      { key: 'achievement', label: 'Achievement', desc: 'Badges earned and level-up milestones', icon: <Medal className="w-4 h-4" /> },
+                      { key: 'system', label: 'System', desc: 'Platform announcements and maintenance', icon: <Megaphone className="w-4 h-4" /> },
+                    ] as const).map(({ key, label, desc, icon }) => (
+                      <div key={key} className="flex items-center justify-between py-2.5 border-b border-[var(--border-default)] last:border-0">
+                        <div className="flex items-center gap-3">
+                          <div className="text-[var(--brand-primary)]">{icon}</div>
+                          <div>
+                            <div className="font-medium text-[var(--text-primary)] text-sm">{label}</div>
+                            <div className="text-xs text-[var(--text-muted)]">{desc}</div>
+                          </div>
+                        </div>
+                        <label className="relative inline-block w-11 h-6 shrink-0 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!(prefs as any)[key]}
+                            onChange={() => togglePref(key as keyof NotificationPreference)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-[var(--surface-2)] rounded-full peer peer-checked:bg-[var(--brand-primary)] transition-colors" />
+                          <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+                        </label>
                       </div>
-                      <label className="relative inline-block w-12 h-6 shrink-0 cursor-pointer">
-                        <input type="checkbox" defaultChecked className="sr-only peer" />
-                        <div className="w-12 h-6 bg-[var(--surface-1)] rounded-full peer peer-checked:bg-[var(--brand-primary)] transition-colors cursor-pointer"></div>
-                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-6"></div>
-                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Channel toggles */}
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Delivery Channels</h3>
+                  <div className="space-y-3">
+                    {([
+                      { key: 'inApp', label: 'In-App', desc: 'Show notifications in the bell dropdown' },
+                      { key: 'email', label: 'Email', desc: 'Send notification emails (requires email verified)' },
+                      { key: 'push', label: 'Push', desc: 'Browser push notifications' },
+                    ] as const).map(({ key, label, desc }) => (
+                      <div key={key} className="flex items-center justify-between py-2.5 border-b border-[var(--border-default)] last:border-0">
+                        <div>
+                          <div className="font-medium text-[var(--text-primary)] text-sm">{label}</div>
+                          <div className="text-xs text-[var(--text-muted)]">{desc}</div>
+                        </div>
+                        <label className="relative inline-block w-11 h-6 shrink-0 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!(prefs as any)[key]}
+                            onChange={() => togglePref(key as keyof NotificationPreference)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-[var(--surface-2)] rounded-full peer peer-checked:bg-[var(--brand-primary)] transition-colors" />
+                          <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quiet Hours */}
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Quiet Hours</h3>
+                  <p className="text-xs text-[var(--text-muted)] mb-3">During quiet hours only critical notifications will push to you.</p>
+                  <div className="flex flex-wrap gap-4">
+                    <div>
+                      <label className="block text-xs text-[var(--text-muted)] mb-1">Start</label>
+                      <input
+                        type="time"
+                        value={prefs.quietStart ?? '22:00'}
+                        onChange={e => setPrefs(p => ({ ...p, quietStart: e.target.value }))}
+                        className="px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand-primary)]"
+                      />
                     </div>
-                  ))}
+                    <div>
+                      <label className="block text-xs text-[var(--text-muted)] mb-1">End</label>
+                      <input
+                        type="time"
+                        value={prefs.quietEnd ?? '08:00'}
+                        onChange={e => setPrefs(p => ({ ...p, quietEnd: e.target.value }))}
+                        className="px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand-primary)]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={handleSavePrefs}
+                    disabled={prefsSaving}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[var(--brand-primary)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 text-sm"
+                  >
+                    <Save className="w-4 h-4" />
+                    Save Preferences
+                  </button>
+                  {prefsSuccess && (
+                    <span className="flex items-center gap-1 text-sm text-[var(--state-success)]">
+                      <Check className="w-4 h-4" /> Saved!
+                    </span>
+                  )}
                 </div>
               </div>
             )}

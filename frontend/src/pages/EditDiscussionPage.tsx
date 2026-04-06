@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { useLanguage } from '../context/LanguageContext';
 import { discussionCategories } from '../data/discussionData';
@@ -76,7 +75,7 @@ export function EditDiscussionPage() {
   if (initLoading) {
     return (
       <Layout>
-        <Navbar />
+
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin w-8 h-8 rounded-full border-b-2 border-[var(--brand-primary)]"></div>
         </div>
@@ -86,7 +85,7 @@ export function EditDiscussionPage() {
 
   return (
     <Layout>
-      <Navbar />
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <button
           onClick={() => navigate(`/discussion/${id}`)}

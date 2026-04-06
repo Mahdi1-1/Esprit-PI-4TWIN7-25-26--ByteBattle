@@ -6,6 +6,10 @@ export class CreateBadgeDto {
   @IsString()
   name: string;
 
+  @ApiProperty()
+  @IsString()
+  key: string;
+
   @ApiProperty({ enum: ['common', 'rare', 'epic', 'legendary'] })
   @IsString()
   rarity: string;

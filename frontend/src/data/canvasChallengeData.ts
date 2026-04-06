@@ -1,21 +1,44 @@
 // Canvas challenge mock data and types
 
+/** Contraintes telles que stockées en base (Json object) */
+export interface CanvasChallengeConstraints {
+  timeLimit?: number;       // durée en minutes
+  maxElements?: number;
+  requiredComponents?: string[];
+  [key: string]: unknown;
+}
+
+/** Rubric criteria */
+export interface RubricItem {
+  category: string;
+  description: string;
+  maxPoints: number;
+}
+
+/**
+ * CanvasChallenge — structure normalisée reçue de l'API backend.
+ * Les champs `requirements`, `constraints`, `deliverables`, `successCriteria`
+ * sont extraits / dérivés du backend dans canvasService.normalizeChallenge().
+ */
 export interface CanvasChallenge {
   id: string;
   title: string;
-  description: string;
-  type: 'drawing' | 'design' | 'illustration' | 'pixel-art';
+  description: string;           // = descriptionMd (texte brut ou markdown)
+  type?: string;                 // catégorie backend (architecture, devops, …)
   difficulty: 'easy' | 'medium' | 'hard' | 'expert';
-  duration: number; // minutes
-  context: string;
-  requirements: string[];
-  constraints: string[];
-  deliverables: string[];
+  duration: number;              // = constraints.timeLimit ?? 45
+  context?: string;
+  requirements: string[];        // = constraints.requiredComponents ?? []
+  constraints: string[];         // = liste clé:valeur de l'objet constraints
+  deliverables: string[];        // = [challenge.deliverables] si présent
   successCriteria: string[];
   tags: string[];
-  rubric: { category: string; description: string; maxPoints: number }[];
+  rubric: RubricItem[];
+  hints?: string[];
   thumbnail?: string;
   status?: 'new' | 'attempted' | 'completed';
+  isDuelEnabled?: boolean;
+  duelTimeLimit?: number | null;
 }
 
 export interface CommunityDesign {

@@ -93,21 +93,21 @@ export class DiscussionsController {
   @Patch(':id')
   @Roles('user')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update own discussion' })
+  @ApiOperation({ summary: 'Update discussion (author, moderator, or admin)' })
   update(
     @Param('id') id: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser() user: { id: string; role: string },
     @Body() dto: UpdateDiscussionDto,
   ) {
-    return this.discussionsService.updateDiscussion(id, userId, dto);
+    return this.discussionsService.updateDiscussion(id, user.id, dto, user.role);
   }
 
   @Delete(':id')
   @Roles('user')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete own discussion' })
-  remove(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    return this.discussionsService.deleteDiscussion(id, userId);
+  @ApiOperation({ summary: 'Delete discussion (author, moderator, or admin)' })
+  remove(@Param('id') id: string, @CurrentUser() user: { id: string; role: string }) {
+    return this.discussionsService.deleteDiscussion(id, user.id, user.role);
   }
 
   @Post(':id/vote')
@@ -154,24 +154,24 @@ export class DiscussionsController {
   @Patch('comments/:commentId')
   @Roles('user')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Edit own comment' })
+  @ApiOperation({ summary: 'Edit comment (author, moderator, or admin)' })
   updateComment(
     @Param('commentId') commentId: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser() user: { id: string; role: string },
     @Body() dto: UpdateCommentDto,
   ) {
-    return this.discussionsService.updateComment(commentId, userId, dto);
+    return this.discussionsService.updateComment(commentId, user.id, dto, user.role);
   }
 
   @Delete('comments/:commentId')
   @Roles('user')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete own comment and its replies' })
+  @ApiOperation({ summary: 'Delete comment and replies (author, moderator, or admin)' })
   deleteComment(
     @Param('commentId') commentId: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.discussionsService.deleteComment(commentId, userId);
+    return this.discussionsService.deleteComment(commentId, user.id, user.role);
   }
 
   @Post('comments/:commentId/vote')

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueueService } from '../queue/queue.service';
 import { RunCodeDto } from './dto/create-submission.dto';
@@ -158,7 +158,7 @@ export class SubmissionsService {
     return { data: submissions, total, page, limit };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requesterId?: string, requesterRole?: string) {
     const submission = await this.prisma.submission.findUnique({
       where: { id },
       include: {
@@ -168,6 +168,12 @@ export class SubmissionsService {
       },
     });
     if (!submission) throw new NotFoundException('Submission not found');
+
+    // Ownership check: only the owner or admin can view the full submission
+    if (requesterId && requesterRole !== 'admin' && submission.userId !== requesterId) {
+      throw new ForbiddenException('You can only view your own submissions');
+    }
+
     return submission;
   }
 

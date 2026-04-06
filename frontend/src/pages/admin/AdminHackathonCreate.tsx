@@ -810,7 +810,7 @@ export function AdminHackathonCreate() {
             <button
               onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
               disabled={!canNext()}
-              className="flex items-center gap-1 px-5 py-2.5 bg-[var(--brand-primary)] text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              className="flex items-center gap-1 px-6 py-2.5 bg-[var(--brand-primary)] text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
             >
               NEXT
               <ChevronRight className="w-4 h-4" />

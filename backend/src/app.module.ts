@@ -32,6 +32,7 @@ import { CacheModule } from './cache/cache.module';
       inject: [ConfigService],
     }),
     PrismaModule,
+    CacheModule,
     AuthModule,
     UsersModule,
     AvatarModule,
@@ -45,7 +46,6 @@ import { CacheModule } from './cache/cache.module';
     AdminModule,
     DuelsModule,
     NotificationsModule,
-    CacheModule,
   ],
 })
 export class AppModule {}

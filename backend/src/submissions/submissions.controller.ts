@@ -49,16 +49,17 @@ export class SubmissionsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get submission by ID' })
-  findOne(@Param('id') id: string) {
-    return this.submissionsService.findOne(id);
+  @Roles('user')
+  @ApiOperation({ summary: 'Get submission by ID (owner or admin)' })
+  findOne(@Param('id') id: string, @CurrentUser() user: { id: string; role: string }) {
+    return this.submissionsService.findOne(id, user.id, user.role);
   }
 
   @Get(':id/status')
   @Roles('user')
   @ApiOperation({ summary: 'Get submission status (polling)' })
-  async getStatus(@Param('id') id: string) {
-    const submission = await this.submissionsService.findOne(id);
+  async getStatus(@Param('id') id: string, @CurrentUser() user: { id: string; role: string }) {
+    const submission = await this.submissionsService.findOne(id, user.id, user.role);
     return {
       status: submission.verdict,
       score: submission.score,

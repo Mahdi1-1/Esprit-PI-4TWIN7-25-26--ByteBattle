@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { duelsService } from '../services/duelsService';
@@ -119,12 +118,7 @@ export function DuelMatchmaking() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <Navbar 
-        isLoggedIn 
-         
-         
-      />
-
+      
       <div className="w-full px-4 sm:px-6 lg:px-10 py-12">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
@@ -192,7 +186,7 @@ export function DuelMatchmaking() {
                 </div>
 
                 {/* Info Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                   <InfoCard
                     icon={<Target className="w-5 h-5" />}
                     label="Elo Range"
@@ -200,7 +194,12 @@ export function DuelMatchmaking() {
                   />
                   <InfoCard
                     icon={<Users className="w-5 h-5" />}
-                    label="Active Duels"
+                    label="Players Online"
+                    value={loadingStats ? '...' : `${queueStats.playersOnline}`}
+                  />
+                  <InfoCard
+                    icon={<Swords className="w-5 h-5" />}
+                    label="Duels"
                     value={loadingStats ? '...' : `${queueStats.activeDuels} active · ${queueStats.waitingDuels} waiting`}
                   />
                   <InfoCard

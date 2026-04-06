@@ -2,11 +2,13 @@ import { Controller, Post, Body, Get, Param, Query, UseGuards } from '@nestjs/co
 import { DuelsService } from './duels.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('Duels')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@Roles('user')
 @Controller('duels')
 export class DuelsController {
   constructor(private readonly duelsService: DuelsService) {}

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { useLanguage } from '../context/LanguageContext';
 import { Layers, ListOrdered, ArrowRightLeft, GitBranch, Share2, LayoutList } from 'lucide-react';
 import { StackVisualizer } from '../components/visualizers/StackVisualizer';
@@ -47,7 +46,7 @@ export function DataStructuresPage() {
 
   return (
     <Layout>
-      <Navbar />
+
       <Toaster
         position="top-right"
         toastOptions={{

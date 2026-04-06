@@ -8,6 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateHackathonDto, UpdateHackathonDto } from './dto/hackathon.dto';
 import { CreateHackathonTeamDto } from './dto/team.dto';
 import { HackathonAuditService } from './hackathon-audit.service';
+import { NotificationEmitterService } from '../notifications/notification-emitter.service';
+import { NotificationCategory, NotificationPriority, NotificationType } from '../notifications/notification.constants';
 
 // ── helpers ──────────────────────────────────────────────
 function generateJoinCode(): string {
@@ -32,6 +34,7 @@ export class HackathonsService {
   constructor(
     private prisma: PrismaService,
     private auditService: HackathonAuditService,
+    private notificationEmitter: NotificationEmitterService,
   ) {}
 
   // ────────────────────────────────────────────────────────
@@ -82,7 +85,7 @@ export class HackathonsService {
         take: limit,
         orderBy: { startTime: 'desc' },
         include: {
-          _count: { select: { hackathonTeams: true } },
+          _count: { select: { hackathonTeams: true, teams: true } },
         },
       }),
       this.prisma.hackathon.count({ where }),
@@ -96,6 +99,9 @@ export class HackathonsService {
       where: { id },
       include: {
         hackathonTeams: {
+          orderBy: { score: 'desc' },
+        },
+        teams: {
           orderBy: { score: 'desc' },
         },
       },
@@ -314,6 +320,31 @@ export class HackathonsService {
       to: newStatus,
     });
 
+    // Notify all participants when hackathon goes live or ends
+    if (newStatus === 'active' || newStatus === 'ended') {
+      const teams = await this.prisma.hackathonTeam.findMany({ where: { hackathonId } });
+      const participantIds = [...new Set(teams.flatMap(t => t.members.map((m: any) => m.userId)))];
+
+      const isStart = newStatus === 'active';
+      await Promise.all(
+        participantIds.map(uid =>
+          this.notificationEmitter.emit({
+            userId: uid,
+            type: isStart ? NotificationType.HACKATHON_STARTED : NotificationType.HACKATHON_ENDED,
+            category: NotificationCategory.HACKATHON,
+            priority: isStart ? NotificationPriority.HIGH : NotificationPriority.MEDIUM,
+            title: isStart ? `🚀 ${hackathon.title} has started!` : `🏁 ${hackathon.title} has ended`,
+            message: isStart
+              ? 'The competition is live. Good luck!'
+              : 'Check the scoreboard for final results.',
+            actionUrl: `/hackathons/${hackathonId}`,
+            entityId: hackathonId,
+            entityType: 'Hackathon',
+          }),
+        ),
+      );
+    }
+
     return updated;
   }
 
@@ -453,7 +484,7 @@ export class HackathonsService {
       throw new BadRequestException('Team is full');
     }
 
-    return this.prisma.hackathonTeam.update({
+    const updated = await this.prisma.hackathonTeam.update({
       where: { id: team.id },
       data: {
         members: {
@@ -461,6 +492,30 @@ export class HackathonsService {
         },
       },
     });
+
+    // Notify all existing team members
+    const existingMemberIds = team.members.map((m: any) => m.userId);
+    const joiner = await this.prisma.user.findUnique({ where: { id: userId }, select: { username: true, profileImage: true } });
+    await Promise.all(
+      existingMemberIds.map((mid: string) =>
+        this.notificationEmitter.emit({
+          userId: mid,
+          type: NotificationType.HACKATHON_TEAM_JOINED,
+          category: NotificationCategory.HACKATHON,
+          priority: NotificationPriority.MEDIUM,
+          title: `${joiner?.username ?? 'Someone'} joined your team!`,
+          message: `New member in ${team.name} for ${hackathon.title}.`,
+          actionUrl: `/hackathons/${hackathonId}`,
+          entityId: hackathonId,
+          entityType: 'Hackathon',
+          senderId: userId,
+          senderName: joiner?.username,
+          senderPhoto: joiner?.profileImage ?? undefined,
+        }),
+      ),
+    );
+
+    return updated;
   }
 
   /** Solo join shortcut — auto-creates a team of 1 */
@@ -545,6 +600,29 @@ export class HackathonsService {
 
     const isCaptain = team.members.find((m) => m.userId === userId)?.role === 'captain';
     const remainingMembers = team.members.filter((m) => m.userId !== userId);
+    const leaver = await this.prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
+
+    const notifyTeamLeft = async (newCaptainId: string | null) => {
+      await Promise.all(
+        remainingMembers.map((m: any) =>
+          this.notificationEmitter.emit({
+            userId: m.userId,
+            type: NotificationType.HACKATHON_TEAM_LEFT,
+            category: NotificationCategory.HACKATHON,
+            priority: NotificationPriority.LOW,
+            title: `${leaver?.username ?? 'A member'} left your team`,
+            message: newCaptainId
+              ? `Captain succession: new captain assigned.`
+              : `Team: ${team.name}`,
+            actionUrl: `/hackathons/${hackathonId}`,
+            entityId: hackathonId,
+            entityType: 'Hackathon',
+            senderId: userId,
+            senderName: leaver?.username,
+          }),
+        ),
+      );
+    };
 
     // No members left → dissolve team
     if (remainingMembers.length === 0) {
@@ -568,6 +646,7 @@ export class HackathonsService {
         data: { members: updated },
       });
 
+      await notifyTeamLeft(sorted[0].userId);
       return { message: 'Left team successfully', newCaptain: sorted[0].userId };
     }
 
@@ -576,6 +655,7 @@ export class HackathonsService {
       data: { members: remainingMembers },
     });
 
+    await notifyTeamLeft(null);
     return { message: 'Left team successfully', newCaptain: null };
   }
 

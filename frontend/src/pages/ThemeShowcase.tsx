@@ -1,6 +1,5 @@
 import { useTheme } from '../context/ThemeContext';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
  
 import { Button } from '../components/Button';
 
@@ -9,12 +8,7 @@ export function ThemeShowcase() {
 
   return (
     <Layout>
-      <Navbar 
-        isLoggedIn 
-         
-         
-      />
-
+      
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {/* Theme Header */}
         <div className="mb-12 text-center">

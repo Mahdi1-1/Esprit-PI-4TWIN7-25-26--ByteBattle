@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { useLanguage } from '../context/LanguageContext';
@@ -153,7 +152,7 @@ export function DiscussionDetailPage() {
   if (loading) {
     return (
       <Layout>
-        <Navbar />
+
         <div className="flex items-center justify-center h-64">
           <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
         </div>
@@ -164,7 +163,7 @@ export function DiscussionDetailPage() {
   if (!post) {
     return (
       <Layout>
-        <Navbar />
+
         <div className="w-full px-4 sm:px-6 lg:px-10 py-20 text-center">
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t('discussion.notFound')}</h2>
           <Link to="/discussion" className="text-[var(--brand-primary)] hover:underline mt-4 inline-block">
@@ -329,7 +328,7 @@ export function DiscussionDetailPage() {
 
   return (
     <Layout>
-      <Navbar />
+
 
       <div className="max-w-[960px] mx-auto px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8">
         {/* Back Link */}

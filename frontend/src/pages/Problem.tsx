@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { DifficultyBadge, VerdictBadge } from '../components/Badge';
 import { CodeFocusManager } from '../components/CodeFocusManager';
@@ -11,6 +10,7 @@ import { adminService } from '../services/adminService';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import Editor from "@monaco-editor/react";
+import { useEditorTheme, defineMonacoThemes } from '../context/EditorThemeContext';
 import { useAnticheat } from '../hooks/useAnticheat';
 import {
   Play,
@@ -49,52 +49,73 @@ const LANG_EXTENSIONS: Record<string, string> = {
   rust: 'rs',
 };
 
+// ─── Input format convention ───────────────────────────────────────────────
+// Each test case is delivered via stdin.
+// Lines are separated by \n. Each line may be a plain value or a JSON-encoded
+// value (e.g. a list). Use the helpers below to parse them.
+// Always write your answer to stdout with print() / console.log() / fmt.Println().
+// ─────────────────────────────────────────────────────────────────────────────
 const CODE_TEMPLATES: Record<string, string> = {
   python: `import sys
+import json
 
-def solution():
-    # Votre code ici
-    data = sys.stdin.read().split()
+def solution(lines):
+    # Each line is either a plain value or JSON-encoded.
+    # Example: parse a list from line 0 and an int from line 1
+    # nums = json.loads(lines[0])
+    # target = int(lines[1])
+    # print(result)
     pass
 
 if __name__ == "__main__":
-    solution()
+    data = sys.stdin.read().splitlines()
+    solution(data)
 `,
-  javascript: `const readline = require('readline');
+  javascript: `const lines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\\n');
 
-function solution() {
-  // Votre code ici
+function solution(lines) {
+  // Each line is either a plain value or JSON-encoded.
+  // Example: parse a list from line 0 and an int from line 1
+  // const nums = JSON.parse(lines[0]);
+  // const target = parseInt(lines[1]);
+  // console.log(result);
 }
 
-// Lecture de l'entrée
-const rl = readline.createInterface({ input: process.stdin });
-const lines = [];
-rl.on('line', (line) => lines.push(line));
-rl.on('close', () => {
-  solution(lines);
-});
+solution(lines);
 `,
-  typescript: `import * as readline from 'readline';
+  typescript: `import * as fs from 'fs';
+
+const lines: string[] = fs.readFileSync('/dev/stdin', 'utf8').trim().split('\\n');
 
 function solution(lines: string[]): void {
-  // Votre code ici
+  // Each line is either a plain value or JSON-encoded.
+  // Example: parse a list from line 0 and an int from line 1
+  // const nums: number[] = JSON.parse(lines[0]);
+  // const target: number = parseInt(lines[1]);
+  // console.log(result);
 }
 
-const rl = readline.createInterface({ input: process.stdin });
-const lines: string[] = [];
-rl.on('line', (line: string) => lines.push(line));
-rl.on('close', () => {
-  solution(lines);
-});
+solution(lines);
 `,
   cpp: `#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <algorithm>
 using namespace std;
 
 int main() {
-    // Votre code ici
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    // Read all lines from stdin
+    string line;
+    vector<string> lines;
+    while (getline(cin, line)) lines.push_back(line);
+
+    // Each line is either a plain value or a JSON-like array.
+    // Parse and print your result:
+    // cout << result << endl;
 
     return 0;
 }
@@ -104,19 +125,32 @@ int main() {
 #include <string.h>
 
 int main() {
-    // Votre code ici
-
+    char line[4096];
+    // Read lines from stdin
+    while (fgets(line, sizeof(line), stdin)) {
+        // Remove trailing newline
+        line[strcspn(line, "\\n")] = 0;
+        // Parse and process each line
+    }
+    // printf("%d\\n", result);
     return 0;
 }
 `,
   java: `import java.util.*;
+import java.io.*;
 
 public class Solution {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        // Votre code ici
+    public static void main(String[] args) throws Exception {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        List<String> lines = new ArrayList<>();
+        String line;
+        while ((line = br.readLine()) != null) lines.add(line);
 
-        sc.close();
+        // Each line is either a plain value or a JSON-like array.
+        // Example: parse line 0 as array, line 1 as int
+        // String[] parts = lines.get(0).replaceAll("[\\\\[\\\\] ]","").split(",");
+        // int target = Integer.parseInt(lines.get(1).trim());
+        // System.out.println(result);
     }
 }
 `,
@@ -129,9 +163,15 @@ import (
 )
 
 func main() {
-	reader := bufio.NewReader(os.Stdin)
-	_ = reader
-	// Votre code ici
+	scanner := bufio.NewScanner(os.Stdin)
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	// Each line is either a plain value or a JSON-like array.
+	// Parse and print your result:
+	_ = lines
 	fmt.Println()
 }
 `,
@@ -139,8 +179,14 @@ func main() {
 
 fn main() {
     let stdin = io::stdin();
-    let mut lines = stdin.lock().lines();
-    // Votre code ici
+    let lines: Vec<String> = stdin.lock().lines()
+        .map(|l| l.expect("Could not read line"))
+        .collect();
+
+    // Each line is either a plain value or a JSON-like array.
+    // Parse and print your result:
+    // println!("{}", result);
+    let _ = lines;
 }
 `,
 };
@@ -344,6 +390,7 @@ export function Problem() {
   const [hintsUsed, setHintsUsed] = useState(0);
   const [socket, setSocket] = useState<Socket | null>(null);
   const { user } = useAuth();
+  const { editorTheme } = useEditorTheme();
 
   // ── Anticheat ────────────────────────────────────────────────────────────
   const { focusLostCount, totalFocusLostTime, isFullScreen } = useAnticheat({
@@ -361,6 +408,7 @@ export function Problem() {
         // Set default code template based on selected language
         if (data.allowedLanguages?.length > 0) {
           const firstLang = data.allowedLanguages[0];
+          setLanguage(firstLang);
           setCode(CODE_TEMPLATES[firstLang] || '// Votre code ici\n');
         } else {
           setCode(CODE_TEMPLATES[language] || '// Votre code ici\n');
@@ -528,7 +576,7 @@ export function Problem() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <Navbar isLoggedIn />
+
 
       {/* Breadcrumb */}
       <div className="border-b border-[var(--border-default)] bg-[var(--surface-1)]">
@@ -646,6 +694,9 @@ export function Problem() {
 
               {activeTab === 'tests' && (
                 <div className="space-y-3">
+                  <div className="text-xs text-[var(--text-muted)] bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-md)] px-3 py-2">
+                    💡 Each line of the input is a separate argument. Read them with <code className="font-code">stdin.splitlines()</code> (Python) or <code className="font-code">readFileSync('/dev/stdin').split('\n')</code> (JS/TS). JSON arrays are already formatted.
+                  </div>
                   {problem.tests && problem.tests.length > 0 ? (
                     problem.tests.map((test: any, i: number) => (
                       <TestCase
@@ -764,12 +815,16 @@ export function Problem() {
               </div>
 
               <Editor
+                key={language}
                 height="100%"
                 language={language}
-                theme="vs-dark"
-                value={code}
+                theme={editorTheme || 'vs-dark'}
+                defaultValue={code}
+                path={`solution.${LANG_EXTENSIONS[language] || language}`}
                 onChange={(value) => setCode(value || '')}
                 beforeMount={(monaco) => {
+                  // Register all custom themes (monokai, dracula, github-dark, …)
+                  defineMonacoThemes(monaco);
                   // Register autocomplete providers for all languages
                   const kindMap: Record<string, number> = {
                     Function: monaco.languages.CompletionItemKind.Function,

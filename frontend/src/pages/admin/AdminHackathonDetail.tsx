@@ -182,6 +182,8 @@ export function AdminHackathonDetail() {
   const canCancel = hackathon && !['active', 'frozen', 'cancelled', 'archived'].includes(hackathon.status);
   const canDelete = hackathon && !['active', 'frozen'].includes(hackathon.status);
 
+  const allTeams = [...(hackathon?.hackathonTeams || []), ...(hackathon?.teams || [])];
+
   return (
     <AdminLayout>
       <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -192,7 +194,7 @@ export function AdminHackathonDetail() {
             <div className="flex items-center gap-3 mt-1">
               <Badge variant={hackathon?.status}>{hackathon?.status}</Badge>
               <span className="text-sm text-[var(--text-muted)]">
-                {hackathon?.hackathonTeams?.length || 0} teams
+                {allTeams.length} teams
               </span>
             </div>
           </div>
@@ -253,15 +255,15 @@ export function AdminHackathonDetail() {
         {/* Teams */}
         <div className="p-4 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg">
           <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">
-            Teams ({hackathon?.hackathonTeams?.length || 0})
+            Teams ({allTeams.length})
           </h3>
           <div className="space-y-2">
-            {!hackathon?.hackathonTeams || hackathon.hackathonTeams.length === 0 ? (
+            {allTeams.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)] py-4 text-center">
                 No teams registered yet
               </p>
             ) : (
-              hackathon.hackathonTeams.map((team: any) => (
+              allTeams.map((team: any) => (
                 <div key={team.id} className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded">
                   <div>
                     <span className="font-medium">{team.name}</span>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { type CanvasChallenge, type CanvasSubmission } from '../data/canvasChallengeData';
@@ -45,7 +44,7 @@ export function CanvasSubmissionResult() {
   if (loading) {
     return (
       <Layout>
-        <Navbar isLoggedIn />
+
         <div className="flex items-center justify-center h-64">
           <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
         </div>
@@ -56,12 +55,7 @@ export function CanvasSubmissionResult() {
   if (!challenge || !submission) {
     return (
       <Layout>
-        <Navbar 
-          isLoggedIn 
-           
-           
-        />
-        <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+                <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
               Résultat non trouvé
@@ -92,12 +86,7 @@ export function CanvasSubmissionResult() {
 
   return (
     <Layout>
-      <Navbar 
-        isLoggedIn 
-         
-         
-      />
-      <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto space-y-8">
           {/* Hero - Score */}
           <div className="theme-card corner-brackets relative bg-[var(--surface-1)] border-[var(--border-default)] p-8 text-center space-y-6">

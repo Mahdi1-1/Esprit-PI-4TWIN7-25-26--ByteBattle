@@ -1,10 +1,11 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue, QueueEvents, Job } from 'bullmq';
+import { Queue, QueueEvents } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 import { forwardRef, Inject } from '@nestjs/common';
 import { CodeExecutionJob } from './interfaces/code-execution-job.interface';
 import { SubmissionsGateway } from '../submissions/submissions.gateway';
+import { BadgeEngineService } from '../badges/badge-engine.service';
 
 @Injectable()
 export class QueueService implements OnModuleInit, OnModuleDestroy {
@@ -16,6 +17,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     private configService: ConfigService,
     @Inject(forwardRef(() => SubmissionsGateway))
     private submissionsGateway: SubmissionsGateway,
+    private badgeEngine: BadgeEngineService,
   ) {}
 
   async onModuleInit() {
@@ -45,6 +47,22 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
           status: 'completed',
           result: returnvalue,
         });
+
+        // Trigger badge evaluation for AC submissions (fire-and-forget)
+        const result = returnvalue as any;
+        if (result?.verdict === 'AC' && job.data.context !== 'duel') {
+          this.badgeEngine.onSubmissionAccepted(job.data.userId, {
+            id: job.data.submissionId,
+            challengeId: job.data.challengeId,
+            language: job.data.language,
+            timeMs: result.totalTimeMs,
+            createdAt: new Date(),
+          }).catch(err => this.logger.error('Badge engine error (submission):', err));
+
+          // Check level/XP badges after every AC submission
+          this.badgeEngine.checkUserLevelBadges(job.data.userId)
+            .catch(err => this.logger.error('Badge engine error (level):', err));
+        }
       }
     });
 

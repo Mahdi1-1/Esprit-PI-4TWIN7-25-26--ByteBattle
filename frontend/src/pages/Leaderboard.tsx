@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Navbar } from '../components/Navbar';
 import { Layout } from '../components/Layout';
 import { Trophy, TrendingUp, Medal, Loader } from 'lucide-react';
 import { leaderboardService } from '../services/leaderboardService';
@@ -85,7 +84,7 @@ export function Leaderboard() {
 
   return (
     <Layout>
-      <Navbar />
+
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {loading ? (

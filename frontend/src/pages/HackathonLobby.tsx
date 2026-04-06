@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { CountdownTimer } from '../components/Timer';
@@ -197,7 +196,7 @@ export function HackathonLobby() {
   return (
     <>
       <Layout>
-      <Navbar />
+
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="mb-8">

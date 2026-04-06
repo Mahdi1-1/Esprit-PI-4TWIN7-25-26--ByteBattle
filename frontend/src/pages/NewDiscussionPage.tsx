@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { useLanguage } from '../context/LanguageContext';
 import { discussionCategories } from '../data/discussionData';
@@ -51,7 +50,7 @@ export function NewDiscussionPage() {
 
   return (
     <Layout>
-      <Navbar />
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <button
           onClick={() => navigate('/discussion')}

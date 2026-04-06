@@ -1,11 +1,10 @@
 import { Button } from '../components/Button';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 
 export function ThemeShowcaseComponents() {
   return (
     <Layout>
-      <Navbar />
+
       <div className="p-8">
         <div className="w-full px-4 sm:px-6 lg:px-10 space-y-12">
         {/* Header */}

@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { Navbar } from '../components/Navbar';
 import { ExcalidrawEditor } from '../components/ExcalidrawEditor';
 import type { SavedScene } from '../components/ExcalidrawEditor';
 import { ThemeEffects } from '../components/ThemeEffects';
@@ -80,7 +79,7 @@ export function SketchpadPage() {
   return (
     <div className="h-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden">
       <ThemeEffects />
-      <Navbar />
+
 
       {/* Header bar */}
       <div className="bg-[var(--surface-1)] border-b border-[var(--border-default)] px-4 sm:px-6 lg:px-10">

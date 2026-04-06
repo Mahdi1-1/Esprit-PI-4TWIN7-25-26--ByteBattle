@@ -3,12 +3,11 @@ import { Link } from 'react-router';
 import { Code2, Swords, Users, Brain, Shield, Zap, ArrowRight, Github } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 
 export function Landing() {
   return (
     <Layout>
-      <Navbar />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="w-full px-4 sm:px-6 lg:px-10 py-20 lg:py-32">
@@ -143,11 +142,13 @@ export function Landing() {
           <p className="text-[var(--text-secondary)] mb-8 max-w-2xl mx-auto">
             Join thousands of developers improving their skills every day
           </p>
-          <Link to="/signup">
-            <Button variant="primary" size="lg">
-              Create Free Account
-            </Button>
-          </Link>
+            <div className="flex justify-center">
+              <Link to="/signup">
+                <Button variant="primary" size="lg">
+                  Create Free Account
+                </Button>
+              </Link>
+            </div>
         </div>
       </section>
 

@@ -98,15 +98,13 @@ export function MetricCard({ title, value, icon, trend, color = 'default' }: Met
   };
 
   return (
-    <div className={`bg-[var(--surface-1)] border ${colors[color]} rounded-lg p-4`}>
-      <div className="flex items-start justify-between mb-2">
-        <span className="text-xs text-[var(--text-secondary)] uppercase tracking-wide">{title}</span>
-        {icon && <span className="text-[var(--text-muted)]">{icon}</span>}
-      </div>
-      <div className="flex items-end justify-between">
-        <span className="text-2xl font-bold text-[var(--text-primary)]">{value}</span>
+    <div className={`bg-[var(--surface-1)] border ${colors[color]} rounded-xl p-5 flex flex-col items-center justify-center text-center min-h-[120px] gap-2`}>
+      {icon && <span className="text-[var(--text-muted)] opacity-60">{icon}</span>}
+      <span className="text-[11px] text-[var(--text-muted)] uppercase tracking-wider font-semibold leading-tight">{title}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-2xl font-bold text-[var(--text-primary)] tabular-nums leading-none">{value}</span>
         {trend && (
-          <span className={`text-xs font-medium ${trend.direction === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+          <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${trend.direction === 'up' ? 'text-green-500 bg-green-500/10' : 'text-red-500 bg-red-500/10'}`}>
             {trend.direction === 'up' ? '↑' : '↓'} {Math.abs(trend.value)}%
           </span>
         )}

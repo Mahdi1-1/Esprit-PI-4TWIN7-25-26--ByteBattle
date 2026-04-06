@@ -25,10 +25,10 @@
 
 **Purpose**: Prisma schema changes and shared service setup required by all stories
 
-- [x] T001 Add `anticheatViolations Int @default(0)` field to HackathonTeam model in `backend/prisma/schema.prisma`
-- [x] T002 Add `problemStartTimes Json?` field to HackathonTeam model in `backend/prisma/schema.prisma`
-- [x] T003 Run `npx prisma generate` and `npx prisma db push` to apply schema changes in `backend/`
-- [x] T004 [P] Inject `PrismaService` into `HackathonsGateway` constructor in `backend/src/hackathons/hackathons.gateway.ts`
+- [X] T001 Add `anticheatViolations Int @default(0)` field to HackathonTeam model in `backend/prisma/schema.prisma`
+- [X] T002 Add `problemStartTimes Json?` field to HackathonTeam model in `backend/prisma/schema.prisma`
+- [X] T003 Run `npx prisma generate` and `npx prisma db push` to apply schema changes in `backend/`
+- [X] T004 [P] Inject `PrismaService` into `HackathonsGateway` constructor in `backend/src/hackathons/hackathons.gateway.ts`
 
 ---
 
@@ -38,9 +38,9 @@
 
 **⚠️ CRITICAL**: User story phases cannot start until this is complete
 
-- [x] T005 Implement `getHackathonChallenges(hackathonId, teamId?)` method with sequential unlock logic and `TIME_LIMITS` map in `backend/src/hackathons/hackathons.service.ts`
-- [x] T006 Add `GET /hackathons/:id/challenges` endpoint with `@Query('teamId')` parameter in `backend/src/hackathons/hackathons.controller.ts`
-- [x] T007 Add `getHackathonChallenges(hackathonId, teamId)` API method in `frontend/src/services/hackathonsService.ts`
+- [X] T005 Implement `getHackathonChallenges(hackathonId, teamId?)` method with sequential unlock logic and `TIME_LIMITS` map in `backend/src/hackathons/hackathons.service.ts`
+- [X] T006 Add `GET /hackathons/:id/challenges` endpoint with `@Query('teamId')` parameter in `backend/src/hackathons/hackathons.controller.ts`
+- [X] T007 Add `getHackathonChallenges(hackathonId, teamId)` API method in `frontend/src/services/hackathonsService.ts`
 
 **Checkpoint**: `GET /api/hackathons/:id/challenges?teamId=X` returns ordered challenges with `locked`, `solved`, `timeLimitMinutes`, `startedAt` fields.
 
@@ -54,21 +54,21 @@
 
 ### Implementation for User Story 1
 
-- [x] T008 [US1] Create `AntiCheatWarning` component stub (returns null) and `ProblemTimer` component stub (returns placeholder) at top of `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T009 [US1] Create `HackathonWorkspace` component with core state: `hackathon`, `loading`, `problems`, `currentProblemIndex`, `code`, `language` in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T010 [US1] Implement `useEffect` to load hackathon data via `hackathonsService.getById(id)` with status-based redirection in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T011 [US1] Implement `loadChallenges` callback that calls `hackathonsService.getHackathonChallenges(id, myTeam.id)` and sets `problems` state in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T012 [US1] Build the 3-panel layout: LEFT (w-56 problem sidebar with progress bar), CENTER (flex-1 statement + editor), RIGHT (w-72 chat placeholder) in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T013 [US1] Implement the LEFT panel: problem list with label, difficulty badge, time limit, Lock/CheckCircle icons, solved progress bar in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T014 [US1] Implement the CENTER panel top 45%: problem statement with title, difficulty badge, tags, `descriptionMd` (whitespace-preserved), constraints panel in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T015 [US1] Implement examples section: 2-column grid (Input | Output) with optional explanation below each example in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T016 [US1] Implement sample test cases section with Input and Expected Output display in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T017 [US1] Implement collapsible hints section with `<details>` / `<summary>` showing hint count in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T018 [US1] Implement locked problem view: center panel shows Lock icon + "Solve the previous problem first to unlock this one" message in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T019 [US1] Implement language selector dropdown and code textarea editor in CENTER panel below statement in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T020 [US1] Implement Run and Submit buttons with `handleRun()` and `handleSubmit()` calling `hackathonsService.runCode()` and `hackathonsService.submitCode()` in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T021 [US1] Implement bottom panel: run results display + submissions list with verdict badges in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T022 [US1] Add route `/hackathon/:id/workspace` pointing to `HackathonWorkspace` in `frontend/src/routes.tsx`
+- [X] T008 [US1] Create `AntiCheatWarning` component stub (returns null) and `ProblemTimer` component stub (returns placeholder) at top of `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T009 [US1] Create `HackathonWorkspace` component with core state: `hackathon`, `loading`, `problems`, `currentProblemIndex`, `code`, `language` in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T010 [US1] Implement `useEffect` to load hackathon data via `hackathonsService.getById(id)` with status-based redirection in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T011 [US1] Implement `loadChallenges` callback that calls `hackathonsService.getHackathonChallenges(id, myTeam.id)` and sets `problems` state in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T012 [US1] Build the 3-panel layout: LEFT (w-56 problem sidebar with progress bar), CENTER (flex-1 statement + editor), RIGHT (w-72 chat placeholder) in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T013 [US1] Implement the LEFT panel: problem list with label, difficulty badge, time limit, Lock/CheckCircle icons, solved progress bar in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T014 [US1] Implement the CENTER panel top 45%: problem statement with title, difficulty badge, tags, `descriptionMd` (whitespace-preserved), constraints panel in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T015 [US1] Implement examples section: 2-column grid (Input | Output) with optional explanation below each example in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T016 [US1] Implement sample test cases section with Input and Expected Output display in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T017 [US1] Implement collapsible hints section with `<details>` / `<summary>` showing hint count in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T018 [US1] Implement locked problem view: center panel shows Lock icon + "Solve the previous problem first to unlock this one" message in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T019 [US1] Implement language selector dropdown and code textarea editor in CENTER panel below statement in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T020 [US1] Implement Run and Submit buttons with `handleRun()` and `handleSubmit()` calling `hackathonsService.runCode()` and `hackathonsService.submitCode()` in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T021 [US1] Implement bottom panel: run results display + submissions list with verdict badges in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T022 [US1] Add route `/hackathon/:id/workspace` pointing to `HackathonWorkspace` in `frontend/src/routes.tsx`
 
 **Checkpoint**: Workspace renders with full problem statements. Submitting code works. Locked problems show restricted view.
 
@@ -82,12 +82,12 @@
 
 ### Implementation for User Story 2
 
-- [x] T023 [US2] Add Q7 guard in `submitCode()`: check for existing AC verdict on `challengeId` and throw `BadRequestException('This problem is already solved')` in `backend/src/hackathons/hackathon-submission.service.ts`
-- [x] T024 [US2] Add Q1 guard in `submitCode()`: validate `challengeIds` ordering — check all preceding challenges have AC verdicts before accepting in `backend/src/hackathons/hackathon-submission.service.ts`
-- [x] T025 [US2] Add challenge-not-in-hackathon guard: validate `dto.challengeId` is in `hackathon.challengeIds` in `backend/src/hackathons/hackathon-submission.service.ts`
-- [x] T026 [US2] Connect `onSubmissionVerdict` WebSocket event to reload challenges after AC via `setTimeout(() => loadChallenges(), 500)` in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T027 [US2] Make solved problems read-only: show "Solved — Read Only" banner, set textarea `readOnly`, disable Run/Submit buttons when `currentProblem.solved` in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T028 [US2] Block `handleSubmit()` and `handleRun()` early return when `currentProblem.solved` in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T023 [US2] Add Q7 guard in `submitCode()`: check for existing AC verdict on `challengeId` and throw `BadRequestException('This problem is already solved')` in `backend/src/hackathons/hackathon-submission.service.ts`
+- [X] T024 [US2] Add Q1 guard in `submitCode()`: validate `challengeIds` ordering — check all preceding challenges have AC verdicts before accepting in `backend/src/hackathons/hackathon-submission.service.ts`
+- [X] T025 [US2] Add challenge-not-in-hackathon guard: validate `dto.challengeId` is in `hackathon.challengeIds` in `backend/src/hackathons/hackathon-submission.service.ts`
+- [X] T026 [US2] Connect `onSubmissionVerdict` WebSocket event to reload challenges after AC via `setTimeout(() => loadChallenges(), 500)` in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T027 [US2] Make solved problems read-only: show "Solved — Read Only" banner, set textarea `readOnly`, disable Run/Submit buttons when `currentProblem.solved` in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T028 [US2] Block `handleSubmit()` and `handleRun()` early return when `currentProblem.solved` in `frontend/src/pages/HackathonWorkspace.tsx`
 
 **Checkpoint**: Submitting to a locked or already-solved problem returns 400. AC verdict triggers automatic challenge list reload. Solved problems are read-only.
 
@@ -101,10 +101,10 @@
 
 ### Implementation for User Story 3
 
-- [x] T029 [US3] Implement team-wide timer auto-start in `getHackathonChallenges()`: read `team.problemStartTimes`, auto-set `startedAt` for current unlocked problem if not already set, persist to DB in `backend/src/hackathons/hackathons.service.ts`
-- [x] T030 [US3] Return `startedAt` field per challenge in `getHackathonChallenges()` response from `team.problemStartTimes[challengeId]` in `backend/src/hackathons/hackathons.service.ts`
-- [x] T031 [US3] Implement `ProblemTimer` component: accepts `startedAt` (timestamp) and `timeLimitMinutes`, displays countdown, yellow pulse at <2min, "TIME UP" in red at 0 in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T032 [US3] Wire `ProblemTimer` in top bar using `currentProblem.startedAt` and `currentProblem.timeLimitMinutes` — hide for solved/locked problems in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T029 [US3] Implement team-wide timer auto-start in `getHackathonChallenges()`: read `team.problemStartTimes`, auto-set `startedAt` for current unlocked problem if not already set, persist to DB in `backend/src/hackathons/hackathons.service.ts`
+- [X] T030 [US3] Return `startedAt` field per challenge in `getHackathonChallenges()` response from `team.problemStartTimes[challengeId]` in `backend/src/hackathons/hackathons.service.ts`
+- [X] T031 [US3] Implement `ProblemTimer` component: accepts `startedAt` (timestamp) and `timeLimitMinutes`, displays countdown, yellow pulse at <2min, "TIME UP" in red at 0 in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T032 [US3] Wire `ProblemTimer` in top bar using `currentProblem.startedAt` and `currentProblem.timeLimitMinutes` — hide for solved/locked problems in `frontend/src/pages/HackathonWorkspace.tsx`
 
 **Checkpoint**: Timer shows correct duration per difficulty, synced across team members, counts down in real-time, does not block submissions.
 
@@ -118,15 +118,15 @@
 
 ### Implementation for User Story 4
 
-- [x] T033 [P] [US4] Implement `AntiCheatWarning` overlay component: full-screen red overlay with AlertTriangle icon, violation count, dismiss button in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T034 [US4] Add anti-cheat state: `violations`, `showWarning`, `violationsRef`, `lastViolationTimeRef` (for 500ms debounce) in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T035 [US4] Implement `reportViolation(eventType)` function with 500ms debounce for `blur`/`tab_switch`, increment count, show warning, emit `anticheat_event` via WebSocket in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T036 [US4] Add 6 event listeners in `useEffect`: `visibilitychange` (tab_switch), `blur`, `copy` (blocked outside `.chat-panel`), `paste` (blocked outside `.chat-panel`), `contextmenu` (blocked), `keydown` (F12/Ctrl+Shift+I/J/C/Ctrl+U blocked) in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T037 [US4] Implement `handleAnticheatEvent()` in gateway: increment `anticheatViolations` atomically via `prisma.hackathonTeam.update({ data: { anticheatViolations: { increment: 1 } } })` in `backend/src/hackathons/hackathons.gateway.ts`
-- [x] T038 [US4] Emit `admin:anticheat_alert` to admin room and `anticheat:violation_count` back to reporter client in `backend/src/hackathons/hackathons.gateway.ts`
-- [x] T039 [US4] Listen for `anticheat:violation_count` server event to sync `violationsRef` from persisted count in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T040 [US4] Initialize violation count from `myTeam.anticheatViolations` on hackathon data load in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T041 [US4] Add anti-cheat indicator in top bar: Shield icon with green "Anti-Cheat" label + red violation badge when count > 0 in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T033 [P] [US4] Implement `AntiCheatWarning` overlay component: full-screen red overlay with AlertTriangle icon, violation count, dismiss button in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T034 [US4] Add anti-cheat state: `violations`, `showWarning`, `violationsRef`, `lastViolationTimeRef` (for 500ms debounce) in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T035 [US4] Implement `reportViolation(eventType)` function with 500ms debounce for `blur`/`tab_switch`, increment count, show warning, emit `anticheat_event` via WebSocket in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T036 [US4] Add 6 event listeners in `useEffect`: `visibilitychange` (tab_switch), `blur`, `copy` (blocked outside `.chat-panel`), `paste` (blocked outside `.chat-panel`), `contextmenu` (blocked), `keydown` (F12/Ctrl+Shift+I/J/C/Ctrl+U blocked) in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T037 [US4] Implement `handleAnticheatEvent()` in gateway: increment `anticheatViolations` atomically via `prisma.hackathonTeam.update({ data: { anticheatViolations: { increment: 1 } } })` in `backend/src/hackathons/hackathons.gateway.ts`
+- [X] T038 [US4] Emit `admin:anticheat_alert` to admin room and `anticheat:violation_count` back to reporter client in `backend/src/hackathons/hackathons.gateway.ts`
+- [X] T039 [US4] Listen for `anticheat:violation_count` server event to sync `violationsRef` from persisted count in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T040 [US4] Initialize violation count from `myTeam.anticheatViolations` on hackathon data load in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T041 [US4] Add anti-cheat indicator in top bar: Shield icon with green "Anti-Cheat" label + red violation badge when count > 0 in `frontend/src/pages/HackathonWorkspace.tsx`
 
 **Checkpoint**: All 6 anti-cheat measures active. Violations persist across page refresh. Admin room receives alerts. Debounce prevents double-counting. Chat panel allows clipboard.
 
@@ -140,15 +140,15 @@
 
 ### Implementation for User Story 5
 
-- [x] T042 [P] [US5] Implement Q4 username enrichment in `sendMessage()`: fetch `user.username` after create, return `{ ...message, username }` in `backend/src/hackathons/hackathon-chat.service.ts`
-- [x] T043 [P] [US5] Implement Q4 username enrichment in `getMessages()`: batch-fetch unique userIds, build usernameMap, enrich all messages in `backend/src/hackathons/hackathon-chat.service.ts`
-- [x] T044 [US5] Add chat state: `chatMessages`, `chatInput`, `activePanel`, `chatEndRef` in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T045 [US5] Implement `useEffect` to load initial chat history via `hackathonsService.getTeamMessages(id, myTeam.id)` (newest first → reversed for display) in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T046 [US5] Connect `onTeamMessage` WebSocket event to append new messages and auto-scroll via `chatEndRef` in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T047 [US5] Implement `handleSendMessage()`: emit `team_message` via `socket.sendTeamMessage()`, clear input in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T048 [US5] Build RIGHT panel chat UI: tabs (Chat | Q&A), bubble-style messages (own=right brand-primary, other=left surface-2), sender `msg.username` display, timestamp, code snippet `<pre>` block in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T049 [US5] Build chat input bar: text input + Send button, Enter key to send in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T050 [US5] Add empty state UI: "No messages yet. Start chatting with your team!" with MessageSquare icon in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T042 [P] [US5] Implement Q4 username enrichment in `sendMessage()`: fetch `user.username` after create, return `{ ...message, username }` in `backend/src/hackathons/hackathon-chat.service.ts`
+- [X] T043 [P] [US5] Implement Q4 username enrichment in `getMessages()`: batch-fetch unique userIds, build usernameMap, enrich all messages in `backend/src/hackathons/hackathon-chat.service.ts`
+- [X] T044 [US5] Add chat state: `chatMessages`, `chatInput`, `activePanel`, `chatEndRef` in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T045 [US5] Implement `useEffect` to load initial chat history via `hackathonsService.getTeamMessages(id, myTeam.id)` (newest first → reversed for display) in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T046 [US5] Connect `onTeamMessage` WebSocket event to append new messages and auto-scroll via `chatEndRef` in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T047 [US5] Implement `handleSendMessage()`: emit `team_message` via `socket.sendTeamMessage()`, clear input in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T048 [US5] Build RIGHT panel chat UI: tabs (Chat | Q&A), bubble-style messages (own=right brand-primary, other=left surface-2), sender `msg.username` display, timestamp, code snippet `<pre>` block in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T049 [US5] Build chat input bar: text input + Send button, Enter key to send in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T050 [US5] Add empty state UI: "No messages yet. Start chatting with your team!" with MessageSquare icon in `frontend/src/pages/HackathonWorkspace.tsx`
 
 **Checkpoint**: Chat messages flow in real-time via WebSocket. Sender username shown. History loads on mount. Auto-scroll on new messages.
 
@@ -158,11 +158,11 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [x] T051 [P] Add keyboard shortcuts via `useKeyboardShortcuts`: Ctrl+Enter=submit, Ctrl+R=run, Ctrl+/=toggle chat in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T052 [P] Add rate limit cooldown timer UI: disabled Submit button with countdown "Wait Ns" when rate limited in `frontend/src/pages/HackathonWorkspace.tsx`
-- [x] T053 [P] Add `WorkspaceSkeleton` loading state component for initial workspace load in `frontend/src/components/HackathonSkeletons.tsx`
-- [x] T054 Update spec.md Decisions section with all 8 decisions (Q1–Q7 + timer informational) in `specs/010-hackathon-workspace-features/spec.md`
-- [x] T055 Run quickstart.md validation: verify all endpoints work, WebSocket events flow, anti-cheat triggers in `specs/010-hackathon-workspace-features/quickstart.md`
+- [X] T051 [P] Add keyboard shortcuts via `useKeyboardShortcuts`: Ctrl+Enter=submit, Ctrl+R=run, Ctrl+/=toggle chat in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T052 [P] Add rate limit cooldown timer UI: disabled Submit button with countdown "Wait Ns" when rate limited in `frontend/src/pages/HackathonWorkspace.tsx`
+- [X] T053 [P] Add `WorkspaceSkeleton` loading state component for initial workspace load in `frontend/src/components/HackathonSkeletons.tsx`
+- [X] T054 Update spec.md Decisions section with all 8 decisions (Q1–Q7 + timer informational) in `specs/010-hackathon-workspace-features/spec.md`
+- [X] T055 Run quickstart.md validation: verify all endpoints work, WebSocket events flow, anti-cheat triggers in `specs/010-hackathon-workspace-features/quickstart.md`
 
 ---
 

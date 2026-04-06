@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
-import { Navbar } from '../components/Navbar';
 import { Layout } from '../components/Layout';
 import { Badge } from '../components/Badge';
 import { Loader, Trophy, Medal, Award } from 'lucide-react';
@@ -41,7 +40,7 @@ export function HackathonResults() {
 
   return (
     <Layout>
-      <Navbar />
+
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8 text-center">
           <h1 className="mb-2">🏆 Final Results</h1>

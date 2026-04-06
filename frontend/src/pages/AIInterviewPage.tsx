@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -231,7 +230,7 @@ export function AIInterviewPage() {
     const domainInfo = getDomainById(session.domain);
     return (
       <Layout>
-        <Navbar />
+
         <div className="w-full px-4 sm:px-6 lg:px-10 py-4">
           {/* Interview Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -388,7 +387,7 @@ export function AIInterviewPage() {
   // Setup View with 3-step flow
   return (
     <Layout>
-      <Navbar />
+
       <div className="w-full px-4 sm:px-8 lg:px-16 py-12" style={{ lineHeight: 1.6 }}>
         {/* Header */}
         <div className="text-center mb-8">
@@ -706,7 +705,7 @@ function ReviewView({ summary, domain, difficulty, onBack }: ReviewViewProps) {
 
   return (
     <Layout>
-      <Navbar />
+
       <div className="max-w-[960px] mx-auto px-6 lg:px-10 py-8">
         <button
           onClick={onBack}

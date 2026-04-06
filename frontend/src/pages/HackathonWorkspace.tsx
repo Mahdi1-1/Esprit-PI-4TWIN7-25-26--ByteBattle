@@ -1,3 +1,12 @@
+// TODO(i18n): All user-facing strings in this file are hardcoded in English.
+// Constitution VII requires useTranslation() + react-i18next with FR/EN keys.
+// Tracked: https://github.com/mahdimasmoudi1/ByteBattle/issues — spec-010 debt
+//
+// TODO(WS_NAMING): WebSocket event names use snake_case ('team_message', 'anticheat_event').
+// Constitution VI requires kebab-case ('team-message', 'anticheat-event').
+// This is a breaking change — requires coordinated frontend + backend update.
+// Tracked as spec-010 technical debt.
+
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '../components/Button';
@@ -164,10 +173,12 @@ export function HackathonWorkspace() {
   }, [id, myTeam?.id, currentProblem?.id]);
 
   // ─── Load chat messages ──────────────────────────────────
+  // Backend returns messages orderBy: { sentAt: 'desc' } (newest first).
+  // Reverse unconditionally so oldest message appears at top of chat.
   useEffect(() => {
     if (!id || !myTeam?.id) return;
     hackathonsService.getTeamMessages(id, myTeam.id).then((msgs: any[]) => {
-      setChatMessages(Array.isArray(msgs) ? (msgs[0]?.sentAt && new Date(msgs[0].sentAt) > new Date(msgs[msgs.length-1]?.sentAt) ? msgs.reverse() : msgs) : []);
+      setChatMessages(Array.isArray(msgs) ? [...msgs].reverse() : []);
     }).catch(console.error);
   }, [id, myTeam?.id]);
 

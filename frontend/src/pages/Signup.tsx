@@ -69,15 +69,37 @@ export function Signup() {
     setIsLoading(true);
 
     try {
-      // Simulate signup
       await signup(formData.username, formData.email, formData.password, formData.firstName, formData.lastName);
       setTimeout(() => {
         setIsLoading(false);
         navigate('/dashboard');
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       setIsLoading(false);
-      setErrors({ submit: 'Une erreur est survenue. Veuillez réessayer.' });
+      const status = error?.response?.status;
+      const message: string = error?.response?.data?.message ?? '';
+
+      if (status === 409) {
+        // Determine which field(s) conflict
+        const lowerMsg = message.toLowerCase();
+        const newErrors: Record<string, string> = {};
+
+        if (lowerMsg.includes('email')) {
+          newErrors.email = 'Cet email est déjà utilisé.';
+        } else if (lowerMsg.includes('username')) {
+          newErrors.username = 'Ce nom d\'utilisateur est déjà pris.';
+        } else {
+          // Both or unspecified — flag both fields
+          newErrors.email = 'Cet email est déjà utilisé.';
+          newErrors.username = 'Ce nom d\'utilisateur est déjà pris.';
+        }
+        newErrors.submit = 'Un compte existe déjà avec ces informations. Essayez de vous connecter.';
+        setErrors(newErrors);
+      } else if (status === 400) {
+        setErrors({ submit: 'Données invalides. Vérifiez vos informations et réessayez.' });
+      } else {
+        setErrors({ submit: 'Une erreur est survenue. Veuillez réessayer.' });
+      }
     }
   };
 
