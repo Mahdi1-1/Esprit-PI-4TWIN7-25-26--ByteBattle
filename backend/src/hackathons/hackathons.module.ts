@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { QueueModule } from '../queue/queue.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 import { HackathonsController } from './hackathons.controller';
 import { HackathonsService } from './hackathons.service';
@@ -21,6 +22,7 @@ import { HackathonsGateway } from './hackathons.gateway';
   imports: [
     QueueModule,
     ConfigModule,
+    NotificationsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -1,30 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
-import { Button } from '../components/Button';
-import { Badge } from '../components/Badge';
 import { useLanguage } from '../context/LanguageContext';
 import {
-  MessageSquare, ThumbsUp, ThumbsDown, Eye, Pin, CheckCircle2,
-  Search, Filter, Plus, TrendingUp, Clock, Flame, ChevronLeft, ChevronRight,
-  Tag, Loader,
+  Search, Plus, Clock, ThumbsUp, Flame,
+  ChevronLeft, ChevronRight, Loader, MessageSquare, LayoutGrid,
+  TrendingUp, Filter,
 } from 'lucide-react';
-import {
-  discussionCategories,
-  type DiscussionPost,
-} from '../data/discussionData';
+import { discussionCategories, type DiscussionPost } from '../data/discussionData';
 import { discussionsService } from '../services/discussionsService';
 import { profileService } from '../services/profileService';
+import { DiscussionPostCard } from '../components/DiscussionPostCard';
 
-const POSTS_PER_PAGE = 5;
-
+const POSTS_PER_PAGE = 10;
 type SortOption = 'trending' | 'newest' | 'most-voted';
 
 export function DiscussionPage() {
   const { t } = useLanguage();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    searchParams.get('category') || 'all',
+  );
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState<SortOption>('trending');
   const [currentPage, setCurrentPage] = useState(1);
   const [discussions, setDiscussions] = useState<DiscussionPost[]>([]);
@@ -32,6 +31,22 @@ export function DiscussionPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (selectedCategory !== 'all') params.category = selectedCategory;
+    if (debouncedSearch) params.search = debouncedSearch;
+    setSearchParams(params, { replace: true });
+  }, [selectedCategory, debouncedSearch]);
+
+  useEffect(() => {
+    let cancelled = false;
     const fetchDiscussions = async () => {
       setLoading(true);
       try {
@@ -43,203 +58,178 @@ export function DiscussionPage() {
         const res = await discussionsService.getAll({
           page: currentPage,
           limit: POSTS_PER_PAGE,
-          search: searchQuery || undefined,
+          search: debouncedSearch || undefined,
           tags: selectedCategory !== 'all' ? selectedCategory : undefined,
           sort: sortMap[sortBy],
         });
+        if (cancelled) return;
         if (res?.data?.length) {
-          setDiscussions(res.data.map((d: any) => ({
-            id: d.id,
-            title: d.title,
-            content: d.content,
-            author: {
-              username: d.author?.username || 'Unknown',
-              avatar: profileService.getPhotoUrl(d.author?.profileImage, d.author?.username),
-              level: d.author?.level || 1,
-            },
-            category: d.tags?.[0] || 'general',
-            tags: d.tags || [],
-            upvotes: d.upvotes?.length || 0,
-            downvotes: d.downvotes?.length || 0,
-            commentCount: d.commentCount || 0,
-            views: d.views || 0,
-            createdAt: new Date(d.createdAt).toLocaleDateString(),
-            isPinned: false,
-            isSolved: false,
-          })));
+          setDiscussions(
+            res.data.map((d: any) => ({
+              id: d.id,
+              title: d.title,
+              content: d.content,
+              author: {
+                username: d.author?.username || 'Unknown',
+                avatar: profileService.getPhotoUrl(d.author?.profileImage, d.author?.username),
+                level: d.author?.level || 1,
+              },
+              category: d.tags?.[0] || 'general',
+              tags: d.tags || [],
+              upvotes: Array.isArray(d.upvotes) ? d.upvotes.length : (d.upvotes || 0),
+              downvotes: Array.isArray(d.downvotes) ? d.downvotes.length : (d.downvotes || 0),
+              commentCount: d.commentCount || 0,
+              views: d.views || 0,
+              createdAt: d.createdAt,
+              isPinned: d.isPinned || false,
+              isSolved: d.isSolved || false,
+            })),
+          );
           setTotalPages(Math.max(1, Math.ceil(res.total / POSTS_PER_PAGE)));
         } else {
           setDiscussions([]);
           setTotalPages(1);
         }
-      } catch (err) {
-        console.error('Failed to load discussions:', err);
-        setDiscussions([]);
-        setTotalPages(1);
+      } catch {
+        if (!cancelled) {
+          setDiscussions([]);
+          setTotalPages(1);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchDiscussions();
-  }, [currentPage, searchQuery, selectedCategory, sortBy]);
+    return () => { cancelled = true; };
+  }, [currentPage, debouncedSearch, selectedCategory, sortBy]);
 
-  const paged = discussions;
+  const handleCategoryClick = (id: string) => {
+    setSelectedCategory(id);
+    setCurrentPage(1);
+  };
 
-  const categoryColorMap: Record<string, string> = {};
-  discussionCategories.forEach((c) => { categoryColorMap[c.id] = c.color; });
+  const activeCat = discussionCategories.find((c) => c.id === selectedCategory);
 
   return (
     <Layout>
-      <Navbar />
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold gradient-brand-text font-title">{t('discussion.title')}</h1>
-            <p className="text-[var(--text-muted)] mt-1">{t('discussion.subtitle')}</p>
-          </div>
-          <Button variant="primary" size="md">
-            <Plus className="w-4 h-4" />
-            {t('discussion.newPost')}
-          </Button>
+        {/* breadcrumb */}
+        <div className="flex items-center gap-2 mb-5">
+          <Link
+            to="/forum"
+            className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--brand-primary)] transition-colors"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            Forum
+          </Link>
+          <span className="text-[var(--text-muted)] text-xs">/</span>
+          <span className="text-xs font-semibold text-[var(--text-primary)]">
+            {activeCat && activeCat.id !== 'all'
+              ? `${activeCat.icon} ${activeCat.label}`
+              : 'All Posts'}
+          </span>
         </div>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: t('discussion.totalPosts'), value: '1,247', icon: <MessageSquare className="w-5 h-5" /> },
-            { label: t('discussion.activeUsers'), value: '389', icon: <TrendingUp className="w-5 h-5" /> },
-            { label: t('discussion.solvedThreads'), value: '876', icon: <CheckCircle2 className="w-5 h-5" /> },
-            { label: t('discussion.thisWeek'), value: '+56', icon: <Flame className="w-5 h-5" /> },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="theme-card p-4 flex items-center gap-3"
-            >
-              <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--brand-primary)]/10 flex items-center justify-center text-[var(--brand-primary)]">
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-xl font-bold text-[var(--text-primary)]">{stat.value}</p>
-                <p className="text-xs text-[var(--text-muted)]">{stat.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="flex flex-col lg:flex-row gap-5">
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar – Categories */}
-          <aside className="lg:w-64 shrink-0 space-y-4">
-            <div className="theme-card p-4">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">{t('discussion.categories')}</h3>
-              <div className="space-y-1">
-                <button
-                  onClick={() => { setSelectedCategory('all'); setCurrentPage(1); }}
-                  className={`w-full text-left px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors ${selectedCategory === 'all'
-                      ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
-                    }`}
-                >
-                  💬 {t('discussion.allPosts')}
-                </button>
-                {discussionCategories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => { setSelectedCategory(cat.id); setCurrentPage(1); }}
-                    className={`w-full text-left px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors ${selectedCategory === cat.id
-                        ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
-                      }`}
-                  >
-                    {cat.icon} {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* ══ MAIN FEED ══ */}
+          <div className="flex-1 min-w-0 space-y-3">
 
-            {/* Popular Tags */}
-            <div className="theme-card p-4">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">{t('discussion.popularTags')}</h3>
-              <div className="flex flex-wrap gap-2">
-                {['Algorithms', 'Dynamic Programming', 'Tips', 'Data Structures', 'TypeScript', 'Bug', 'Competitive'].map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => { setSearchQuery(tag); setCurrentPage(1); }}
-                    className="px-2 py-1 text-xs rounded-[var(--radius-sm)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[var(--brand-primary)]/10 hover:text-[var(--brand-primary)] transition-colors"
-                  >
-                    <Tag className="w-3 h-3 inline mr-1" />{tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <div className="flex-1 space-y-4">
-            {/* Search & Sort */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                  placeholder={t('discussion.searchPlaceholder')}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--brand-primary)] transition-colors"
-                />
-              </div>
-              <div className="flex gap-2">
-                {([
-                  { key: 'trending', icon: <Flame className="w-4 h-4" />, label: t('discussion.trending') },
-                  { key: 'newest', icon: <Clock className="w-4 h-4" />, label: t('discussion.newest') },
-                  { key: 'most-voted', icon: <ThumbsUp className="w-4 h-4" />, label: t('discussion.mostVoted') },
-                ] as const).map((opt) => (
+            {/* Sort + Create bar */}
+            <div className="theme-card px-3 py-2 flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-1">
+                {(
+                  [
+                    { key: 'trending',   icon: <Flame className="w-4 h-4" />,       label: 'Hot' },
+                    { key: 'newest',     icon: <Clock className="w-4 h-4" />,       label: 'New' },
+                    { key: 'most-voted', icon: <TrendingUp className="w-4 h-4" />,  label: 'Top' },
+                  ] as const
+                ).map((opt) => (
                   <button
                     key={opt.key}
                     onClick={() => setSortBy(opt.key)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors whitespace-nowrap ${sortBy === opt.key
-                        ? 'bg-[var(--brand-primary)] text-[var(--bg-primary)] font-medium'
-                        : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:border-[var(--brand-primary)]'
-                      }`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
+                      sortBy === opt.key
+                        ? 'bg-[var(--brand-primary)]/12 text-[var(--brand-primary)]'
+                        : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]'
+                    }`}
                   >
                     {opt.icon}
-                    <span className="hidden sm:inline">{opt.label}</span>
+                    {opt.label}
                   </button>
                 ))}
               </div>
+
+              {/* New post button */}
+              <Link to="/discussion/new">
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold hover:opacity-90 transition-opacity shrink-0">
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Post</span>
+                </button>
+              </Link>
             </div>
 
-            {/* Posts List */}
-            <div className="space-y-3">
-              {paged.length === 0 ? (
-                <div className="theme-card p-12 text-center">
-                  <MessageSquare className="w-12 h-12 mx-auto text-[var(--text-muted)] mb-3" />
-                  <p className="text-[var(--text-muted)]">{t('discussion.noResults')}</p>
+            {/* Mobile search */}
+            <div className="sm:hidden relative flex justify-center">
+              <div className="relative w-full max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('discussion.searchPlaceholder')}
+                  className="w-full pl-9 pr-4 py-2.5 bg-[var(--surface-1)] border border-[var(--border-default)]
+                       rounded-[var(--radius-md)] text-sm text-[var(--text-primary)]
+                       placeholder:text-[var(--text-muted)] focus:outline-none
+                       focus:border-[var(--brand-primary)] transition-colors text-center"
+                />
+              </div>
+            </div>
+
+            {/* Posts list */}
+            <div className="space-y-2">
+              {loading ? (
+                <div className="theme-card py-16 text-center">
+                  <Loader className="w-7 h-7 mx-auto animate-spin text-[var(--brand-primary)] mb-3" />
+                  <p className="text-sm text-[var(--text-muted)]">Loading…</p>
+                </div>
+              ) : discussions.length === 0 ? (
+                <div className="theme-card py-16 text-center">
+                  <MessageSquare className="w-12 h-12 mx-auto text-[var(--text-muted)] mb-3 opacity-40" />
+                  <p className="font-semibold text-[var(--text-primary)] mb-1">{t('discussion.noResults')}</p>
+                  <p className="text-sm text-[var(--text-muted)] mb-5">Be the first to start a discussion.</p>
+                  <Link to="/discussion/new">
+                    <button className="px-5 py-2 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold hover:opacity-90 transition-opacity">
+                      + Create Post
+                    </button>
+                  </Link>
                 </div>
               ) : (
-                paged.map((post) => <PostCard key={post.id} post={post} />)
+                discussions.map((post) => <DiscussionPostCard key={post.id} post={post} />)
               )}
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-4">
+              <div className="flex items-center justify-center gap-1 pt-2">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded text-[var(--text-secondary)]
+                             hover:bg-[var(--surface-2)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-9 h-9 rounded-[var(--radius-md)] text-sm font-medium transition-colors ${page === currentPage
-                        ? 'bg-[var(--brand-primary)] text-[var(--bg-primary)]'
+                    className={`w-8 h-8 rounded text-sm font-semibold transition-colors ${
+                      page === currentPage
+                        ? 'bg-[var(--brand-primary)] text-white'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
-                      }`}
+                    }`}
                   >
                     {page}
                   </button>
@@ -247,106 +237,71 @@ export function DiscussionPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded text-[var(--text-secondary)]
+                             hover:bg-[var(--surface-2)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             )}
           </div>
+
+          {/* ══ RIGHT SIDEBAR ══ */}
+          <aside className="lg:w-64 shrink-0 space-y-3">
+
+            {/* Filter by category */}
+            <div className="theme-card overflow-hidden">
+              <div className="px-3 py-2.5 border-b border-[var(--border-default)] flex items-center gap-2">
+                <Filter className="w-3.5 h-3.5 text-[var(--brand-primary)]" />
+                <span className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wide">
+                  Filter by topic
+                </span>
+              </div>
+              <div className="py-1">
+                {discussionCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryClick(cat.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left ${
+                      selectedCategory === cat.id
+                        ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-semibold'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--surface-2)]'
+                    }`}
+                  >
+                    <span className="text-base w-5 text-center leading-none">{cat.icon}</span>
+                    <span className="flex-1">{cat.label}</span>
+                    {selectedCategory === cat.id && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-primary)] shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Rules */}
+            <div className="theme-card px-3 py-3">
+              <p className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wide mb-2">
+                Posting Rules
+              </p>
+              <ul className="space-y-1.5 text-xs text-[var(--text-muted)]">
+                {[
+                  'Be respectful & constructive',
+                  'No spam or self-promotion',
+                  'Keep topics coding-related',
+                  'Mark posts as solved',
+                  'Search before posting',
+                ].map((rule, i) => (
+                  <li key={rule} className="flex gap-2">
+                    <span className="font-bold text-[var(--brand-primary)] shrink-0">{i + 1}.</span>
+                    {rule}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+          </aside>
         </div>
       </div>
     </Layout>
-  );
-}
-
-/* ───── Post Card Component ───── */
-
-function PostCard({ post, ...rest }: { post: DiscussionPost } & React.HTMLAttributes<HTMLDivElement>) {
-  const cat = discussionCategories.find((c) => c.id === post.category);
-
-  return (
-    <Link to={`/discussion/${post.id}`} className="block">
-      <div className="theme-card p-6 hover:border-[var(--brand-primary)]/40 transition-all group">
-        <div className="flex gap-4">
-          {/* Vote Column */}
-          <div className="hidden sm:flex flex-col items-center gap-1 min-w-[50px]">
-            <button
-              onClick={(e) => e.preventDefault()}
-              className="p-1 rounded hover:bg-[var(--state-success)]/10 text-[var(--text-muted)] hover:text-[var(--state-success)] transition-colors"
-            >
-              <ThumbsUp className="w-4 h-4" />
-            </button>
-            <span className="text-sm font-bold text-[var(--text-primary)]">{post.upvotes - post.downvotes}</span>
-            <button
-              onClick={(e) => e.preventDefault()}
-              className="p-1 rounded hover:bg-[var(--state-error)]/10 text-[var(--text-muted)] hover:text-[var(--state-error)] transition-colors"
-            >
-              <ThumbsDown className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              {post.isPinned && (
-                <Pin className="w-4 h-4 text-[var(--brand-secondary)] rotate-45" />
-              )}
-              {post.isSolved && (
-                <CheckCircle2 className="w-4 h-4 text-[var(--state-success)]" />
-              )}
-              <h3 className="text-[var(--text-primary)] font-semibold group-hover:text-[var(--brand-primary)] transition-colors truncate">
-                {post.title}
-              </h3>
-            </div>
-
-            <p className="text-sm text-[var(--text-muted)] line-clamp-2 mb-3">
-              {post.content.replace(/[#*`\n]/g, ' ').slice(0, 150)}...
-            </p>
-
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-3">
-                {/* Author */}
-                <div className="flex items-center gap-2">
-                  <img src={post.author.avatar} alt={post.author.username} className="w-5 h-5 rounded-full" />
-                  <span className="text-xs text-[var(--text-secondary)]">{post.author.username}</span>
-                  <span className="text-xs text-[var(--text-muted)]">Lv.{post.author.level}</span>
-                </div>
-
-                {/* Category */}
-                {cat && (
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: `color-mix(in srgb, ${cat.color} 15%, transparent)`,
-                      color: cat.color,
-                    }}
-                  >
-                    {cat.icon} {cat.label}
-                  </span>
-                )}
-
-                {/* Tags */}
-                <div className="hidden md:flex items-center gap-1">
-                  {post.tags.slice(0, 2).map((tag) => (
-                    <span key={tag}><Badge variant="default">{tag}</Badge></span>
-                  ))}
-                  {post.tags.length > 2 && (
-                    <span className="text-xs text-[var(--text-muted)]">+{post.tags.length - 2}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Meta */}
-              <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
-                <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{post.views}</span>
-                <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" />{post.commentCount}</span>
-                <span>{post.createdAt}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Link>
   );
 }

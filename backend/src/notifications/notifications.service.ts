@@ -5,109 +5,93 @@ import { NotificationsGateway } from './notifications.gateway';
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: NotificationsGateway,
   ) {}
 
-  async create(data: { recipientId: string; actorId: string; type: string; targetId: string; targetType: string }) {
-    if (data.recipientId === data.actorId) {
-      return null;
-    }
+  async getAll(
+    userId: string,
+    options: { page?: number; limit?: number; category?: string; unreadOnly?: boolean } = {},
+  ) {
+    const page = options.page ?? 1;
+    const limit = options.limit ?? 20;
+    const skip = (page - 1) * limit;
 
-    const notification = await this.prisma.notification.create({
-      data: {
-        recipientId: data.recipientId,
-        actorId: data.actorId,
-        type: data.type,
-        targetId: data.targetId,
-        targetType: data.targetType,
-      },
-      include: {
-        actor: {
-          select: { username: true, profileImage: true }
-        }
-      }
-    });
+    const where: any = { recipientId: userId, isArchived: false };
+    if (options.category) where.category = options.category;
+    if (options.unreadOnly) where.isRead = false;
 
-    await this.enforceMax100(data.recipientId);
+    const [data, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.notification.count({ where }),
+    ]);
 
-    this.gateway.emitToUser(data.recipientId, 'new-notification', {
-      id: notification.id,
-      type: notification.type,
-      actorUsername: notification.actor.username,
-      actorProfileImage: notification.actor.profileImage,
-      targetId: notification.targetId,
-      targetType: notification.targetType,
-      createdAt: notification.createdAt,
-    });
-
-    return notification;
-  }
-
-  async getAll(userId: string) {
-    return this.prisma.notification.findMany({
-      where: { recipientId: userId },
-      include: {
-        actor: { select: { id: true, username: true, profileImage: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
+    return { data, total, page, limit, hasMore: skip + data.length < total };
   }
 
   async getUnreadCount(userId: string) {
     const count = await this.prisma.notification.count({
-      where: { recipientId: userId, isRead: false },
+      where: { recipientId: userId, isRead: false, isArchived: false },
     });
     return { count };
   }
 
   async markRead(id: string, userId: string) {
     const notif = await this.prisma.notification.findUnique({ where: { id } });
-    if (!notif) {
-      throw new NotFoundException('Notification not found');
-    }
-    if (notif.recipientId !== userId) {
-      throw new ForbiddenException('Not your notification');
-    }
+    if (!notif) throw new NotFoundException('Notification not found');
+    if (notif.recipientId !== userId) throw new ForbiddenException('Not your notification');
     return this.prisma.notification.update({
       where: { id },
-      data: { isRead: true },
+      data: { isRead: true, readAt: new Date() },
     });
   }
 
   async markAllRead(userId: string) {
     const result = await this.prisma.notification.updateMany({
-      where: { recipientId: userId, isRead: false },
-      data: { isRead: true },
+      where: { recipientId: userId, isRead: false, isArchived: false },
+      data: { isRead: true, readAt: new Date() },
     });
     return { updated: result.count };
   }
 
-  async enforceMax100(userId: string) {
-    const count = await this.prisma.notification.count({
-      where: { recipientId: userId },
+  async archive(id: string, userId: string) {
+    const notif = await this.prisma.notification.findUnique({ where: { id } });
+    if (!notif) throw new NotFoundException('Notification not found');
+    if (notif.recipientId !== userId) throw new ForbiddenException('Not your notification');
+    return this.prisma.notification.update({
+      where: { id },
+      data: { isArchived: true },
     });
+  }
 
-    if (count > 100) {
-      const toDelete = count - 100;
-      const oldestNotifications = await this.prisma.notification.findMany({
-        where: { recipientId: userId },
-        orderBy: { createdAt: 'asc' },
-        take: toDelete,
-        select: { id: true }
-      });
+  async bulkMarkRead(ids: string[], userId: string) {
+    const result = await this.prisma.notification.updateMany({
+      where: { id: { in: ids }, recipientId: userId },
+      data: { isRead: true, readAt: new Date() },
+    });
+    return { updated: result.count };
+  }
 
-      const idsToDelete = oldestNotifications.map(n => n.id);
-      
-      if (idsToDelete.length > 0) {
-        await this.prisma.notification.deleteMany({
-          where: { id: { in: idsToDelete } },
-        });
-        this.logger.debug(`Deleted ${idsToDelete.length} old notifications for user ${userId}`);
-      }
-    }
+  async bulkArchive(ids: string[], userId: string) {
+    const result = await this.prisma.notification.updateMany({
+      where: { id: { in: ids }, recipientId: userId },
+      data: { isArchived: true },
+    });
+    return { updated: result.count };
+  }
+
+  async delete(id: string, userId: string) {
+    const notif = await this.prisma.notification.findUnique({ where: { id } });
+    if (!notif) throw new NotFoundException('Notification not found');
+    if (notif.recipientId !== userId) throw new ForbiddenException('Not your notification');
+    await this.prisma.notification.delete({ where: { id } });
+    return { deleted: true };
   }
 }

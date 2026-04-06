@@ -1,13 +1,12 @@
 import { Link } from 'react-router';
 import { Home, AlertTriangle, Lock, RefreshCw, Inbox, ServerCrash } from 'lucide-react';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 
 // 404 Not Found
 export function NotFound() {
   return (
     <Layout>
-      <Navbar />
+
       <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-64px)]">
         <div className="text-center max-w-md">
           <div className="mb-6">
@@ -45,7 +44,7 @@ export function NotFound() {
 export function PermissionDenied() {
   return (
     <Layout>
-      <Navbar />
+
       <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-64px)]">
         <div className="text-center max-w-md">
           <div className="mb-6">
@@ -77,7 +76,7 @@ export function PermissionDenied() {
 export function LoadingPage() {
   return (
     <Layout>
-      <Navbar />
+
       <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-64px)]">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] mb-4 animate-pulse">
@@ -95,7 +94,7 @@ export function LoadingPage() {
 export function EmptyStatePage() {
   return (
     <Layout>
-      <Navbar />
+
       <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-64px)]">
         <div className="text-center max-w-md">
           <div className="mb-6">
@@ -123,7 +122,7 @@ export function EmptyStatePage() {
 export function ErrorPage() {
   return (
     <Layout>
-      <Navbar />
+
       <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-64px)]">
         <div className="text-center max-w-md">
           <div className="mb-6">

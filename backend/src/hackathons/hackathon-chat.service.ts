@@ -24,7 +24,7 @@ export class HackathonChatService {
     const isMember = team.members.some((m) => m.userId === userId);
     if (!isMember) throw new ForbiddenException('Not a member of this team');
 
-    return this.prisma.hackathonMessage.create({
+    const message = await this.prisma.hackathonMessage.create({
       data: {
         hackathonId,
         teamId,
@@ -34,6 +34,14 @@ export class HackathonChatService {
         codeLanguage: dto.codeLanguage,
       },
     });
+
+    // Q4: Enrich with sender username
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    });
+
+    return { ...message, username: user?.username || 'Unknown' };
   }
 
   // T040 — Get messages with cursor-based pagination
@@ -49,10 +57,25 @@ export class HackathonChatService {
       where.sentAt = { lt: new Date(options.before) };
     }
 
-    return this.prisma.hackathonMessage.findMany({
+    const messages = await this.prisma.hackathonMessage.findMany({
       where,
       orderBy: { sentAt: 'desc' },
       take: limit,
     });
+
+    // Q4: Enrich all messages with sender usernames
+    if (messages.length === 0) return messages;
+
+    const userIds = [...new Set(messages.map((m) => m.userId))];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true },
+    });
+    const usernameMap = new Map(users.map((u) => [u.id, u.username]));
+
+    return messages.map((m) => ({
+      ...m,
+      username: usernameMap.get(m.userId) || 'Unknown',
+    }));
   }
 }

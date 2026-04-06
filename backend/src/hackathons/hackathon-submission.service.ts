@@ -40,6 +40,46 @@ export class HackathonSubmissionService {
       throw new BadRequestException('Your team has been disqualified');
     }
 
+    // Q7: Block re-submission to already-solved problems (READ-ONLY once AC)
+    const existingAC = await this.prisma.hackathonSubmission.findFirst({
+      where: {
+        hackathonId,
+        teamId,
+        challengeId: dto.challengeId,
+        verdict: 'AC',
+      },
+    });
+    if (existingAC) {
+      throw new BadRequestException('This problem is already solved. No re-submissions allowed.');
+    }
+
+    // Q1: Enforce sequential problem order server-side
+    const challengeIds = hackathon.challengeIds || [];
+    const challengeIndex = challengeIds.indexOf(dto.challengeId);
+    if (challengeIndex === -1) {
+      throw new BadRequestException('Challenge is not part of this hackathon');
+    }
+
+    if (challengeIndex > 0) {
+      // Check that all preceding challenges are solved (have AC verdict)
+      const precedingIds = challengeIds.slice(0, challengeIndex);
+      const solvedPreceding = await this.prisma.hackathonSubmission.findMany({
+        where: {
+          hackathonId,
+          teamId,
+          challengeId: { in: precedingIds },
+          verdict: 'AC',
+        },
+        distinct: ['challengeId'],
+        select: { challengeId: true },
+      });
+      const solvedSet = new Set(solvedPreceding.map((s) => s.challengeId));
+      const allPrecedingSolved = precedingIds.every((cId) => solvedSet.has(cId));
+      if (!allPrecedingSolved) {
+        throw new BadRequestException('You must solve the previous problems first before submitting to this one.');
+      }
+    }
+
     // Rate limit: 1 submission per problem per minute per team (Decision #19)
     const oneMinuteAgo = new Date(Date.now() - 60_000);
     const recentSubmission = await this.prisma.hackathonSubmission.findFirst({

@@ -201,7 +201,8 @@
     border: var(--border-width) solid var(--brand-primary);
     background: transparent;
     color: var(--brand-primary);
-    transition: all 0.2s ease;
+    /* Only transition GPU-composited properties to avoid non-composited animation warnings */
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
     position: relative;
     overflow: hidden;

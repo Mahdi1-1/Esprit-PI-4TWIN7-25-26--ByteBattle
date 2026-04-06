@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
-import { Navbar } from '../components/Navbar';
 import { Badge } from '../components/Badge';
 import { Timer } from '../components/Timer';
 import { Layout } from '../components/Layout';
@@ -39,7 +38,7 @@ export function HackathonScoreboard() {
   if (loading) {
     return (
       <Layout>
-        <Navbar />
+
         <div className="flex items-center justify-center h-64">
           <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
         </div>
@@ -50,7 +49,7 @@ export function HackathonScoreboard() {
   if (!hackathon) {
     return (
       <Layout>
-        <Navbar />
+
         <div className="flex items-center justify-center h-64">
           <p className="text-[var(--text-muted)]">Hackathon not found</p>
         </div>
@@ -65,7 +64,7 @@ export function HackathonScoreboard() {
 
   return (
     <Layout>
-      <Navbar />
+
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {/* Header */}

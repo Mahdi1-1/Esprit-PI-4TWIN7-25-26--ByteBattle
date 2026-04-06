@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
+import { THEME_LEVEL_REQUIREMENTS } from "./themeConstants";
 
 export type ThemeName =
   | "cyber"
@@ -29,22 +30,13 @@ const ThemeContext = createContext<
   ThemeContextType | undefined
 >(undefined);
 
-const THEME_LEVEL_REQUIREMENTS: Record<ThemeName, number> = {
-  cyber: 1,
-  space: 20,
-  samurai: 40,
-  pixel: 60,
-  mythic: 80,
-  sports: 100,
-};
-
 export function ThemeProvider({
   children,
 }: {
   children: ReactNode;
 }) {
   const { user } = useAuth();
-  const [theme, setThemeState] = useState<ThemeName>("cyber");
+  const [theme, setThemeState] = useState<ThemeName>("samurai");
   const [colorScheme, setColorScheme] =
     useState<ColorScheme>("dark");
 
@@ -123,5 +115,3 @@ export function useTheme() {
   }
   return context;
 }
-
-export { THEME_LEVEL_REQUIREMENTS };

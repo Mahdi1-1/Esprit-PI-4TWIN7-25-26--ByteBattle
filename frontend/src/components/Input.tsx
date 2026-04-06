@@ -4,10 +4,11 @@ import { Eye, EyeOff, Search } from 'lucide-react';
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  hint?: string;
   className?: string;
 }
 
-export function Input({ label, error, className = '', ...props }: InputProps) {
+export function Input({ label, error, hint, className = '', ...props }: InputProps) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
@@ -31,6 +32,9 @@ export function Input({ label, error, className = '', ...props }: InputProps) {
         `}
         {...props}
       />
+      {hint && !error && (
+        <p className="text-caption text-[var(--text-muted)]">{hint}</p>
+      )}
       {error && (
         <p className="text-caption text-[var(--state-error)]">{error}</p>
       )}
@@ -38,7 +42,7 @@ export function Input({ label, error, className = '', ...props }: InputProps) {
   );
 }
 
-export function PasswordInput({ label, error, className = '', ...props }: InputProps) {
+export function PasswordInput({ label, error, hint, className = '', ...props }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -75,6 +79,9 @@ export function PasswordInput({ label, error, className = '', ...props }: InputP
           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
+      {hint && !error && (
+        <p className="text-caption text-[var(--text-muted)]">{hint}</p>
+      )}
       {error && (
         <p className="text-caption text-[var(--state-error)]">{error}</p>
       )}

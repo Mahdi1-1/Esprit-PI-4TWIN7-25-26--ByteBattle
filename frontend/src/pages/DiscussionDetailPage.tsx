@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { useLanguage } from '../context/LanguageContext';
 import {
   ArrowLeft, ThumbsUp, ThumbsDown, MessageSquare, Eye, Pin,
-  CheckCircle2, Share2, Bookmark, Flag, Clock, Send, Tag, Loader, Edit, Trash2
+  CheckCircle2, Share2, Bookmark, Flag, Clock, Send, Tag, Loader, Edit, Trash2, Pencil, History, X
 } from 'lucide-react';
 import { discussionCategories, type DiscussionComment, type DiscussionPost } from '../data/discussionData';
 import { discussionsService } from '../services/discussionsService';
@@ -17,6 +16,12 @@ import { profileService } from '../services/profileService';
 /* ───── helpers ───── */
 
 type SortMode = 'newest' | 'oldest' | 'top';
+
+function formatDate(raw: string): string {
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
 function mapComment(c: any, currentUserId?: string): DiscussionComment {
   return {
@@ -28,7 +33,7 @@ function mapComment(c: any, currentUserId?: string): DiscussionComment {
       level: c.author?.level || 1,
     },
     content: c.content,
-    createdAt: new Date(c.createdAt).toLocaleDateString(),
+    createdAt: c.createdAt,  // keep raw ISO string for sorting
     upvotes: Array.isArray(c.upvotes) ? c.upvotes.length : (c.upvotes || 0),
     downvotes: Array.isArray(c.downvotes) ? c.downvotes.length : (c.downvotes || 0),
     userVote: currentUserId
@@ -74,6 +79,12 @@ export function DiscussionDetailPage() {
   const [editContent, setEditContent] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+  // Revisions modal state
+  const [showRevisions, setShowRevisions] = useState(false);
+  const [revisions, setRevisions] = useState<any[]>([]);
+  const [revisionsLoading, setRevisionsLoading] = useState(false);
+  const [expandedRevision, setExpandedRevision] = useState<string | null>(null);
+
   // Sort
   const [sortMode, setSortMode] = useState<SortMode>('newest');
 
@@ -97,7 +108,8 @@ export function DiscussionDetailPage() {
           downvotes: Array.isArray(d.downvotes) ? d.downvotes.length : (d.downvotes || 0),
           commentCount: d.commentCount || 0,
           views: d.views || 0,
-          createdAt: new Date(d.createdAt).toLocaleDateString(),
+          createdAt: d.createdAt,  // keep raw ISO string for sorting
+          updatedAt: d.updatedAt,
           isPinned: d.isPinned || false,
           isSolved: d.isSolved || false,
           userVote: user?.id && Array.isArray(d.upvotes) && d.upvotes.includes(user.id)
@@ -117,10 +129,30 @@ export function DiscussionDetailPage() {
 
   useEffect(() => { fetchPost(); }, [fetchPost]);
 
+  const fetchRevisions = async () => {
+    if (!id) return;
+    setRevisionsLoading(true);
+    try {
+      const data = await discussionsService.getRevisions(id);
+      setRevisions(data || []);
+    } catch (err) {
+      console.error('Failed to load revisions:', err);
+      setRevisions([]);
+    } finally {
+      setRevisionsLoading(false);
+    }
+  };
+
+  const handleOpenRevisions = () => {
+    setShowRevisions(true);
+    setExpandedRevision(null);
+    fetchRevisions();
+  };
+
   if (loading) {
     return (
       <Layout>
-        <Navbar />
+
         <div className="flex items-center justify-center h-64">
           <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
         </div>
@@ -131,7 +163,7 @@ export function DiscussionDetailPage() {
   if (!post) {
     return (
       <Layout>
-        <Navbar />
+
         <div className="w-full px-4 sm:px-6 lg:px-10 py-20 text-center">
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t('discussion.notFound')}</h2>
           <Link to="/discussion" className="text-[var(--brand-primary)] hover:underline mt-4 inline-block">
@@ -296,7 +328,7 @@ export function DiscussionDetailPage() {
 
   return (
     <Layout>
-      <Navbar />
+
 
       <div className="max-w-[960px] mx-auto px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8">
         {/* Back Link */}
@@ -342,9 +374,17 @@ export function DiscussionDetailPage() {
                 >
                   <CheckCircle2 className="w-4 h-4" />
                 </button>
+                <Link
+                  to={`/discussion/edit/${post.id}`}
+                  className="p-2 text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:bg-[var(--surface-2)] rounded-[var(--radius-md)] transition-colors"
+                  title="Edit discussion"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Link>
                 <button
                   onClick={handleDelete}
                   className="p-2 text-[var(--text-muted)] hover:text-[var(--state-error)] hover:bg-[var(--surface-2)] rounded-[var(--radius-md)] transition-colors"
+                  title="Delete discussion"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -358,13 +398,28 @@ export function DiscussionDetailPage() {
               <img
                 src={post.author.avatar}
                 alt={post.author.username}
+                referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
               />
             </div>
             <div>
               <span className="font-medium text-sm text-[var(--text-primary)]">{post.author.username}</span>
               <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                <Clock className="w-3 h-3" /> {post.createdAt}
+                <Clock className="w-3 h-3" /> {formatDate(post.createdAt)}
+                {post.updatedAt && post.updatedAt !== post.createdAt && (
+                  <>
+                    <span className="flex items-center gap-1 italic" title={`Last edited: ${formatDate(post.updatedAt)}`}>
+                      <Pencil className="w-3 h-3" /> edited {formatDate(post.updatedAt)}
+                    </span>
+                    <button
+                      onClick={handleOpenRevisions}
+                      className="flex items-center gap-1 text-[var(--brand-primary)] hover:underline cursor-pointer"
+                      title="View edit history"
+                    >
+                      <History className="w-3 h-3" /> view edits
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -516,6 +571,122 @@ export function DiscussionDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Revisions Modal */}
+      {showRevisions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-default)]">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <History className="w-5 h-5 text-[var(--brand-primary)]" />
+                Edit History
+              </h3>
+              <button
+                onClick={() => setShowRevisions(false)}
+                className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] rounded-[var(--radius-md)] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-3">
+              {revisionsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="w-6 h-6 animate-spin text-[var(--brand-primary)]" />
+                </div>
+              ) : revisions.length === 0 ? (
+                <div className="text-center py-12 text-[var(--text-muted)]">
+                  <History className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                  <p>No edit history found</p>
+                </div>
+              ) : (
+                <>
+                  {/* Current version banner */}
+                  <div className="p-3 rounded-[var(--radius-md)] border border-[var(--brand-primary)]/30 bg-[var(--brand-primary)]/5">
+                    <div className="flex items-center gap-2 text-sm font-medium text-[var(--brand-primary)]">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Current version
+                    </div>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">{formatDate(post.updatedAt || post.createdAt)}</p>
+                  </div>
+
+                  {/* Revisions list */}
+                  {revisions.map((rev, idx) => {
+                    const isExpanded = expandedRevision === rev.id;
+                    return (
+                      <div
+                        key={rev.id}
+                        className="border border-[var(--border-default)] rounded-[var(--radius-md)] overflow-hidden"
+                      >
+                        <button
+                          onClick={() => setExpandedRevision(isExpanded ? null : rev.id)}
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--surface-2)] text-xs font-bold text-[var(--text-secondary)] shrink-0">
+                              {revisions.length - idx}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-[var(--text-primary)] truncate">{rev.title}</p>
+                              <p className="text-xs text-[var(--text-muted)]">
+                                by {rev.editor?.username || 'Unknown'} · {formatDate(rev.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`text-[var(--text-muted)] transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                            ▾
+                          </span>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="px-4 pb-4 border-t border-[var(--border-default)] bg-[var(--surface-2)]/50">
+                            <div className="mt-3 space-y-3">
+                              <div>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Title</span>
+                                <p className="text-sm text-[var(--text-primary)] mt-1">{rev.title}</p>
+                              </div>
+                              <div>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Content</span>
+                                <p className="text-sm text-[var(--text-primary)] mt-1 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto bg-[var(--surface-1)] p-3 rounded-[var(--radius-md)] border border-[var(--border-default)]">
+                                  {rev.content}
+                                </p>
+                              </div>
+                              {rev.tags && rev.tags.length > 0 && (
+                                <div>
+                                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Tags</span>
+                                  <div className="flex flex-wrap gap-1.5 mt-1">
+                                    {rev.tags.map((tag: string) => (
+                                      <span
+                                        key={tag}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-[var(--radius-sm)]"
+                                      >
+                                        <Tag className="w-3 h-3" /> {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3 border-t border-[var(--border-default)] flex justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setShowRevisions(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
@@ -578,13 +749,13 @@ function CommentCard({
   return (
     <div className={`theme-card p-3 sm:p-4 ${depth > 0 ? 'ml-4 sm:ml-8 border-l-2 border-[var(--brand-primary)]/20' : ''} ${comment.isAccepted ? 'ring-1 ring-[var(--state-success)]/30' : ''}`}>
       <div className="flex gap-3">
-        <img src={comment.author.avatar} alt={comment.author.username} className="w-8 h-8 rounded-full shrink-0" />
+        <img src={comment.author.avatar} alt={comment.author.username} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full shrink-0" />
         <div className="flex-1 min-w-0">
           {/* Author row */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
             <span className="font-medium text-sm text-[var(--text-primary)]">{comment.author.username}</span>
             <span className="text-xs text-[var(--text-muted)]">Lv.{comment.author.level}</span>
-            <span className="text-xs text-[var(--text-muted)]">· {comment.createdAt}</span>
+            <span className="text-xs text-[var(--text-muted)]">· {formatDate(comment.createdAt)}</span>
             {comment.isAccepted && (
               <span className="flex items-center gap-1 text-xs text-[var(--state-success)]">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Best Answer

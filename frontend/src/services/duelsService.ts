@@ -33,5 +33,15 @@ export const duelsService = {
   getDuelResult: async (id: string) => {
     const { data } = await api.get(`/duels/${id}/result`);
     return data;
-  }
+  },
+
+  getQueueStats: async () => {
+    const { data } = await api.get('/duels/queue/stats');
+    return data;
+  },
+
+  getMyStats: async () => {
+    const { data } = await api.get('/duels/my-stats');
+    return data;
+  },
 };
