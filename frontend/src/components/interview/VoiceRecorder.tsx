@@ -31,7 +31,7 @@ export function VoiceRecorder({ sessionId, settings, onMessageSent, disabled }: 
     return (
       <button 
         disabled
-        title="Votre navigateur ne supporte pas l'enregistrement audio"
+        title="Your browser does not support audio recording"
         className="px-3 rounded-[var(--radius-md)] bg-[var(--surface-2)] text-[var(--text-muted)] opacity-50 cursor-not-allowed flex items-center justify-center"
       >
         <MicOff className="w-4 h-4" />
@@ -52,7 +52,7 @@ export function VoiceRecorder({ sessionId, settings, onMessageSent, disabled }: 
           onClick={startRecording}
           disabled={disabled}
           className="w-10 flex-shrink-0 flex items-center justify-center rounded-[var(--radius-md)] transition-colors bg-[var(--surface-2)] text-[var(--text-primary)] hover:bg-[var(--surface-3)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Enregistrer un message vocal"
+          title="Record a voice message"
         >
           <Mic className="w-4 h-4" />
         </button>
@@ -85,14 +85,14 @@ export function VoiceRecorder({ sessionId, settings, onMessageSent, disabled }: 
           <button
             onClick={cancelRecording}
             className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-3)] rounded-md transition-colors"
-            title="Annuler"
+            title="Cancel"
           >
             <X className="w-4 h-4" />
           </button>
           <button
             onClick={stopRecording}
             className="p-1.5 bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary)]/90 rounded-md transition-colors"
-            title="Terminer et corriger"
+            title="Stop and edit"
           >
             <Send className="w-4 h-4" />
           </button>
@@ -105,7 +105,7 @@ export function VoiceRecorder({ sessionId, settings, onMessageSent, disabled }: 
     return (
       <div className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-md)] px-3 py-2">
         <Loader2 className="w-4 h-4 animate-spin text-[var(--brand-primary)]" />
-        <span className="text-sm text-[var(--text-secondary)]">Transcription en cours...</span>
+        <span className="text-sm text-[var(--text-secondary)]">Transcribing...</span>
       </div>
     );
   }
@@ -125,14 +125,14 @@ export function VoiceRecorder({ sessionId, settings, onMessageSent, disabled }: 
             onClick={cancelRecording}
             className="px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Annuler
+            Cancel
           </button>
           <button
             onClick={reRecord}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--surface-3)] text-[var(--text-primary)] hover:bg-[var(--surface-4)] rounded-md transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Réenregistrer
+            Re-record
           </button>
           <button
             onClick={sendTranscript}
@@ -140,7 +140,7 @@ export function VoiceRecorder({ sessionId, settings, onMessageSent, disabled }: 
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
           >
             <Send className="w-3.5 h-3.5" />
-            Envoyer
+            Send
           </button>
         </div>
       </div>

@@ -139,7 +139,7 @@ export function HackathonWorkspace() {
         const data = await hackathonsService.getById(id);
         setHackathon(data);
         if (!['active', 'frozen'].includes(data.status)) {
-          if (['lobby', 'checkin'].includes(data.status)) navigate(`/hackathon/${id}/lobby`);
+          if (['lobby', 'checkin'].includes(data.status)) navigate('/teams');
           else if (data.status === 'ended') navigate(`/hackathon/${id}/results`);
         }
       } catch (err) {

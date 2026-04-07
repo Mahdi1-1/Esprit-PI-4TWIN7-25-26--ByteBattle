@@ -125,6 +125,12 @@ export function AdminProblem() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.title.trim() || !formData.statementMd.trim()) {
+      setError('Title and problem statement are required.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -157,7 +163,7 @@ export function AdminProblem() {
 
   return (
     <AdminLayout>
-      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6">
         <Breadcrumb
           items={[
             { label: 'Admin' },

@@ -155,9 +155,9 @@ export function useVoiceRecorder({ sessionId, settings, onMessageSent }: UseVoic
     } catch (err: any) {
       console.error('Recording error:', err);
       if (err.name === 'NotAllowedError') {
-        setError("L'accès au microphone a été refusé. Veuillez l'autoriser dans les paramètres de votre navigateur.");
+        setError("Microphone access was denied. Please allow it in your browser settings.");
       } else {
-        setError("Erreur lors de l'accès au microphone.");
+        setError("Error while accessing the microphone.");
       }
       setState('idle');
       stopAllTracks();
@@ -204,7 +204,7 @@ export function useVoiceRecorder({ sessionId, settings, onMessageSent }: UseVoic
           replyAudioUrl = res.audioUrl;
         } catch (sttErr: any) {
           console.warn('Server STT failed:', sttErr);
-          setError("Le service de transcription vocale n'est pas disponible. Tapez votre message à la place.");
+          setError("Voice transcription service is unavailable. Type your message instead.");
           setState('idle');
           return;
         }
@@ -212,7 +212,7 @@ export function useVoiceRecorder({ sessionId, settings, onMessageSent }: UseVoic
       // In browser mode, we use the transcript from SpeechRecognition — no server fallback
 
       if (!finalTranscript.trim()) {
-        setError("Aucun texte détecté. Parlez clairement près du micro, ou tapez votre message.");
+        setError("No text detected. Speak clearly near the mic, or type your message.");
         setState('idle');
         return;
       }
@@ -234,7 +234,7 @@ export function useVoiceRecorder({ sessionId, settings, onMessageSent }: UseVoic
 
     } catch (err) {
       console.error('Transcription error:', err);
-      setError("Erreur lors de l'envoi du message vocal.");
+      setError("Error while sending the voice message.");
       setState('idle');
     }
   };

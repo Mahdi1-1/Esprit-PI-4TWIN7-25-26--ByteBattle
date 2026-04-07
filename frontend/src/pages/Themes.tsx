@@ -8,7 +8,7 @@ import { Layout } from '../components/Layout';
 const THEME_INFO: Record<ThemeName, { name: string; description: string; preview: string[]; font: string }> = {
   cyber: {
     name: 'Cyber Arena / Neon Tournament',
-    description: 'Arène e-sport futuriste avec néons cyan/violet. Fonts: Orbitron + Rajdhani',
+    description: 'Futuristic e-sports arena with cyan/violet neon. Fonts: Orbitron + Rajdhani',
     preview: ['#00E5FF', '#8B5CF6', '#0B1020'],
     font: 'Orbitron',
   },
@@ -181,14 +181,14 @@ function ThemeCard({
           onClick={onActivate}
           disabled={isActive}
         >
-          {isActive ? 'Activé' : 'Activer'}
+          {isActive ? 'Active' : 'Activate'}
         </Button>
       ) : (
         <div className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded-[var(--radius-md)]">
           <div className="flex items-center gap-2 text-[var(--text-muted)]">
             <Lock className="w-4 h-4" />
             <span className="text-caption">
-              Niveau {requiredLevel} requis
+              Level {requiredLevel} required
             </span>
           </div>
           <span className="text-caption font-semibold text-[var(--text-primary)]">

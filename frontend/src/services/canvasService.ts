@@ -2,22 +2,22 @@ import api from '../api/axios';
 import { type CanvasChallenge } from '../data/canvasChallengeData';
 
 /**
- * Normalise un challenge brut du backend vers la structure CanvasChallenge
- * attendue par le frontend.
+ * Normalize a raw backend challenge to the CanvasChallenge
+ * structure expected by the frontend.
  */
 function normalizeChallenge(raw: any): CanvasChallenge {
   const constraints = raw.constraints ?? {};
 
-  // Construire un tableau lisible des contraintes (ex: "Temps: 45 min")
+  // Build a readable list of constraints (e.g. "Time: 45 min")
   const constraintsList: string[] = [
-    constraints.timeLimit       ? `⏱ Temps : ${constraints.timeLimit} min`       : null,
-    constraints.maxElements     ? `📐 Max éléments : ${constraints.maxElements}`  : null,
+    constraints.timeLimit       ? `⏱ Time: ${constraints.timeLimit} min`          : null,
+    constraints.maxElements     ? `📐 Max elements: ${constraints.maxElements}`    : null,
     constraints.budget          ? `💰 Budget : ${constraints.budget}`             : null,
     constraints.throughput      ? `📊 Throughput : ${constraints.throughput}`     : null,
-    constraints.dataVolume      ? `💾 Volume : ${constraints.dataVolume}`         : null,
+    constraints.dataVolume      ? `💾 Volume: ${constraints.dataVolume}`           : null,
     constraints.gitops          ? `🔁 GitOps : ${constraints.gitops}`            : null,
     constraints.minimum         ? `✅ Minimum : ${constraints.minimum}`           : null,
-    constraints.level           ? `🎯 Niveau : ${constraints.level}`              : null,
+    constraints.level           ? `🎯 Level: ${constraints.level}`                : null,
   ].filter(Boolean) as string[];
 
   return {

@@ -6,24 +6,46 @@ import { CountdownTimer } from '../components/Timer';
 import { Layout } from '../components/Layout';
 import { Users, Calendar, Trophy, Play, Loader } from 'lucide-react';
 import { hackathonsService } from '../services/hackathonsService';
+import { teamsService } from '../services/teamsService';
+import { useAuth } from '../context/AuthContext';
+
+type UserTeam = {
+  id: string;
+  name: string;
+  ownerId: string;
+};
 
 export function Hackathon() {
+  const { user } = useAuth();
   const [hackathons, setHackathons] = useState<any[]>([]);
+  const [myTeams, setMyTeams] = useState<UserTeam[]>([]);
+  const [selectedTeamByHackathon, setSelectedTeamByHackathon] = useState<Record<string, string>>({});
+  const [registeringHackathonId, setRegisteringHackathonId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchHackathons = async () => {
-      try {
-        const res = await hackathonsService.getAll();
-        if (res?.data?.length) {
-          setHackathons(res.data);
-        }
-      } catch (err) {
-        console.error('Failed to load hackathons:', err);
-      } finally {
-        setLoading(false);
+  const fetchHackathons = async () => {
+    try {
+      const [hackathonRes, myTeamsRes] = await Promise.all([
+        hackathonsService.getAll(),
+        teamsService.getMine(),
+      ]);
+
+      if (hackathonRes?.data?.length) {
+        setHackathons(hackathonRes.data);
+      } else {
+        setHackathons([]);
       }
-    };
+
+      setMyTeams(Array.isArray(myTeamsRes) ? myTeamsRes : []);
+    } catch (err) {
+      console.error('Failed to load hackathons:', err);
+      setMyTeams([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchHackathons();
   }, []);
 
@@ -33,6 +55,24 @@ export function Hackathon() {
   const upcomingHackathons = hackathons.filter(h => h.status === 'draft');
   const finishedHackathons = hackathons.filter(h => ['ended', 'archived'].includes(h.status));
   const cancelledHackathons = hackathons.filter(h => h.status === 'cancelled');
+  const captainTeams = myTeams.filter((team) => team.ownerId === user?.id);
+
+  const registerTeamToHackathon = async (hackathonId: string) => {
+    const selectedTeamId = selectedTeamByHackathon[hackathonId] || captainTeams[0]?.id;
+    if (!selectedTeamId) {
+      return;
+    }
+
+    setRegisteringHackathonId(hackathonId);
+    try {
+      await teamsService.registerToHackathon(selectedTeamId, hackathonId);
+      await fetchHackathons();
+    } catch (err: any) {
+      console.error('Failed to register team', err?.response?.data?.message || err?.message || err);
+    } finally {
+      setRegisteringHackathonId(null);
+    }
+  };
 
   return (
     <Layout>
@@ -59,7 +99,18 @@ export function Hackathon() {
                 <h2 className="mb-4">🔴 Ongoing</h2>
                 <div className="space-y-4">
                   {ongoingHackathons.map((hackathon) => (
-                    <HackathonCard key={hackathon.id} hackathon={hackathon} />
+                    <HackathonCard
+                      key={hackathon.id}
+                      hackathon={hackathon}
+                      currentUserId={user?.id}
+                      captainTeams={captainTeams}
+                      selectedTeamId={selectedTeamByHackathon[hackathon.id] || captainTeams[0]?.id || ''}
+                      onTeamChange={(teamId) =>
+                        setSelectedTeamByHackathon((prev) => ({ ...prev, [hackathon.id]: teamId }))
+                      }
+                      onRegister={() => registerTeamToHackathon(hackathon.id)}
+                      isRegistering={registeringHackathonId === hackathon.id}
+                    />
                   ))}
                 </div>
               </section>
@@ -71,7 +122,18 @@ export function Hackathon() {
                 <h2 className="mb-4">📝 Registration Open</h2>
                 <div className="space-y-4">
                   {lobbyHackathons.map((hackathon) => (
-                    <HackathonCard key={hackathon.id} hackathon={hackathon} />
+                    <HackathonCard
+                      key={hackathon.id}
+                      hackathon={hackathon}
+                      currentUserId={user?.id}
+                      captainTeams={captainTeams}
+                      selectedTeamId={selectedTeamByHackathon[hackathon.id] || captainTeams[0]?.id || ''}
+                      onTeamChange={(teamId) =>
+                        setSelectedTeamByHackathon((prev) => ({ ...prev, [hackathon.id]: teamId }))
+                      }
+                      onRegister={() => registerTeamToHackathon(hackathon.id)}
+                      isRegistering={registeringHackathonId === hackathon.id}
+                    />
                   ))}
                 </div>
               </section>
@@ -83,7 +145,18 @@ export function Hackathon() {
                 <h2 className="mb-4">✅ Check-in</h2>
                 <div className="space-y-4">
                   {checkinHackathons.map((hackathon) => (
-                    <HackathonCard key={hackathon.id} hackathon={hackathon} />
+                    <HackathonCard
+                      key={hackathon.id}
+                      hackathon={hackathon}
+                      currentUserId={user?.id}
+                      captainTeams={captainTeams}
+                      selectedTeamId={selectedTeamByHackathon[hackathon.id] || captainTeams[0]?.id || ''}
+                      onTeamChange={(teamId) =>
+                        setSelectedTeamByHackathon((prev) => ({ ...prev, [hackathon.id]: teamId }))
+                      }
+                      onRegister={() => registerTeamToHackathon(hackathon.id)}
+                      isRegistering={registeringHackathonId === hackathon.id}
+                    />
                   ))}
                 </div>
               </section>
@@ -92,12 +165,31 @@ export function Hackathon() {
             {/* Upcoming Hackathons */}
             <section className="mb-8">
               <h2 className="mb-4">Upcoming</h2>
-              <div className="p-12 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] text-center">
-                <Trophy className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)]" />
-                <p className="text-[var(--text-muted)]">
-                  No upcoming hackathons at the moment
-                </p>
-              </div>
+              {upcomingHackathons.length > 0 ? (
+                <div className="space-y-4">
+                  {upcomingHackathons.map((hackathon) => (
+                    <HackathonCard
+                      key={hackathon.id}
+                      hackathon={hackathon}
+                      currentUserId={user?.id}
+                      captainTeams={captainTeams}
+                      selectedTeamId={selectedTeamByHackathon[hackathon.id] || captainTeams[0]?.id || ''}
+                      onTeamChange={(teamId) =>
+                        setSelectedTeamByHackathon((prev) => ({ ...prev, [hackathon.id]: teamId }))
+                      }
+                      onRegister={() => registerTeamToHackathon(hackathon.id)}
+                      isRegistering={registeringHackathonId === hackathon.id}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] text-center">
+                  <Trophy className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)]" />
+                  <p className="text-[var(--text-muted)]">
+                    No upcoming hackathons at the moment
+                  </p>
+                </div>
+              )}
             </section>
 
             {/* Past Hackathons */}
@@ -106,7 +198,40 @@ export function Hackathon() {
                 <h2 className="mb-4">Finished</h2>
                 <div className="space-y-4">
                   {finishedHackathons.map((hackathon) => (
-                    <HackathonCard key={hackathon.id} hackathon={hackathon} />
+                    <HackathonCard
+                      key={hackathon.id}
+                      hackathon={hackathon}
+                      currentUserId={user?.id}
+                      captainTeams={captainTeams}
+                      selectedTeamId={selectedTeamByHackathon[hackathon.id] || captainTeams[0]?.id || ''}
+                      onTeamChange={(teamId) =>
+                        setSelectedTeamByHackathon((prev) => ({ ...prev, [hackathon.id]: teamId }))
+                      }
+                      onRegister={() => registerTeamToHackathon(hackathon.id)}
+                      isRegistering={registeringHackathonId === hackathon.id}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {cancelledHackathons.length > 0 && (
+              <section className="mt-8">
+                <h2 className="mb-4">Cancelled</h2>
+                <div className="space-y-4">
+                  {cancelledHackathons.map((hackathon) => (
+                    <HackathonCard
+                      key={hackathon.id}
+                      hackathon={hackathon}
+                      currentUserId={user?.id}
+                      captainTeams={captainTeams}
+                      selectedTeamId={selectedTeamByHackathon[hackathon.id] || captainTeams[0]?.id || ''}
+                      onTeamChange={(teamId) =>
+                        setSelectedTeamByHackathon((prev) => ({ ...prev, [hackathon.id]: teamId }))
+                      }
+                      onRegister={() => registerTeamToHackathon(hackathon.id)}
+                      isRegistering={registeringHackathonId === hackathon.id}
+                    />
                   ))}
                 </div>
               </section>
@@ -118,7 +243,23 @@ export function Hackathon() {
   );
 }
 
-function HackathonCard({ hackathon }: { hackathon: any }) {
+function HackathonCard({
+  hackathon,
+  currentUserId,
+  captainTeams,
+  selectedTeamId,
+  onTeamChange,
+  onRegister,
+  isRegistering,
+}: {
+  hackathon: any;
+  currentUserId?: string;
+  captainTeams: UserTeam[];
+  selectedTeamId: string;
+  onTeamChange: (teamId: string) => void;
+  onRegister: () => void;
+  isRegistering: boolean;
+}) {
   const isOngoing = ['active', 'frozen'].includes(hackathon.status);
   const isFinished = ['ended', 'archived'].includes(hackathon.status);
   const isLobby = hackathon.status === 'lobby';
@@ -126,7 +267,7 @@ function HackathonCard({ hackathon }: { hackathon: any }) {
 
   // Determine navigation target based on status
   const getLink = () => {
-    if (isLobby || isCheckin) return `/hackathon/${hackathon.id}/lobby`;
+    if (isCheckin) return `/hackathon/${hackathon.id}/scoreboard`;
     if (isOngoing) return `/hackathon/${hackathon.id}/workspace`;
     if (isFinished) return `/hackathon/${hackathon.id}/results`;
     return `/hackathon/${hackathon.id}/scoreboard`;
@@ -151,25 +292,50 @@ function HackathonCard({ hackathon }: { hackathon: any }) {
     cancelled: 'Cancelled',
   }[hackathon.status] || hackathon.status;
 
+  const title = hackathon.title || hackathon.name || 'Untitled Hackathon';
+  const teamsCount =
+    hackathon._count?.hackathonTeams ??
+    hackathon.hackathonTeams?.length ??
+    hackathon._count?.teams ??
+    hackathon.teams ??
+    0;
+  const problemsCount =
+    Array.isArray(hackathon.challengeIds) ? hackathon.challengeIds.length : (hackathon.problems ?? 0);
+  const myTeam = Array.isArray(hackathon.hackathonTeams)
+    ? hackathon.hackathonTeams.find((t: any) =>
+      t.members?.some((m: any) => m.userId === currentUserId),
+    )
+    : null;
+  const myRole = myTeam?.members?.find((m: any) => m.userId === currentUserId)?.role;
+  const isRegistered = Boolean(myTeam);
+
   return (
     <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] hover:border-[var(--brand-primary)] transition-colors">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h3>{hackathon.name}</h3>
+            <h3>{title}</h3>
             <Badge variant={hackathon.status}>
               {statusLabel}
             </Badge>
+            {myTeam && (
+              <Link to="/teams">
+                <Badge variant="ongoing">
+                  {myRole === 'captain' ? 'My Team: Captain' : 'My Team: Member'}
+                  {myTeam.isCheckedIn ? ' • Checked In' : ''}
+                </Badge>
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-6 text-caption text-[var(--text-muted)]">
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4" />
-              <span>{hackathon.teams} teams</span>
+              <span>{teamsCount} teams</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Trophy className="w-4 h-4" />
-              <span>{hackathon.problems} problems</span>
+              <span>{problemsCount} problems</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4" />
@@ -186,7 +352,37 @@ function HackathonCard({ hackathon }: { hackathon: any }) {
         </div>
 
         <div className="flex items-center gap-3">
-          {(isOngoing || isLobby || isCheckin) && (
+          {isLobby ? (
+            <div className="flex items-center gap-2">
+              {!isRegistered && (
+                <select
+                  className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-2 py-2 text-sm"
+                  value={selectedTeamId}
+                  onChange={(e) => onTeamChange(e.target.value)}
+                  disabled={isRegistering || captainTeams.length === 0}
+                >
+                  {captainTeams.length === 0 ? (
+                    <option value="">No captain team</option>
+                  ) : (
+                    captainTeams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              )}
+              <Button
+                variant="primary"
+                size="md"
+                onClick={onRegister}
+                disabled={isRegistering || captainTeams.length === 0 || isRegistered}
+              >
+                <Play className="w-4 h-4" />
+                {isRegistered ? 'Registered' : isRegistering ? 'Registering...' : 'Register'}
+              </Button>
+            </div>
+          ) : (isOngoing || isCheckin) && (
             <Link to={getLink()}>
               <Button variant="primary" size="md">
                 <Play className="w-4 h-4" />
@@ -213,6 +409,26 @@ function HackathonCard({ hackathon }: { hackathon: any }) {
             </span>
             <CountdownTimer targetDate={hackathon.endTime} />
           </div>
+        </div>
+      )}
+
+      {isLobby && (
+        <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
+          {isRegistered ? (
+            <p className="text-sm text-[var(--text-secondary)]">
+              You are already registered in this hackathon.
+            </p>
+          ) : captainTeams.length === 0 ? (
+            <p className="text-sm text-[var(--text-secondary)]">
+              You need to be captain of a team before registering.
+              {' '}
+              <Link to="/teams" className="text-[var(--brand-primary)] hover:underline">Create a team</Link>.
+            </p>
+          ) : (
+            <p className="text-sm text-[var(--text-secondary)]">
+              Select one of your captain teams and click Register.
+            </p>
+          )}
         </div>
       )}
     </div>

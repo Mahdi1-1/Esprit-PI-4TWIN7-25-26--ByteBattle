@@ -70,7 +70,7 @@ export function DuelRoom() {
     });
 
     newSocket.on('duel_started', (data) => {
-      toast.success('Le duel a commencé !');
+      toast.success('The duel has started!');
       setActiveTab('statement');
     });
 
@@ -78,9 +78,9 @@ export function DuelRoom() {
       setTestResult(result);
       setIsRunning(false);
       if (result.verdict === 'AC') {
-        toast.success('Tous les tests sont passés ! Analyse IA en cours...');
+        toast.success('All tests passed! AI analysis in progress...');
       } else {
-        toast.error(`Exécution terminée : ${result.verdict}`);
+        toast.error(`Execution finished: ${result.verdict}`);
       }
     });
 
@@ -172,7 +172,7 @@ export function DuelRoom() {
   if (!duelState) return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center text-[var(--text-primary)]">
       <Loader className="w-8 h-8 text-[var(--brand-primary)] animate-spin mb-4" />
-      Chargement du duel...
+      Loading duel...
     </div>
   );
 
@@ -203,7 +203,7 @@ export function DuelRoom() {
               {focusLostCount > 0 && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/30 rounded-full text-red-400 text-xs">
                   <AlertTriangle className="w-3 h-3" />
-                  <span>Perte Focus: {focusLostCount}× ({totalFocusLostTime}s)</span>
+                  <span>Focus Loss: {focusLostCount}x ({totalFocusLostTime}s)</span>
                 </div>
               )}
 
@@ -243,7 +243,7 @@ export function DuelRoom() {
                     }
                   `}
                 >
-                  {tab === 'statement' ? 'Énoncé' : 'Statut du Duel'}
+                  {tab === 'statement' ? 'Statement' : 'Duel Status'}
                 </button>
               ))}
             </div>
@@ -254,7 +254,7 @@ export function DuelRoom() {
               {activeTab === 'statement' && (
                 <div className="prose prose-invert max-w-none">
                   <div className="mb-6 whitespace-pre-wrap text-[var(--text-primary)]">
-                    {duelState.challenge.descriptionMd || "Description cachée / non chargée. Faisons le duel !"}
+                    {duelState.challenge.descriptionMd || "Description hidden / not loaded. Let's duel!"}
                   </div>
                 </div>
               )}
@@ -263,50 +263,50 @@ export function DuelRoom() {
                 <div className="space-y-6">
                   <div className="p-4 rounded-[var(--radius-lg)] bg-[var(--surface-2)]">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold text-[var(--text-primary)] text-sm uppercase tracking-wider">État du Duel</span>
+                      <span className="font-semibold text-[var(--text-primary)] text-sm uppercase tracking-wider">Duel State</span>
                       <span className={`px-2 py-1 text-xs rounded-full font-bold ${duelState.status === 'active' ? 'bg-[var(--brand-primary)] text-white animate-pulse' : 'bg-[var(--surface-3)] text-[var(--text-secondary)]'}`}>
                         {duelState.status.toUpperCase()}
                       </span>
                     </div>
-                    {duelState.status === 'waiting' && <p className="text-sm text-[var(--text-muted)]">En attente d'un adversaire...</p>}
-                    {duelState.status === 'ready' && <p className="text-sm text-[var(--text-muted)]">L'adversaire est là. Préparez-vous !</p>}
-                    {duelState.status === 'active' && <p className="text-sm text-[var(--brand-primary)]">Le duel est en cours ! Le temps et la complexité IA comptent.</p>}
+                    {duelState.status === 'waiting' && <p className="text-sm text-[var(--text-muted)]">Waiting for an opponent...</p>}
+                    {duelState.status === 'ready' && <p className="text-sm text-[var(--text-muted)]">The opponent is here. Get ready!</p>}
+                    {duelState.status === 'active' && <p className="text-sm text-[var(--brand-primary)]">The duel is active! Time and AI complexity matter.</p>}
                   </div>
 
                   {/* Players Overview */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className={`p-4 rounded-[var(--radius-md)] border-2 ${me?.ready ? 'border-[var(--brand-primary)]' : 'border-[var(--border-default)]'} bg-[var(--surface-1)]`}>
-                      <h3 className="font-bold text-sm mb-2 text-center text-[var(--brand-primary)]">Vous</h3>
+                      <h3 className="font-bold text-sm mb-2 text-center text-[var(--brand-primary)]">You</h3>
                       <div className="text-center font-medium mb-2">{me?.username || '...'}</div>
                       <div className="text-xs space-y-2 text-center">
-                        <div className={me?.ready ? 'text-green-500 font-bold' : 'text-yellow-500'}>{me?.ready ? 'PRÊT' : 'NON PRÊT'}</div>
+                        <div className={me?.ready ? 'text-green-500 font-bold' : 'text-yellow-500'}>{me?.ready ? 'READY' : 'NOT READY'}</div>
                         <div className="p-2 bg-[var(--surface-2)] rounded">
-                          <div>Tests passés: {me?.testsPassed || 0} / {me?.testsTotal || 0}</div>
+                          <div>Tests passed: {me?.testsPassed || 0} / {me?.testsTotal || 0}</div>
                           <div className="font-bold">Score: {me?.score || 0}%</div>
                         </div>
-                        {me?.finishedAt && <div className="text-green-400 font-bold text-xs mt-1">✓ Terminé! IA en cours...</div>}
+                        {me?.finishedAt && <div className="text-green-400 font-bold text-xs mt-1">✓ Finished! AI in progress...</div>}
                         {me?.complexityScore !== undefined && (
                           <div className="text-purple-400 font-bold text-xs mt-1 animate-pulse">
-                            🔥 Complexité IA: Score {me.complexityScore}
+                            🔥 AI Complexity: Score {me.complexityScore}
                           </div>
                         )}
                       </div>
                       {!me?.ready && duelState.status === 'ready' && (
-                        <Button className="w-full mt-3 h-8 text-xs" onClick={handleReady}>Je suis prêt</Button>
+                        <Button className="w-full mt-3 h-8 text-xs" onClick={handleReady}>I am ready</Button>
                       )}
                     </div>
 
                     <div className={`p-4 rounded-[var(--radius-md)] border-2 ${opponent?.ready ? 'border-red-500' : 'border-[var(--border-default)]'} bg-[var(--surface-1)]`}>
-                      <h3 className="font-bold text-sm mb-2 text-center text-red-500">Adversaire</h3>
-                      <div className="text-center font-medium mb-2">{opponent?.username || 'En attente...'}</div>
+                      <h3 className="font-bold text-sm mb-2 text-center text-red-500">Opponent</h3>
+                      <div className="text-center font-medium mb-2">{opponent?.username || 'Waiting...'}</div>
                       {opponent?.id ? (
                         <div className="text-xs space-y-2 text-center">
-                          <div className={opponent.ready ? 'text-green-500 font-bold' : 'text-yellow-500'}>{opponent.ready ? 'PRÊT' : 'NON PRÊT'}</div>
+                          <div className={opponent.ready ? 'text-green-500 font-bold' : 'text-yellow-500'}>{opponent.ready ? 'READY' : 'NOT READY'}</div>
                           <div className="p-2 bg-[var(--surface-2)] rounded">
-                            <div>Tests passés: {opponent.testsPassed || 0} / {opponent.testsTotal || 0}</div>
+                            <div>Tests passed: {opponent.testsPassed || 0} / {opponent.testsTotal || 0}</div>
                             <div className="font-bold text-red-400">Score: {opponent.score || 0}%</div>
                           </div>
-                          {opponent?.finishedAt && <div className="text-green-400 font-bold text-xs mt-1">✓ Terminé! IA en cours...</div>}
+                          {opponent?.finishedAt && <div className="text-green-400 font-bold text-xs mt-1">✓ Finished! AI in progress...</div>}
                           {opponent?.complexityScore !== undefined && (
                             <div className="text-purple-400 font-bold text-xs mt-1">
                               🔥 Score IA: {opponent.complexityScore}
@@ -321,7 +321,7 @@ export function DuelRoom() {
 
                   {testResult && (
                     <div className="p-4 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)]">
-                      <h3 className="font-bold text-sm mb-2 text-[var(--text-primary)]">Résultat d'exécution</h3>
+                      <h3 className="font-bold text-sm mb-2 text-[var(--text-primary)]">Execution result</h3>
                       <div className="space-y-2 text-sm font-code">
                         <div className="flex justify-between">
                           <span className="text-[var(--text-muted)]">Verdict:</span>

@@ -23,6 +23,11 @@ export function EmailChangeForm() {
         setError(null);
         setSuccess(null);
 
+        if (!currentPassword.trim() || !newEmail.trim()) {
+            setError('All fields are required.');
+            return;
+        }
+
         // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(newEmail)) {
@@ -72,7 +77,7 @@ export function EmailChangeForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="flex items-center gap-2">
                 <Mail className="w-5 h-5" />
                 <span className="font-medium">{t('settings.account.email')}</span>

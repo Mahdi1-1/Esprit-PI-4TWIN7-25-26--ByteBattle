@@ -145,10 +145,10 @@ export function CanvasEditor() {
       <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
-            Challenge non trouvé
+            Challenge not found
           </h2>
           <Button onClick={() => navigate('/canvas')}>
-            Retour au catalogue
+            Back to catalog
           </Button>
         </div>
       </div>
@@ -246,7 +246,7 @@ export function CanvasEditor() {
             <div className="flex items-center gap-2 text-caption text-[var(--text-muted)]">
               <span>{mode === 'bi' ? 'Mode Duo' : 'Mode Solo'}</span>
               {mode === 'bi' && <span>• 2 participants</span>}
-              <span>• Sauvegardé {lastSaveTime.toLocaleTimeString()}</span>
+              <span>• Saved {lastSaveTime.toLocaleTimeString()}</span>
             </div>
           </div>
         </div>
@@ -255,7 +255,7 @@ export function CanvasEditor() {
            {focusLostCount > 0 && (
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/30 rounded-full text-red-400 text-xs">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span>Focus perdu ({focusLostCount}x, {totalFocusLostTime}s)</span>
+              <span>Focus lost ({focusLostCount}x, {totalFocusLostTime}s)</span>
             </div>
           )}
 
@@ -356,16 +356,16 @@ export function CanvasEditor() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </span>
-              <h3 className="text-xl font-bold mb-2">Mode Plein Écran Requis</h3>
+              <h3 className="text-xl font-bold mb-2">Full Screen Mode Required</h3>
               <p className="text-[var(--text-secondary)] mb-6 max-w-md">
-                Pour éditer le canvas, veuillez activer le mode plein écran afin de garantir les conditions de l'examen.
+                To edit the canvas, please enable full screen mode to ensure exam conditions.
               </p>
               <Button 
                 size="lg" 
                 variant="primary" 
                 onClick={() => document.documentElement.requestFullscreen()}
               >
-                Activer le Mode Plein Écran
+                Enable Full Screen Mode
               </Button>
             </div>
           )}

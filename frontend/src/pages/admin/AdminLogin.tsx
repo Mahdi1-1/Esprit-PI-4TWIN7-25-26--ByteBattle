@@ -13,6 +13,12 @@ export function AdminLogin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required.');
+      return;
+    }
+
     setLoading(true);
 
     // Mock login
@@ -49,7 +55,7 @@ export function AdminLogin() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} noValidate className="space-y-4">
             {/* Email */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-[var(--text-primary)]">

@@ -52,7 +52,7 @@ export function Dashboard() {
         }
 
       } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
+        console.error('Error while loading data:', error);
       } finally {
         setLoading(false);
       }

@@ -12,6 +12,7 @@ import { HackathonsModule } from './hackathons/hackathons.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { BadgesModule } from './badges/badges.module';
 import { InterviewsModule } from './interviews/interviews.module';
+import { TeamsModule } from './teams/teams.module';
 import { AdminModule } from './admin/admin.module';
 import { DuelsModule } from './duels/duels.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -40,6 +41,7 @@ import { CacheModule } from './cache/cache.module';
     SubmissionsModule,
     DiscussionsModule,
     HackathonsModule,
+    TeamsModule,
     LeaderboardModule,
     BadgesModule,
     InterviewsModule,

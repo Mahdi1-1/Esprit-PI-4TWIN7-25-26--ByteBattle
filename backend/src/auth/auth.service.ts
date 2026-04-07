@@ -1,9 +1,16 @@
 // backend/src/auth/auth.service.ts
-import { Injectable, ConflictException, UnauthorizedException, Inject, Logger } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, Inject, Logger, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 export interface GoogleUserDto {
   googleId: string;
@@ -16,10 +23,13 @@ export interface GoogleUserDto {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly verificationResendCooldownMs = 30 * 1000;
 
   constructor(
     @Inject(PrismaService) private prisma: any,
     private jwtService: JwtService,
+    private emailService: EmailService,
+    private configService: ConfigService,
   ) { }
 
   async register(dto: RegisterDto) {
@@ -31,6 +41,9 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
+    const rawVerificationToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerificationToken = crypto.createHash('sha256').update(rawVerificationToken).digest('hex');
+    const verificationExpiration = new Date(Date.now() + 60 * 60 * 1000);
 
     const user = await this.prisma.user.create({
       data: {
@@ -41,10 +54,19 @@ export class AuthService {
         passwordHash,
         provider: 'local',
         isOAuthUser: false,
+        emailVerified: false,
+        emailVerificationToken: hashedVerificationToken,
+        emailVerificationExpires: verificationExpiration,
+        emailVerificationLastSentAt: new Date(),
       },
     });
 
-    return this.generateTokens(user);
+    const verificationLink = this.buildFrontendUrl(`/verify-email?token=${rawVerificationToken}`);
+    await this.emailService.sendVerificationEmail(user.email, user.username, verificationLink);
+
+    return {
+      message: 'Registration successful. Please verify your email before logging in.',
+    };
   }
 
   async login(dto: LoginDto) {
@@ -53,7 +75,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     // Vérifier si c'est un compte OAuth
@@ -64,12 +86,16 @@ export class AuthService {
     }
 
     if (!user.passwordHash) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (!user.emailVerified) {
+      throw new UnauthorizedException('Please verify your email before logging in. Check your inbox for the verification link.');
     }
 
     if (user.status !== 'active') {
@@ -155,6 +181,136 @@ export class AuthService {
 
     const { passwordHash, ...profile } = user;
     return profile;
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    if (!dto.token || typeof dto.token !== 'string') {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(dto.token).digest('hex');
+    const user = await this.prisma.user.findFirst({
+      where: {
+        emailVerificationToken: hashedToken,
+        emailVerificationExpires: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+        emailVerificationLastSentAt: null,
+      },
+    });
+
+    return { message: 'Email verified successfully' };
+  }
+
+  async resendVerificationEmail(dto: ResendVerificationDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user || user.emailVerified) {
+      return { message: 'If an account exists and is not yet verified, a new verification email has been sent.' };
+    }
+
+    const lastSentAt = user.emailVerificationLastSentAt ? new Date(user.emailVerificationLastSentAt).getTime() : 0;
+    if (Date.now() - lastSentAt < this.verificationResendCooldownMs) {
+      return { message: 'If an account exists and is not yet verified, a new verification email has been sent.' };
+    }
+
+    const rawVerificationToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerificationToken = crypto.createHash('sha256').update(rawVerificationToken).digest('hex');
+    const verificationExpiration = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: hashedVerificationToken,
+        emailVerificationExpires: verificationExpiration,
+        emailVerificationLastSentAt: new Date(),
+      },
+    });
+
+    const verificationLink = this.buildFrontendUrl(`/verify-email?token=${rawVerificationToken}`);
+    await this.emailService.sendVerificationEmail(user.email, user.username, verificationLink);
+
+    return { message: 'If an account exists and is not yet verified, a new verification email has been sent.' };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user || (user.isOAuthUser && !user.passwordHash)) {
+      return { message: 'If an account exists, a password reset link has been sent to your email.' };
+    }
+
+    const rawResetToken = crypto.randomBytes(32).toString('hex');
+    const hashedResetToken = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+    const resetExpiration = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: hashedResetToken,
+        passwordResetExpires: resetExpiration,
+      },
+    });
+
+    const resetLink = this.buildFrontendUrl(`/reset-password?token=${rawResetToken}`);
+    await this.emailService.sendPasswordResetEmail(user.email, user.username, resetLink);
+
+    return { message: 'If an account exists, a password reset link has been sent to your email.' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    if (!dto.token || typeof dto.token !== 'string') {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(dto.token).digest('hex');
+    const user = await this.prisma.user.findFirst({
+      where: {
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newPasswordHash,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      },
+    });
+
+    return { message: 'Password reset successfully' };
+  }
+
+  private buildFrontendUrl(path: string) {
+    const publicFrontendUrl = this.configService.get<string>('PUBLIC_FRONTEND_URL');
+    const frontendUrl = publicFrontendUrl || this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const normalizedBaseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+    return `${normalizedBaseUrl}${normalizedPath}`;
   }
 
   private generateTokens(user: any) {

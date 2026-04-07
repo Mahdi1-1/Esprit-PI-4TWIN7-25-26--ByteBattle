@@ -41,8 +41,8 @@ export function AudioPlayButton({ isCurrentMessage, state, onPlay, onPause, onRe
           ? 'bg-[var(--brand-primary)] text-white' 
           : 'bg-[var(--surface-3)] text-[var(--text-secondary)] hover:bg-[var(--surface-4)] hover:text-[var(--text-primary)]'
       }`}
-      aria-label="Lecture du message"
-      title="Écouter le message"
+      aria-label="Play message"
+      title="Listen to message"
     >
       {isLoading ? (
         <Loader2 className="w-4 h-4 animate-spin" />

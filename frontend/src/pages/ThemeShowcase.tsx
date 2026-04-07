@@ -171,7 +171,7 @@ function getThemeTitle(theme: string): string {
 
 function getThemeSubtitle(theme: string): string {
   const subtitles: Record<string, string> = {
-    cyber: 'Neon Tournament - Arène e-sport futuriste',
+    cyber: 'Neon Tournament - Futuristic e-sports arena',
     space: 'Mission Control - Centre de contrôle spatial',
     samurai: 'Code Kata - Discipline martiale du code',
     pixel: '8-Bit Competitive - Arcade rétro vibrante',

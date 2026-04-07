@@ -10,18 +10,18 @@ export interface Avatar {
 }
 
 export const SCENES = [
-  { id: 'halfbody-portrait-v1', label: 'Buste' },
-  { id: 'fullbody-portrait-v1', label: 'Corps entier (Portrait)' },
-  { id: 'fullbody-posture-v1', label: 'En pied' },
+  { id: 'halfbody-portrait-v1', label: 'Bust' },
+  { id: 'fullbody-portrait-v1', label: 'Full body (Portrait)' },
+  { id: 'fullbody-posture-v1', label: 'Standing full body' },
 ] as const;
 
 export const EXPRESSIONS = [
-  { id: 'neutral', label: 'Neutre', emoji: '😐' },
-  { id: 'smile', label: 'Sourire', emoji: '🙂' },
-  { id: 'big-smile', label: 'Grand sourire', emoji: '😄' },
-  { id: 'surprised', label: 'Surpris', emoji: '😮' },
-  { id: 'wink', label: 'Clin d\'œil', emoji: '😉' },
-  { id: 'sad', label: 'Triste', emoji: '🙁' },
+  { id: 'neutral', label: 'Neutral', emoji: '😐' },
+  { id: 'smile', label: 'Smile', emoji: '🙂' },
+  { id: 'big-smile', label: 'Big smile', emoji: '😄' },
+  { id: 'surprised', label: 'Surprised', emoji: '😮' },
+  { id: 'wink', label: 'Wink', emoji: '😉' },
+  { id: 'sad', label: 'Sad', emoji: '🙁' },
 ] as const;
 
 export type RPMScene = typeof SCENES[number]['id'];

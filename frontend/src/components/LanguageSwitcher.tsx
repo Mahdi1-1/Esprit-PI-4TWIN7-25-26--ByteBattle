@@ -4,7 +4,7 @@ import { useLanguage, Language } from '../context/LanguageContext';
 
 const languages: { code: Language; name: string; flag: string }[] = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'fr', name: 'French', flag: '🇫🇷' },
   { code: 'ar', name: 'العربية', flag: '🇸🇦' },
 ];
 
