@@ -66,7 +66,7 @@ export function useAnticheat(options: UseAnticheatOptions = {}): AnticheatState 
 
       setFocusLostCount((prev) => {
         const next = prev + 1;
-        toast.error('⚠️ Attention ! Focus perdu.', { duration: 4000 });
+        toast.error('⚠️ Warning! Focus lost.', { duration: 4000 });
         onFocusLost?.(next);
         return next;
       });
@@ -109,7 +109,7 @@ export function useAnticheat(options: UseAnticheatOptions = {}): AnticheatState 
 
     const handleCopyPaste = (e: ClipboardEvent) => {
       e.preventDefault();
-      toast.error('🚫 Copier-coller désactivé pendant l\'épreuve.', {
+      toast.error('🚫 Copy/paste is disabled during the challenge.', {
         style: {
           background: 'var(--surface-2)',
           color: 'var(--text-primary)',

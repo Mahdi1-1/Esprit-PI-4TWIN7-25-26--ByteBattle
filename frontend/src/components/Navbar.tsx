@@ -20,6 +20,7 @@ import {
   Shield,
   X,
   ChevronDown,
+  Flag,
 } from 'lucide-react';
 import { BBLogo } from './BBLogo';
 import { useTheme } from '../context/ThemeContext';
@@ -90,7 +91,8 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
     { to: '/data-structures', icon: <Layers className="w-10 h-7" />, label: t('nav.dataStructures') },
     { to: '/interview', icon: <Bot className="w-10 h-7" />, label: t('nav.interview') },
     { to: '/duel', icon: <Swords className="w-10 h-7" />, label: t('nav.duel') },
-    { to: '/hackathon', icon: <Users className="w-10 h-7" />, label: t('nav.hackathon') },
+    { to: '/hackathon', icon: <Flag className="w-10 h-7" />, label: t('nav.hackathon') },
+    { to: '/teams', icon: <Users className="w-10 h-7" />, label: t('nav.teams') },
     { to: '/leaderboard', icon: <Trophy className="w-10 h-7" />, label: t('nav.leaderboard') },
     { to: '/themes', icon: <Palette className="w-10 h-7" />, label: t('nav.themes') },
   ];

@@ -69,7 +69,7 @@ export function NewDiscussionPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="theme-card p-6 space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="theme-card p-6 space-y-6">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Title</label>

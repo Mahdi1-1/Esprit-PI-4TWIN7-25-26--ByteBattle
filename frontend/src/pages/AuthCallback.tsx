@@ -17,5 +17,5 @@ export function AuthCallback() {
     }
   }, [searchParams, navigate]);
 
-  return <div>Connexion en cours...</div>;
+  return <div>Signing in...</div>;
 }

@@ -9,6 +9,9 @@ import { AppShell, PrivateGuard, AdminGuard, PublicGuard, S } from './routes';
 const Landing              = lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })));
 const Login                = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const Signup               = lazy(() => import('./pages/Signup').then(m => ({ default: m.Signup })));
+const VerifyEmail          = lazy(() => import('./pages/VerifyEmail').then(m => ({ default: m.VerifyEmail })));
+const ForgotPassword       = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
+const ResetPassword        = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const Dashboard            = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Problems             = lazy(() => import('./pages/Problems').then(m => ({ default: m.Problems })));
 const Problem              = lazy(() => import('./pages/Problem').then(m => ({ default: m.Problem })));
@@ -23,7 +26,7 @@ const DuelResult           = lazy(() => import('./pages/DuelResult').then(m => (
 const Leaderboard          = lazy(() => import('./pages/Leaderboard').then(m => ({ default: m.Leaderboard })));
 const AIInterviewPage      = lazy(() => import('./pages/AIInterviewPage').then(m => ({ default: m.AIInterviewPage })));
 const Hackathon            = lazy(() => import('./pages/Hackathon').then(m => ({ default: m.Hackathon })));
-const HackathonLobby       = lazy(() => import('./pages/HackathonLobby').then(m => ({ default: m.HackathonLobby })));
+const Teams                = lazy(() => import('./pages/Teams').then(m => ({ default: m.Teams })));
 const HackathonWorkspace   = lazy(() => import('./pages/HackathonWorkspace').then(m => ({ default: m.HackathonWorkspace })));
 const HackathonResults     = lazy(() => import('./pages/HackathonResults').then(m => ({ default: m.HackathonResults })));
 const HackathonScoreboard  = lazy(() => import('./pages/HackathonScoreboard').then(m => ({ default: m.HackathonScoreboard })));
@@ -66,6 +69,9 @@ export const router = createBrowserRouter([
         children: [
           { path: 'login',  element: <S><Login /></S> },
           { path: 'signup', element: <S><Signup /></S> },
+          { path: 'verify-email', element: <S><VerifyEmail /></S> },
+          { path: 'forgot-password', element: <S><ForgotPassword /></S> },
+          { path: 'reset-password', element: <S><ResetPassword /></S> },
         ],
       },
 
@@ -95,7 +101,8 @@ export const router = createBrowserRouter([
 
           // Hackathon
           { path: 'hackathon',                    element: <S><Hackathon /></S> },
-          { path: 'hackathon/:id/lobby',          element: <S><HackathonLobby /></S> },
+          { path: 'teams',                        element: <S><Teams /></S> },
+          { path: 'hackathon/:id/lobby',          element: <Navigate to="/teams" replace /> },
           { path: 'hackathon/:id/workspace',      element: <S><HackathonWorkspace /></S> },
           { path: 'hackathon/:id/results',        element: <S><HackathonResults /></S> },
           { path: 'hackathon/:id/scoreboard',     element: <S><HackathonScoreboard /></S> },

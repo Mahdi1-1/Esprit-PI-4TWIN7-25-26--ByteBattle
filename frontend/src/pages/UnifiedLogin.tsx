@@ -15,19 +15,19 @@ export function UnifiedLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ✨ Gérer les erreurs OAuth depuis les query params
+  // Handle OAuth errors from query params
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam) {
       const errorMessages: Record<string, string> = {
-        'authentication_failed': 'La connexion avec Google a échoué. Veuillez réessayer.',
-        'access_denied': 'Vous avez refusé l\'accès à votre compte Google.',
-        'server_error': 'Une erreur serveur est survenue. Veuillez réessayer.',
-        'invalid_credentials': 'Identifiants invalides.',
+        authentication_failed: 'Google sign-in failed. Please try again.',
+        access_denied: 'You denied access to your Google account.',
+        server_error: 'A server error occurred. Please try again.',
+        invalid_credentials: 'Invalid credentials.',
       };
-      setError(errorMessages[errorParam] || 'Une erreur est survenue lors de la connexion.');
+      setError(errorMessages[errorParam] || 'An error occurred while signing in.');
 
-      // Effacer le paramètre d'erreur de l'URL après 5 secondes
+      // Clear the error query param from the URL after 5 seconds
       setTimeout(() => {
         setError('');
         navigate('/login', { replace: true });
@@ -38,14 +38,19 @@ export function UnifiedLogin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Utiliser la méthode login du contexte
+      // Use login method from AuthContext
       await login(email, password);
 
-      // La redirection est gérée dans le contexte AuthContext
-      // Mais on peut aussi vérifier le rôle ici si nécessaire
+      // Redirect is handled in AuthContext, but we also guard by role here
       const user = JSON.parse(localStorage.getItem('user') || '{}');
 
       if (user.role === 'admin') {
@@ -56,31 +61,31 @@ export function UnifiedLogin() {
     } catch (err: any) {
       console.error('Login error:', err);
 
-      // Gérer les différents types d'erreurs
+      // Handle different error types
       const errorMessage = err.response?.data?.message || err.message;
 
       if (errorMessage.includes('Google Sign-In')) {
-        setError('Ce compte utilise Google Sign-In. Veuillez vous connecter avec Google.');
+        setError('This account uses Google Sign-In. Please sign in with Google.');
       } else if (errorMessage.includes('suspended')) {
-        setError('Votre compte a été suspendu. Contactez le support.');
+        setError('Your account has been suspended. Contact support.');
       } else if (errorMessage.includes('banned')) {
-        setError('Votre compte a été banni. Contactez le support.');
+        setError('Your account has been banned. Contact support.');
       } else {
-        setError('Email ou mot de passe invalide.');
+        setError('Invalid email or password.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // ✨ Fonction pour initier le login Google
+  // Function to initiate Google login
   const handleGoogleSignIn = () => {
     setError('');
 
-    // Récupérer l'URL du backend depuis les variables d'environnement
+    // Read backend URL from environment variables
     const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:4001';
 
-    // Rediriger vers l'endpoint OAuth du backend
+    // Redirect to backend OAuth endpoint
     window.location.href = `${backendUrl}/api/auth/google`;
   };
 
@@ -94,13 +99,13 @@ export function UnifiedLogin() {
           </div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">ByteBattle</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-2">
-            Connectez-vous à votre compte
+            Sign in to your account
           </p>
         </div>
 
         {/* Login Form */}
         <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6 space-y-6">
-          {/* Message d'erreur */}
+          {/* Error message */}
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-500 animate-in fade-in slide-in-from-top-2 duration-300">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -108,7 +113,7 @@ export function UnifiedLogin() {
             </div>
           )}
 
-          {/* OAuth Buttons en premier (meilleure UX) */}
+          {/* OAuth buttons first (better UX) */}
           <div className="space-y-3">
             <button
               onClick={handleGoogleSignIn}
@@ -125,20 +130,20 @@ export function UnifiedLogin() {
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
-                  <span>Continuer avec Google</span>
+                  <span>Continue with Google</span>
                 </>
               )}
             </button>
 
-            {/* GitHub (désactivé) */}
+            {/* GitHub (disabled) */}
             <button
               disabled
               className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-[var(--border-default)] rounded-lg text-sm font-medium text-[var(--text-secondary)] opacity-50 cursor-not-allowed"
             >
               <Github className="w-5 h-5" />
-              <span>Continuer avec GitHub</span>
+              <span>Continue with GitHub</span>
               <span className="ml-auto text-xs bg-[var(--surface-2)] px-2 py-0.5 rounded">
-                Bientôt
+                Soon
               </span>
             </button>
           </div>
@@ -150,13 +155,13 @@ export function UnifiedLogin() {
             </div>
             <div className="relative flex justify-center text-xs">
               <span className="px-2 bg-[var(--surface-1)] text-[var(--text-muted)]">
-                ou avec votre email
+                or with your email
               </span>
             </div>
           </div>
 
           {/* Email/Password Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} noValidate className="space-y-4">
             {/* Email */}
             <div className="space-y-2">
               <label
@@ -172,7 +177,7 @@ export function UnifiedLogin() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre@email.com"
+                  placeholder="you@email.com"
                   required
                   disabled={loading}
                   className="w-full pl-10 pr-4 py-2 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--brand-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -186,7 +191,7 @@ export function UnifiedLogin() {
                 htmlFor="password"
                 className="block text-sm font-medium text-[var(--text-primary)]"
               >
-                Mot de passe
+                Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
@@ -210,13 +215,13 @@ export function UnifiedLogin() {
                   type="checkbox"
                   className="rounded border-[var(--border-default)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
                 />
-                <span className="text-[var(--text-secondary)]">Se souvenir de moi</span>
+                <span className="text-[var(--text-secondary)]">Remember me</span>
               </label>
               <a
                 href="/forgot-password"
                 className="text-[var(--brand-primary)] hover:underline"
               >
-                Mot de passe oublié ?
+                Forgot password?
               </a>
             </div>
 
@@ -229,10 +234,10 @@ export function UnifiedLogin() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Connexion...
+                  Signing in...
                 </>
               ) : (
-                'Se connecter'
+                'Sign in'
               )}
             </button>
           </form>
@@ -240,12 +245,12 @@ export function UnifiedLogin() {
 
         {/* Sign Up Link */}
         <div className="text-center text-sm text-[var(--text-secondary)]">
-          Vous n'avez pas de compte ?{' '}
+          Don't have an account?{' '}
           <a
             href="/signup"
             className="text-[var(--brand-primary)] hover:underline font-medium"
           >
-            Créer un compte
+            Create an account
           </a>
         </div>
 
@@ -253,7 +258,7 @@ export function UnifiedLogin() {
         {import.meta.env.DEV && (
           <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-4">
             <p className="text-xs text-[var(--text-muted)] mb-2 font-medium">
-              🔧 Comptes de test (développement)
+              🔧 Test accounts (development)
             </p>
             <div className="space-y-1 text-xs text-[var(--text-secondary)]">
               <p>• user@bytebattle.dev / demo123 (User)</p>

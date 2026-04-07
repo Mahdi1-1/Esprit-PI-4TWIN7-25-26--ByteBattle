@@ -38,6 +38,12 @@ model User {
   googleId      String?
   isOAuthUser   Boolean    @default(false)
   provider      String     @default("local")
+  emailVerified Boolean    @default(false)
+  emailVerificationToken String?
+  emailVerificationExpires DateTime?
+  emailVerificationLastSentAt DateTime?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
 
   role          UserRole   @default(user)
   status        UserStatus @default(active)
@@ -80,6 +86,7 @@ enum UserRole {
 }
 
 enum UserStatus {
+  inactive
   active
   suspended
   banned
@@ -331,6 +338,33 @@ model Team {
 type TeamMember {
   userId String @db.ObjectId
   role   String
+}
+
+model UserTeam {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  ownerId   String           @db.ObjectId
+  joinCode  String?          @unique
+  members   UserTeamMember[]
+  joinRequests TeamJoinRequest[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([ownerId])
+}
+
+type UserTeamMember {
+  userId   String   @db.ObjectId
+  username String?
+  role     String
+  joinedAt DateTime @default(now())
+}
+
+type TeamJoinRequest {
+  userId      String   @db.ObjectId
+  username    String?
+  requestedAt DateTime @default(now())
+  status      String   @default("pending")
 }
 
 // ---------------------------------------------------------

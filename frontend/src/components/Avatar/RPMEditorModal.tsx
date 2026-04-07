@@ -10,7 +10,7 @@ interface RPMEditorModalProps {
 
 export const RPMEditorModal: React.FC<RPMEditorModalProps> = ({ isOpen, onClose, onAvatarCreated, existingAvatarId }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const subdomain = 'demo'; // Vous pouvez remplacer 'demo' par votre propre sous-domaine RPM
+  const subdomain = 'demo'; // You can replace 'demo' with your own RPM subdomain
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);
   const [showTimeoutError, setShowTimeoutError] = useState(false);
 
@@ -26,8 +26,8 @@ export const RPMEditorModal: React.FC<RPMEditorModalProps> = ({ isOpen, onClose,
     }, 15000);
 
     const handleMessage = (event: MessageEvent) => {
-        const source = event.data; // readyplayer.me envoie parfois des objets directs,
-        // mais normalement c'est stringifié pour les événements frameApi
+        const source = event.data; // readyplayer.me sometimes sends direct objects,
+        // but frameApi events are normally stringified
         
         let json;
         try {
@@ -78,13 +78,13 @@ export const RPMEditorModal: React.FC<RPMEditorModalProps> = ({ isOpen, onClose,
           <div className="absolute inset-0 flex flex-col items-center justify-center z-0 bg-slate-900">
             {showTimeoutError ? (
                 <div className="text-center p-6">
-                    <p className="text-red-400 mb-2">L'éditeur a mis trop de temps à charger.</p>
-                    <button onClick={onClose} className="px-4 py-2 bg-slate-700 rounded text-white text-sm">Fermer</button>
+                <p className="text-red-400 mb-2">The editor took too long to load.</p>
+                <button onClick={onClose} className="px-4 py-2 bg-slate-700 rounded text-white text-sm">Close</button>
                 </div>
             ) : (
                 <>
                     <Loader className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-                    <p className="text-slate-400 text-sm">Connexion à Ready Player Me...</p>
+                <p className="text-slate-400 text-sm">Connecting to Ready Player Me...</p>
                 </>
             )}
           </div>
@@ -93,8 +93,8 @@ export const RPMEditorModal: React.FC<RPMEditorModalProps> = ({ isOpen, onClose,
         <iframe
           ref={iframeRef}
           src={existingAvatarId 
-            ? `https://${subdomain}.readyplayer.me/avatar/${existingAvatarId}?frameApi&language=fr`
-            : `https://${subdomain}.readyplayer.me/avatar?frameApi&bodyType=halfbody&language=fr`
+            ? `https://${subdomain}.readyplayer.me/avatar/${existingAvatarId}?frameApi&language=en`
+            : `https://${subdomain}.readyplayer.me/avatar?frameApi&bodyType=halfbody&language=en`
           }
           allow="camera *; microphone *"
           className="w-full h-full border-0 relative z-1"

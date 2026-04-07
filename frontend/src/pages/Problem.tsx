@@ -414,8 +414,8 @@ export function Problem() {
           setCode(CODE_TEMPLATES[language] || '// Votre code ici\n');
         }
       } catch (err) {
-        toast.error('Erreur lors du chargement du problème');
-      } finally {
+        toast.error('Error while loading problem');
+        toast.error('Error while fetching AI review. Make sure the Gemini API key is configured.');
         setLoading(false);
       }
     };
@@ -440,7 +440,7 @@ export function Problem() {
 
     newSocket.on('submission_status', (data) => {
       if (data.status === 'executing') {
-        toast.loading('Exécution en cours...', { id: 'submission-toast' });
+        toast.loading('Running...', { id: 'submission-toast' });
       } else if (data.status === 'completed') {
         setIsRunning(false);
         const result = data.result || {};
@@ -594,7 +594,7 @@ export function Problem() {
             {focusLostCount > 0 && (
               <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/30 rounded-full text-red-400 text-xs">
                 <AlertTriangle className="w-3 h-3" />
-                <span>Perte Focus: {focusLostCount} fois ({totalFocusLostTime}s)</span>
+                  <span>Focus Loss: {focusLostCount} times ({totalFocusLostTime}s)</span>
               </div>
             )}
           </div>
@@ -637,10 +637,10 @@ export function Problem() {
                     }
                   `}
                 >
-                  {tab === 'statement' ? 'Énoncé' :
+                  {tab === 'statement' ? 'Statement' :
                     tab === 'tests' ? 'Tests' :
-                      tab === 'submissions' ? 'Soumissions' :
-                        'Éditorial'}
+                      tab === 'submissions' ? 'Submissions' :
+                        'Editorial'}
                 </button>
               ))}
             </div>
@@ -650,12 +650,12 @@ export function Problem() {
               {activeTab === 'statement' && (
                 <div className="prose prose-invert max-w-none">
                   <div className="mb-6 whitespace-pre-wrap text-[var(--text-primary)]">
-                    {problem.descriptionMd || problem.statementMd || "Aucune description fournie."}
+                    {problem.descriptionMd || problem.statementMd || 'No description provided.'}
                   </div>
 
                   {problem.examples && problem.examples.length > 0 && (
                     <>
-                      <h3 className="mb-3">Exemples</h3>
+                      <h3 className="mb-3">Examples</h3>
                       {problem.examples.map((example: any, i: number) => (
                         <div key={i} className="mb-4 p-4 bg-[var(--surface-2)] rounded-[var(--radius-md)] font-code text-[0.875rem]">
                           <div className="mb-2">
@@ -789,16 +789,16 @@ export function Problem() {
               {!isFullScreen && (
                 <div className="absolute inset-0 z-50 bg-[var(--surface-1)]/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6">
                   <AlertTriangle className="w-12 h-12 text-yellow-500 mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Mode Plein Écran Requis</h3>
+                  <h3 className="text-xl font-bold mb-2">Full Screen Mode Required</h3>
                   <p className="text-[var(--text-secondary)] mb-6 max-w-md">
-                    Pour garantir l'équité du test, l'éditeur est verrouillé. Veuillez activer le mode plein écran pour continuer.
+                    To ensure fair testing, the editor is locked. Please enable full screen mode to continue.
                   </p>
                   <Button
                     size="lg"
                     variant="primary"
                     onClick={() => document.documentElement.requestFullscreen()}
                   >
-                    Activer le Mode Plein Écran
+                    Enable Full Screen Mode
                   </Button>
                 </div>
               )}
@@ -865,7 +865,7 @@ export function Problem() {
                     if ((ctrlKey || metaKey) && (keyCode === 33 || keyCode === 52)) {
                       e.preventDefault();
                       e.stopPropagation();
-                      toast.error('Copier-coller désactivé dans l\'éditeur', { icon: '🚫' });
+                      toast.error('Copy-paste disabled in editor', { icon: '🚫' });
                     }
                   });
                 }}
@@ -931,7 +931,7 @@ export function Problem() {
                         loading={loadingAiReview}
                       >
                         <Sparkles className="w-4 h-4" />
-                        Obtenir l'analyse IA du code (Gemini)
+                        Get AI code analysis (Gemini)
                       </Button>
                     )}
                     
@@ -939,20 +939,20 @@ export function Problem() {
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 font-bold text-lg">
                           <Sparkles className="text-[var(--brand-primary)]" />
-                          <span>Analyse IA (Score: {aiReview.score}/100)</span>
+                          <span>AI Analysis (Score: {aiReview.score}/100)</span>
                         </div>
                         <p className="text-sm text-[var(--text-secondary)]">
                           {aiReview.summary}
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="bg-[var(--state-success)]/10 border border-[var(--state-success)]/20 p-3 rounded-lg">
-                            <h4 className="text-sm font-semibold text-[var(--state-success)] mb-2 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Points forts</h4>
+                            <h4 className="text-sm font-semibold text-[var(--state-success)] mb-2 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Strengths</h4>
                             <ul className="list-disc list-inside text-xs space-y-1 text-[var(--text-secondary)]">
                               {aiReview.strengths?.map((s: string, i: number) => <li key={i}>{s}</li>)}
                             </ul>
                           </div>
                           <div className="bg-[var(--state-warning)]/10 border border-[var(--state-warning)]/20 p-3 rounded-lg">
-                            <h4 className="text-sm font-semibold text-[var(--state-warning)] mb-2 flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> Améliorations</h4>
+                            <h4 className="text-sm font-semibold text-[var(--state-warning)] mb-2 flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> Improvements</h4>
                             <ul className="list-disc list-inside text-xs space-y-1 text-[var(--text-secondary)]">
                               {aiReview.improvements?.map((s: string, i: number) => <li key={i}>{s}</li>)}
                             </ul>
@@ -973,7 +973,7 @@ export function Problem() {
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-center justify-between text-yellow-500 text-sm">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
-              <span>Le mode plein écran est recommandé pour ce défi.</span>
+              <span>Full screen mode is recommended for this challenge.</span>
             </div>
             <Button
               size="sm"
@@ -981,7 +981,7 @@ export function Problem() {
               className="text-yellow-500 hover:bg-yellow-500/20"
               onClick={() => document.documentElement.requestFullscreen()}
             >
-              Activer plein écran
+              Enable full screen
             </Button>
           </div>
         </div>

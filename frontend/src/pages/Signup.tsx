@@ -27,32 +27,32 @@ export function Signup() {
     const newErrors: Record<string, string> = {};
 
     if (formData.username.length < 3) {
-      newErrors.username = 'Le nom d\'utilisateur doit contenir au moins 3 caractères';
+      newErrors.username = 'Username must be at least 3 characters';
     }
 
     if (formData.firstName.length < 2) {
-      newErrors.firstName = 'Le prénom est requis';
+      newErrors.firstName = 'First name is required';
     }
 
     if (formData.lastName.length < 2) {
-      newErrors.lastName = 'Le nom est requis';
+      newErrors.lastName = 'Last name is required';
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Email invalide';
+      newErrors.email = 'Invalid email';
     }
 
     if (formData.password.length < 8) {
-      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+      newErrors.password = 'Password must be at least 8 characters';
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (!acceptTerms) {
-      newErrors.terms = 'Vous devez accepter les conditions d\'utilisation';
+      newErrors.terms = 'You must accept the terms of use';
     }
 
     setErrors(newErrors);
@@ -70,10 +70,8 @@ export function Signup() {
 
     try {
       await signup(formData.username, formData.email, formData.password, formData.firstName, formData.lastName);
-      setTimeout(() => {
-        setIsLoading(false);
-        navigate('/dashboard');
-      }, 1000);
+      setIsLoading(false);
+      navigate(`/login?verification=required&email=${encodeURIComponent(formData.email)}`);
     } catch (error: any) {
       setIsLoading(false);
       const status = error?.response?.status;
@@ -85,20 +83,20 @@ export function Signup() {
         const newErrors: Record<string, string> = {};
 
         if (lowerMsg.includes('email')) {
-          newErrors.email = 'Cet email est déjà utilisé.';
+          newErrors.email = 'This email is already in use.';
         } else if (lowerMsg.includes('username')) {
-          newErrors.username = 'Ce nom d\'utilisateur est déjà pris.';
+          newErrors.username = 'This username is already taken.';
         } else {
           // Both or unspecified — flag both fields
-          newErrors.email = 'Cet email est déjà utilisé.';
-          newErrors.username = 'Ce nom d\'utilisateur est déjà pris.';
+          newErrors.email = 'This email is already in use.';
+          newErrors.username = 'This username is already taken.';
         }
-        newErrors.submit = 'Un compte existe déjà avec ces informations. Essayez de vous connecter.';
+        newErrors.submit = 'An account already exists with this information. Try signing in.';
         setErrors(newErrors);
       } else if (status === 400) {
-        setErrors({ submit: 'Données invalides. Vérifiez vos informations et réessayez.' });
+        setErrors({ submit: 'Invalid data. Check your information and try again.' });
       } else {
-        setErrors({ submit: 'Une erreur est survenue. Veuillez réessayer.' });
+        setErrors({ submit: 'An error occurred. Please try again.' });
       }
     }
   };
@@ -130,9 +128,9 @@ export function Signup() {
           {/* Card */}
           <div className="p-8 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
             <div className="text-center mb-8">
-              <h2 className="mb-2">Créer un compte</h2>
+              <h2 className="mb-2">Create an account</h2>
               <p className="text-[var(--text-secondary)]">
-                Rejoignez la communauté ByteBattle
+                Join the ByteBattle community
               </p>
             </div>
 
@@ -140,7 +138,7 @@ export function Signup() {
             <div className="space-y-3 mb-6">
               <Button variant="secondary" size="lg" className="w-full">
                 <Github className="w-5 h-5" />
-                S'inscrire avec GitHub
+                Sign up with GitHub
               </Button>
               <Button variant="secondary" size="lg" className="w-full">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -149,7 +147,7 @@ export function Signup() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                S'inscrire avec Google
+                Sign up with Google
               </Button>
             </div>
 
@@ -159,16 +157,16 @@ export function Signup() {
               </div>
               <div className="relative flex justify-center">
                 <span className="px-4 bg-[var(--surface-1)] text-caption text-[var(--text-muted)]">
-                  ou avec email
+                  or with email
                 </span>
               </div>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Prénom"
+                  label="First Name"
                   type="text"
                   placeholder="John"
                   value={formData.firstName}
@@ -177,7 +175,7 @@ export function Signup() {
                   required
                 />
                 <Input
-                  label="Nom"
+                  label="Last Name"
                   type="text"
                   placeholder="Doe"
                   value={formData.lastName}
@@ -188,7 +186,7 @@ export function Signup() {
               </div>
 
               <Input
-                label="Nom d'utilisateur"
+                label="Username"
                 type="text"
                 placeholder="johndoe"
                 value={formData.username}
@@ -208,17 +206,17 @@ export function Signup() {
               />
 
               <PasswordInput
-                label="Mot de passe"
+                label="Password"
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 error={errors.password}
-                hint="Minimum 8 caractères"
+                hint="Minimum 8 characters"
                 required
               />
 
               <PasswordInput
-                label="Confirmer le mot de passe"
+                label="Confirm password"
                 placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={(e) => handleChange('confirmPassword', e.target.value)}
@@ -229,7 +227,7 @@ export function Signup() {
               {/* Password Requirements */}
               <div className="p-3 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-md)]">
                 <p className="text-caption font-medium text-[var(--text-secondary)] mb-2">
-                  Votre mot de passe doit contenir :
+                  Your password must contain:
                 </p>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-caption">
@@ -237,7 +235,7 @@ export function Signup() {
                       className={`w-4 h-4 ${formData.password.length >= 8 ? 'text-[var(--status-success)]' : 'text-[var(--text-muted)]'}`}
                     />
                     <span className={formData.password.length >= 8 ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
-                      Au moins 8 caractères
+                      At least 8 characters
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-caption">
@@ -245,7 +243,7 @@ export function Signup() {
                       className={`w-4 h-4 ${/[A-Z]/.test(formData.password) ? 'text-[var(--status-success)]' : 'text-[var(--text-muted)]'}`}
                     />
                     <span className={/[A-Z]/.test(formData.password) ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
-                      Une lettre majuscule
+                      One uppercase letter
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-caption">
@@ -253,7 +251,7 @@ export function Signup() {
                       className={`w-4 h-4 ${/[0-9]/.test(formData.password) ? 'text-[var(--status-success)]' : 'text-[var(--text-muted)]'}`}
                     />
                     <span className={/[0-9]/.test(formData.password) ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
-                      Un chiffre
+                      One number
                     </span>
                   </div>
                 </div>
@@ -277,13 +275,13 @@ export function Signup() {
                   }}
                 />
                 <span className="text-[var(--text-secondary)]">
-                  J'accepte les{' '}
+                  I accept the{' '}
                   <a href="#" className="text-[var(--brand-primary)] hover:underline">
-                    Conditions d'utilisation
+                    Terms of Use
                   </a>{' '}
-                  et la{' '}
+                  and the{' '}
                   <a href="#" className="text-[var(--brand-primary)] hover:underline">
-                    Politique de confidentialité
+                    Privacy Policy
                   </a>
                 </span>
               </label>
@@ -304,16 +302,16 @@ export function Signup() {
                 className="w-full"
                 loading={isLoading}
               >
-                Créer mon compte
+                Create my account
               </Button>
             </form>
           </div>
 
           {/* Login link */}
           <p className="mt-6 text-center text-[var(--text-secondary)]">
-            Vous avez déjà un compte ?{' '}
+            Already have an account?{' '}
             <Link to="/login" className="text-[var(--brand-primary)] hover:underline font-medium">
-              Se connecter
+              Sign in
             </Link>
           </p>
         </div>

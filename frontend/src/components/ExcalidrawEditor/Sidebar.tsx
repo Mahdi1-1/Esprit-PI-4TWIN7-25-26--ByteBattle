@@ -23,14 +23,14 @@ export function Sidebar({
       {/* Header avec input de sauvegarde */}
       <div className="p-4 space-y-3 border-b border-[var(--border-default)]">
         <h2 className="font-semibold text-sm uppercase tracking-wider text-[var(--text-muted)] font-title">
-          💾 Scènes sauvegardées
+          💾 Saved scenes
         </h2>
         <div className="flex gap-2">
           <input
             type="text"
             value={sceneName}
             onChange={(e) => onSceneNameChange(e.target.value)}
-            placeholder="Nom de la scène..."
+            placeholder="Scene name..."
             onKeyDown={(e) => e.key === "Enter" && onSave()}
             className="flex-1 px-3 py-2 text-sm rounded-[var(--btn-radius)] border border-[var(--border-default)] outline-none transition-all bg-[var(--surface-2)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--brand-primary)]"
           />
@@ -95,7 +95,7 @@ export function Sidebar({
                   <button
                     onClick={() => onDelete(index)}
                     className="p-1.5 rounded-md transition-colors text-[var(--state-error)] hover:bg-[var(--state-error)]/10"
-                    title="Supprimer"
+                    title="Delete"
                   >
                     <svg
                       className="w-4 h-4"

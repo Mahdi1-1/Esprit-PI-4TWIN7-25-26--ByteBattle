@@ -10,6 +10,10 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   isLoading: boolean;
+  verifyEmail: (token: string) => Promise<void>;
+  resendVerificationEmail: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('Auth check success:', response.data);
           setUser(response.data);
           setIsAuthenticated(true);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Auth check failed:', error);
           // Only remove token if it's an auth error (401), not network error
           if (error.response && error.response.status === 401) {
@@ -88,16 +92,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (username: string, email: string, password: string, firstName: string, lastName: string) => {
     try {
-      const response = await api.post('/auth/register', { username, email, password, firstName, lastName });
-      const { accessToken, access_token } = response.data;
-      const token = accessToken || access_token;
-
-      localStorage.setItem('token', token);
-      setIsAuthenticated(true);
-      // Always fetch full profile after signup
-      const profile = await api.get('/auth/me');
-      setUser(profile.data);
-    } catch (error) {
+      await api.post('/auth/register', { username, email, password, firstName, lastName });
+      localStorage.removeItem('token');
+      setIsAuthenticated(false);
+      setUser(null);
+    } catch (error: any) {
       console.error('Signup failed:', error);
       throw error;
     }
@@ -118,8 +117,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const verifyEmail = async (token: string) => {
+    const response = await api.post('/auth/verify-email', { token });
+    console.log('Email verified:', response.data);
+  };
+
+  const resendVerificationEmail = async (email: string) => {
+    const response = await api.post('/auth/resend-verification', { email });
+    console.log('Verification email resent:', response.data);
+  };
+
+  const forgotPassword = async (email: string) => {
+    const response = await api.post('/auth/forgot-password', { email });
+    console.log('Password reset email sent:', response.data);
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    const response = await api.post('/auth/reset-password', { token, newPassword });
+    console.log('Password reset successful:', response.data);
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout, updateUser, isLoading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout, updateUser, isLoading, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

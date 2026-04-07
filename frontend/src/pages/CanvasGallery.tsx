@@ -88,7 +88,7 @@ export function CanvasGallery() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Designs partagés', value: '1,234', icon: '🎨' },
+              { label: 'Shared designs', value: '1,234', icon: '🎨' },
               { label: 'Contributeurs', value: '567', icon: '👥' },
               { label: 'Likes totaux', value: '12.5K', icon: '❤️' },
               { label: 'Cette semaine', value: '+48', icon: '📈' }
@@ -152,7 +152,7 @@ export function CanvasGallery() {
                   {[
                     { value: 'popular', label: '❤️ Plus populaires', icon: Heart },
                     { value: 'top', label: '🏆 Meilleurs scores', icon: Award },
-                    { value: 'recent', label: '📅 Récents', icon: Calendar }
+                    { value: 'recent', label: '📅 Recent', icon: Calendar }
                   ].map((sort) => (
                     <button
                       key={sort.value}
@@ -193,7 +193,7 @@ export function CanvasGallery() {
                 Aucun design trouvé
               </h3>
               <p className="text-[var(--text-secondary)] mb-4">
-                Essayez de modifier vos filtres
+                Try changing your filters
               </p>
               <Button variant="secondary" onClick={() => setSelectedFilter('all')}>
                 Voir tous les designs

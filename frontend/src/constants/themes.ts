@@ -8,7 +8,7 @@ export const ThemeConfigs = {
     victory: {
       bg: 'bg-cyber-bg',
       title: 'VICTORY!',
-      subtitle: 'ACCEPTED // CODE COMPILÉ',
+      subtitle: 'ACCEPTED // CODE COMPILED',
       emoji: '🏆',
       particleColors: ['#00E5FF', '#8B5CF6', '#22C55E', '#FFFFFF'],
       motivationalQuote: 'System override successful. You dominate the grid.',
@@ -61,7 +61,7 @@ export const ThemeConfigs = {
       subtitle: 'HONOR IN DEFEAT',
       emoji: '⚔️',
       particleColors: ['#4A4A4A', '#8B0000', '#222222', '#8B7355'],
-      motivationalQuote: 'La défaite forge le guerrier.',
+      motivationalQuote: 'Defeat forges the warrior.',
     }
   },
   [GameTheme.PIXEL_ARCADE]: {
@@ -92,7 +92,7 @@ export const ThemeConfigs = {
     victory: {
       bg: 'bg-rpg-night',
       title: 'QUEST COMPLETE',
-      subtitle: 'La Guilde vous salue, Héros!',
+      subtitle: 'The Guild salutes you, Hero!',
       emoji: '🐉',
       particleColors: ['#F59E0B', '#6D28D9', '#FEF3C7', '#16A34A'],
       motivationalQuote: 'Your legend grows with every victory.',
@@ -100,7 +100,7 @@ export const ThemeConfigs = {
     defeat: {
       bg: 'bg-rpg-night-deep',
       title: 'QUEST FAILED',
-      subtitle: 'Les ténèbres s\'étendent...',
+      subtitle: 'Darkness spreads...',
       emoji: '💀',
       particleColors: ['#7F1D1D', '#3B0764', '#92400E', '#000000'],
       motivationalQuote: 'Every hero falls. True heroes rise again.',

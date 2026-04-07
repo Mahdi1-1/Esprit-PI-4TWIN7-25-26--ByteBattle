@@ -45,7 +45,7 @@ export function CanvasChallengeBrief() {
                 <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
-              Challenge non trouvé
+              Challenge not found
             </h2>
             <Button onClick={() => navigate('/canvas')}>
               Back to Catalog
@@ -164,7 +164,7 @@ export function CanvasChallengeBrief() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-6 h-6 text-[var(--state-warning)]" />
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Contraintes</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Constraints</h2>
             </div>
             <ul className="space-y-2">
               {challenge.constraints.map((constraint, idx) => (
@@ -180,7 +180,7 @@ export function CanvasChallengeBrief() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-2xl">📦</span>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">À livrer</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Deliverables</h2>
             </div>
             <ul className="space-y-2">
               {challenge.deliverables.map((deliverable, idx) => (
@@ -196,7 +196,7 @@ export function CanvasChallengeBrief() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🎯</span>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Critères de réussite</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Success criteria</h2>
             </div>
             <ul className="space-y-2">
               {challenge.successCriteria.map((criterion, idx) => (
@@ -212,7 +212,7 @@ export function CanvasChallengeBrief() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-2xl">📊</span>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Grille d'évaluation</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Evaluation rubric</h2>
             </div>
             <div className="space-y-3">
               {challenge.rubric.map((item, idx) => (
@@ -242,7 +242,7 @@ export function CanvasChallengeBrief() {
           {/* Mode Selection */}
           <div className="theme-card corner-brackets relative bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
-              Choisir un mode
+              Choose a mode
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
@@ -290,7 +290,7 @@ export function CanvasChallengeBrief() {
                     {mode.description}
                   </div>
                   {!mode.available && (
-                    <Badge variant="warning" className="mt-2">Bientôt disponible</Badge>
+                    <Badge variant="warning" className="mt-2">Coming soon</Badge>
                   )}
                 </button>
               ))}
@@ -304,7 +304,7 @@ export function CanvasChallengeBrief() {
               size="lg"
               onClick={() => navigate('/canvas')}
             >
-              Annuler
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -312,7 +312,7 @@ export function CanvasChallengeBrief() {
               onClick={handleStart}
               className="min-w-[200px]"
             >
-              🎨 Ouvrir le Canvas
+              🎨 Open Canvas
             </Button>
           </div>
         </div>

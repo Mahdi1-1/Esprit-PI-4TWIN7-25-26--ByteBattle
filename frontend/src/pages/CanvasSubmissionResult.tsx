@@ -58,7 +58,7 @@ export function CanvasSubmissionResult() {
                 <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
-              Résultat non trouvé
+              Result not found
             </h2>
             <Button onClick={() => navigate('/canvas')}>
               Back to Catalog
@@ -78,10 +78,10 @@ export function CanvasSubmissionResult() {
 
   const getScoreGrade = () => {
     if (scorePercentage >= 90) return 'Excellent';
-    if (scorePercentage >= 80) return 'Très bien';
-    if (scorePercentage >= 70) return 'Bien';
-    if (scorePercentage >= 60) return 'Satisfaisant';
-    return 'À améliorer';
+    if (scorePercentage >= 80) return 'Very Good';
+    if (scorePercentage >= 70) return 'Good';
+    if (scorePercentage >= 60) return 'Satisfactory';
+    return 'Needs Improvement';
   };
 
   return (
@@ -92,7 +92,7 @@ export function CanvasSubmissionResult() {
           <div className="theme-card corner-brackets relative bg-[var(--surface-1)] border-[var(--border-default)] p-8 text-center space-y-6">
             <div className="inline-block px-4 py-2 bg-[var(--surface-2)] rounded-full">
               <span className="text-sm font-semibold text-[var(--text-secondary)]">
-                Challenge complété !
+                Challenge completed!
               </span>
             </div>
 
@@ -131,7 +131,7 @@ export function CanvasSubmissionResult() {
             <div className="flex items-center justify-center gap-3">
               <Button variant="ghost" size="sm" className="gap-2">
                 <Download className="w-4 h-4" />
-                Télécharger
+                Download
               </Button>
               <Button variant="ghost" size="sm" className="gap-2">
                 <Share2 className="w-4 h-4" />
@@ -151,7 +151,7 @@ export function CanvasSubmissionResult() {
                 Your Diagram
               </h2>
               <Button variant="secondary" size="sm" onClick={() => {}}>
-                Voir en plein écran
+                View full screen
               </Button>
             </div>
             
@@ -170,7 +170,7 @@ export function CanvasSubmissionResult() {
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">🤖</span>
-                <h2 className="text-xl font-bold text-[var(--text-primary)]">Feedback IA</h2>
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">AI Feedback</h2>
               </div>
               <p className="text-[var(--text-secondary)] leading-relaxed">
                 {submission.feedback.summary}

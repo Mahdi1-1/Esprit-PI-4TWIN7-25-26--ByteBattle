@@ -86,6 +86,14 @@ export class HackathonsService {
         orderBy: { startTime: 'desc' },
         include: {
           _count: { select: { hackathonTeams: true, teams: true } },
+          hackathonTeams: {
+            select: {
+              id: true,
+              name: true,
+              isCheckedIn: true,
+              members: true,
+            },
+          },
         },
       }),
       this.prisma.hackathon.count({ where }),
@@ -337,7 +345,7 @@ export class HackathonsService {
             message: isStart
               ? 'The competition is live. Good luck!'
               : 'Check the scoreboard for final results.',
-            actionUrl: `/hackathons/${hackathonId}`,
+            actionUrl: `/hackathon/${hackathonId}`,
             entityId: hackathonId,
             entityType: 'Hackathon',
           }),
@@ -505,7 +513,7 @@ export class HackathonsService {
           priority: NotificationPriority.MEDIUM,
           title: `${joiner?.username ?? 'Someone'} joined your team!`,
           message: `New member in ${team.name} for ${hackathon.title}.`,
-          actionUrl: `/hackathons/${hackathonId}`,
+          actionUrl: `/hackathon/${hackathonId}`,
           entityId: hackathonId,
           entityType: 'Hackathon',
           senderId: userId,
@@ -614,7 +622,7 @@ export class HackathonsService {
             message: newCaptainId
               ? `Captain succession: new captain assigned.`
               : `Team: ${team.name}`,
-            actionUrl: `/hackathons/${hackathonId}`,
+            actionUrl: `/hackathon/${hackathonId}`,
             entityId: hackathonId,
             entityType: 'Hackathon',
             senderId: userId,

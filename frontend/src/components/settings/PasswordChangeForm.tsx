@@ -25,6 +25,16 @@ export function PasswordChangeForm() {
         setError(null);
         setSuccess(null);
 
+        if (!currentPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+            setError('All password fields are required.');
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            setError('New password must be at least 8 characters.');
+            return;
+        }
+
         // Validate passwords match
         if (newPassword !== confirmPassword) {
             setError(t('settings.security.password.mismatch'));
@@ -71,7 +81,7 @@ export function PasswordChangeForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="flex items-center gap-2">
                 <Lock className="w-5 h-5" />
                 <span className="font-medium">{t('settings.security.password')}</span>

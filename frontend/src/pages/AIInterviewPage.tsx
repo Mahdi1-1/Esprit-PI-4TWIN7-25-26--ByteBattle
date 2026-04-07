@@ -531,7 +531,7 @@ export function AIInterviewPage() {
                 style={{ borderRadius: 16 }}
               >
                 <div className="text-4xl mb-3">🇫🇷</div>
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Français</h3>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">French</h3>
                 <p className="text-sm text-[var(--text-muted)]">French interview</p>
               </button>
               <button
@@ -560,7 +560,7 @@ export function AIInterviewPage() {
                 Start Interview
               </Button>
               <p className="text-sm text-[var(--text-muted)] mt-3">
-                {getDomainById(selectedDomain!)?.icon} {getDomainById(selectedDomain!)?.label} • {selectedDifficulty} • {selectedLanguage === 'FR' ? '🇫🇷 Français' : '🇬🇧 English'}
+                {getDomainById(selectedDomain!)?.icon} {getDomainById(selectedDomain!)?.label} • {selectedDifficulty} • {selectedLanguage === 'FR' ? '🇫🇷 French' : '🇬🇧 English'}
               </p>
             </div>
           </div>

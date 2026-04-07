@@ -42,7 +42,7 @@ export const AvatarManager: React.FC = () => {
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition w-full justify-center"
                 >
                     <Sparkles className="w-4 h-4" />
-                    Créer mon avatar
+                  Create my avatar
                 </button>
              ) : (
                  <button 
@@ -59,7 +59,7 @@ export const AvatarManager: React.FC = () => {
         {avatar && (
             <div className="flex-1 space-y-6 w-full">
                 <div>
-                    <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Humeur</h3>
+                  <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Mood</h3>
                     <ExpressionSelector 
                         current={avatar.expression} 
                         onChange={changeExpression}
@@ -68,7 +68,7 @@ export const AvatarManager: React.FC = () => {
                 </div>
 
                 <div>
-                    <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Cadrage</h3>
+                  <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Framing</h3>
                     <SceneSelector 
                         current={avatar.scene}
                         onChange={changeScene}
@@ -82,14 +82,14 @@ export const AvatarManager: React.FC = () => {
                         disabled={processing}
                         className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded transition"
                     >
-                        <RefreshCw className="w-3 h-3" /> Actualiser
+                      <RefreshCw className="w-3 h-3" /> Refresh
                     </button>
                     <button 
                         onClick={remove}
                         disabled={processing}
                         className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 bg-slate-800 hover:bg-red-500/10 rounded transition ml-auto"
                     >
-                        <Trash2 className="w-3 h-3" /> Supprimer l'avatar
+                      <Trash2 className="w-3 h-3" /> Delete avatar
                     </button>
                 </div>
             </div>
@@ -97,7 +97,7 @@ export const AvatarManager: React.FC = () => {
 
         {!avatar && (
              <div className="flex-1 flex items-center p-6 bg-slate-800/50 rounded-lg border border-dashed border-slate-700 text-slate-400 italic">
-                Aucun avatar configuré. Créez-le pour personnaliser votre expérience !
+                  No avatar configured. Create one to personalize your experience!
              </div>
         )}
       </div>

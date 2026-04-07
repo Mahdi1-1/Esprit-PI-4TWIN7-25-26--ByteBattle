@@ -22,7 +22,7 @@ export function useAvatar() {
         setError(null);
       } else {
         console.error('Error loading avatar:', err);
-        setError('Impossible de charger l\'avatar');
+        setError('Unable to load avatar');
       }
     } finally {
       setLoading(false);
@@ -43,7 +43,7 @@ export function useAvatar() {
       window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: { avatar: newAvatar } }));
     } catch (err) {
       console.error(err);
-      setError('Erreur lors de la sauvegarde de l\'avatar');
+      setError('Error while saving avatar');
     } finally {
       setProcessing(false);
     }
@@ -63,7 +63,7 @@ export function useAvatar() {
     } catch (err) {
       console.error(err);
       setAvatar(previousAvatar);
-      setError('Erreur lors du changement d\'expression');
+      setError('Error while changing expression');
     }
   };
 
@@ -75,14 +75,14 @@ export function useAvatar() {
       window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: { avatar: updated } }));
     } catch (err) {
       console.error(err);
-      setError('Erreur lors du changement de cadrage');
+      setError('Error while changing framing');
     } finally {
       setProcessing(false);
     }
   };
 
   const remove = async () => {
-    if (!window.confirm("Voulez-vous vraiment supprimer votre avatar ?")) return;
+    if (!window.confirm('Do you really want to delete your avatar?')) return;
     
     setProcessing(true);
     try {
@@ -90,7 +90,7 @@ export function useAvatar() {
       setAvatar(null);
       window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: { avatar: null } }));
     } catch (err) {
-      setError('Erreur lors de la suppression');
+      setError('Error while deleting avatar');
     } finally {
       setProcessing(false);
     }
@@ -103,7 +103,7 @@ export function useAvatar() {
       setAvatar(updated);
       window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: { avatar: updated } }));
     } catch (err) {
-      setError('Erreur de rafraîchissement');
+      setError('Refresh error');
     } finally {
       setProcessing(false);
     }
