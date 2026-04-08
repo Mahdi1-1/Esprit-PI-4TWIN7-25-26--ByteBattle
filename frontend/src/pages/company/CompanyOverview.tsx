@@ -106,7 +106,7 @@ export function CompanyOverview() {
                         </span>
                       </div>
                     </div>
-                    <Badge variant={challenge.status === 'active' ? 'success' : 'warning'}>
+                    <Badge variant="default">
                       {challenge.status}
                     </Badge>
                   </div>
@@ -166,7 +166,7 @@ export function CompanyOverview() {
                     <span className="text-[var(--text-muted)]">
                       {new Date(candidate.date).toLocaleDateString()}
                     </span>
-                    <Badge variant="success" className="text-xs">
+                    <Badge variant="default" className="text-xs">
                       {candidate.status}
                     </Badge>
                   </div>

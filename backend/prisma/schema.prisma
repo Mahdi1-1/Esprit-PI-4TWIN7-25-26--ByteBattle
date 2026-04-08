@@ -116,6 +116,8 @@ model CompanyMember {
   role      String
   status    String
   joinedAt  DateTime @default(now())
+
+  @@unique([companyId, userId])
 }
 
 // ---------------------------------------------------------

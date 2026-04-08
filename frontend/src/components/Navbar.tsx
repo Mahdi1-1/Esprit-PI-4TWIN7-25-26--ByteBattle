@@ -21,6 +21,7 @@ import {
   X,
   ChevronDown,
   Flag,
+  Building2,
 } from 'lucide-react';
 import { BBLogo } from './BBLogo';
 import { useTheme } from '../context/ThemeContext';
@@ -36,6 +37,7 @@ import { NotificationBell } from './NotificationBell';
 import { UserSearchBar } from './UserSearchBar';
 import { useNotifications } from '../context/NotificationContext';
 import { Bell } from 'lucide-react';
+import { companiesService, CompanyMembership } from '../services/companiesService';
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -60,6 +62,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showFontSizePanel, setShowFontSizePanel] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [activeCompanyMembership, setActiveCompanyMembership] = useState<CompanyMembership | null>(null);
 
   const fontSizePanelRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -93,6 +96,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
     { to: '/duel', icon: <Swords className="w-10 h-7" />, label: t('nav.duel') },
     { to: '/hackathon', icon: <Flag className="w-10 h-7" />, label: t('nav.hackathon') },
     { to: '/teams', icon: <Users className="w-10 h-7" />, label: t('nav.teams') },
+    { to: '/companies', icon: <Building2 className="w-10 h-7" />, label: 'Companies' },
     { to: '/leaderboard', icon: <Trophy className="w-10 h-7" />, label: t('nav.leaderboard') },
     { to: '/themes', icon: <Palette className="w-10 h-7" />, label: t('nav.themes') },
   ];
@@ -131,6 +135,26 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // ─── Load active company membership (member/recruiter/admin of a company) ───
+  useEffect(() => {
+    const loadMembership = async () => {
+      if (!loggedIn || !isUser) {
+        setActiveCompanyMembership(null);
+        return;
+      }
+
+      try {
+        const memberships = await companiesService.getMyCompanies();
+        const activeMembership = (memberships || []).find((m) => m.status === 'active') || null;
+        setActiveCompanyMembership(activeMembership);
+      } catch {
+        setActiveCompanyMembership(null);
+      }
+    };
+
+    loadMembership();
+  }, [loggedIn, isUser]);
 
   // ─── Lock body scroll when mobile menu is open ───
   useEffect(() => {
@@ -323,6 +347,13 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
             {/* ═══ Right Actions ═══ */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+
+              {activeCompanyMembership?.company?.name && (
+                <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--brand-primary)]/30 bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] text-xs font-semibold">
+                  <Building2 className="w-3.5 h-3.5" />
+                  Member of {activeCompanyMembership.company.name}
+                </div>
+              )}
 
               {/* Language Switcher - hidden on very small screens */}
               <div className="hidden sm:block">

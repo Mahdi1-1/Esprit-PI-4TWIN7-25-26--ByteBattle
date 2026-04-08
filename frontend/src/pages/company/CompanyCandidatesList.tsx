@@ -70,9 +70,9 @@ export function CompanyCandidatesList() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'passed': return 'success';
-      case 'failed': return 'error';
-      case 'pending': return 'warning';
+      case 'passed': return 'easy';
+      case 'failed': return 'hard';
+      case 'pending': return 'medium';
       default: return 'default';
     }
   };

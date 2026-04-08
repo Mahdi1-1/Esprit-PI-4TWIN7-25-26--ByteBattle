@@ -47,6 +47,16 @@ export const challengesService = {
     return data;
   },
 
+  async createCodeChallenge(challenge: any) {
+    const { data } = await api.post('/challenges/code', challenge);
+    return data;
+  },
+
+  async createCanvasChallenge(challenge: any) {
+    const { data } = await api.post('/challenges/canvas', challenge);
+    return data;
+  },
+
   async update(id: string, challenge: Partial<Challenge>) {
     const { data } = await api.patch(`/challenges/${id}`, challenge);
     return data;
@@ -59,6 +69,11 @@ export const challengesService = {
 
   async getAllAdmin(params?: any) {
     const { data } = await api.get('/challenges/admin/all', { params });
+    return data;
+  },
+
+  async getByIdAdmin(id: string) {
+    const { data } = await api.get(`/challenges/admin/${id}`);
     return data;
   },
 };
