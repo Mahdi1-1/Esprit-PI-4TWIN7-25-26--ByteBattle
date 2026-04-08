@@ -6,6 +6,8 @@ interface UseAnticheatOptions {
   onFocusLost?: (count: number) => void;
   /** Called when a copy/paste/cut event is blocked */
   onCopyPasteBlocked?: () => void;
+  /** Called when user exits fullscreen mode */
+  onFullScreenExit?: () => void;
   /** Whether to auto-request fullscreen on mount */
   autoFullscreen?: boolean;
   /** Whether to block copy/paste/contextmenu */
@@ -22,6 +24,7 @@ export function useAnticheat(options: UseAnticheatOptions = {}): AnticheatState 
   const {
     onFocusLost,
     onCopyPasteBlocked,
+    onFullScreenExit,
     autoFullscreen = true,
     blockCopyPaste = true,
   } = options;
@@ -29,11 +32,35 @@ export function useAnticheat(options: UseAnticheatOptions = {}): AnticheatState 
   const [focusLostCount, setFocusLostCount] = useState(0);
   const [totalFocusLostTime, setTotalFocusLostTime] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const focusLostCountRef = useRef(0);
+  const wasFullScreenRef = useRef(false);
 
   // Use a ref to hold the interval so it persists across renders without triggering effects
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Auto Fullscreen ─────────────────────────────────────────────────────────
+  // ── Fullscreen state tracking (always active) ──────────────────────────────
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      const currentlyFullScreen = !!document.fullscreenElement;
+      if (wasFullScreenRef.current && !currentlyFullScreen) {
+        toast.error('⚠️ Fullscreen disabled. Please re-enable it to continue.', {
+          duration: 4000,
+        });
+        onFullScreenExit?.();
+      }
+
+      wasFullScreenRef.current = currentlyFullScreen;
+      setIsFullScreen(currentlyFullScreen);
+    };
+
+    // Sync immediately on mount in case page already entered fullscreen
+    handleFullScreenChange();
+
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+  }, [onFullScreenExit]);
+
+  // ── Auto Fullscreen request (optional) ─────────────────────────────────────
   useEffect(() => {
     if (!autoFullscreen) return;
 
@@ -50,12 +77,7 @@ export function useAnticheat(options: UseAnticheatOptions = {}): AnticheatState 
 
     enterFullScreen();
 
-    const handleFullScreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullScreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    return;
   }, [autoFullscreen]);
 
   // ── Focus / Visibility Tracking ─────────────────────────────────────────────
@@ -64,12 +86,13 @@ export function useAnticheat(options: UseAnticheatOptions = {}): AnticheatState 
       // Only increment once per consecutive blur (avoid double-fire from both blur + visibilitychange)
       if (intervalRef.current !== null) return;
 
-      setFocusLostCount((prev) => {
-        const next = prev + 1;
+      const next = focusLostCountRef.current + 1;
+      focusLostCountRef.current = next;
+      setFocusLostCount(next);
+      setTimeout(() => {
         toast.error('⚠️ Warning! Focus lost.', { duration: 4000 });
         onFocusLost?.(next);
-        return next;
-      });
+      }, 0);
 
       intervalRef.current = setInterval(() => {
         setTotalFocusLostTime((prev) => prev + 1);

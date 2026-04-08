@@ -137,6 +137,7 @@ export function AdminProblem() {
     try {
       const payload = {
         title: formData.title,
+        kind: 'CODE' as const,
         difficulty: formData.difficulty,
         tags: formData.tags,
         statementMd: formData.statementMd,

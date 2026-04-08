@@ -17,6 +17,7 @@ import { AdminModule } from './admin/admin.module';
 import { DuelsModule } from './duels/duels.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CacheModule } from './cache/cache.module';
+import { CompaniesModule } from './companies/companies.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { CacheModule } from './cache/cache.module';
     AdminModule,
     DuelsModule,
     NotificationsModule,
+    CompaniesModule,
   ],
 })
 export class AppModule {}

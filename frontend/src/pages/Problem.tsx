@@ -7,7 +7,7 @@ import { Select } from '../components/Input';
 import { challengesService } from '../services/challengesService';
 import { submissionsService } from '../services/submissionsService';
 import { adminService } from '../services/adminService';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import Editor from "@monaco-editor/react";
 import { useEditorTheme, defineMonacoThemes } from '../context/EditorThemeContext';
@@ -388,7 +388,6 @@ export function Problem() {
   const [timeRemaining, setTimeRemaining] = useState(120);
 
   const [hintsUsed, setHintsUsed] = useState(0);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const { user } = useAuth();
   const { editorTheme } = useEditorTheme();
 
@@ -415,7 +414,7 @@ export function Problem() {
         }
       } catch (err) {
         toast.error('Error while loading problem');
-        toast.error('Error while fetching AI review. Make sure the Gemini API key is configured.');
+      } finally {
         setLoading(false);
       }
     };
@@ -427,12 +426,10 @@ export function Problem() {
     if (!user) return;
 
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4001';
-    const wsUrl = apiUrl.replace('https://', 'wss://').replace('http://', 'ws://');
-    const newSocket = io(`${wsUrl}/submissions`, { 
-      transports: ['websocket', 'polling'],
+    const newSocket = io(`${apiUrl}/submissions`, {
+      transports: ['polling'],
       withCredentials: true 
     });
-    setSocket(newSocket);
 
     newSocket.on('connect', () => {
       newSocket.emit('subscribe_user', { userId: user.id });

@@ -43,11 +43,14 @@ const DataStructuresPage   = lazy(() => import('./pages/DataStructuresPage').the
 const NotificationsPage    = lazy(() => import('./pages/NotificationsPage'));
 const NotFound             = lazy(() => import('./pages/ErrorPages').then(m => ({ default: m.NotFound })));
 const PublicProfile        = lazy(() => import('./pages/PublicProfile').then(m => ({ default: m.PublicProfile })));
+const CompanyJoin          = lazy(() => import('./pages/company/CompanyJoin').then(m => ({ default: m.CompanyJoin })));
+const CompanySpace         = lazy(() => import('./pages/company/CompanySpace').then(m => ({ default: m.CompanySpace })));
 
 // ─── Admin pages ───
 const AdminDashboard    = lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const AdminUsers        = lazy(() => import('./pages/admin/AdminUsers').then(m => ({ default: m.AdminUsers })));
 const AdminProblems     = lazy(() => import('./pages/admin/AdminProblems').then(m => ({ default: m.AdminProblems })));
+const AdminProblem      = lazy(() => import('./pages/admin/AdminProblem').then(m => ({ default: m.AdminProblem })));
 const AdminSubmissions  = lazy(() => import('./pages/admin/AdminSubmissions').then(m => ({ default: m.AdminSubmissions })));
 const AdminReports      = lazy(() => import('./pages/admin/AdminReports').then(m => ({ default: m.AdminReports })));
 const AdminHackathons   = lazy(() => import('./pages/admin/AdminHackathons').then(m => ({ default: m.AdminHackathons })));
@@ -121,6 +124,17 @@ export const router = createBrowserRouter([
           { path: 'sketchpad',           element: <S><SketchpadPage /></S> },
           { path: 'data-structures',     element: <S><DataStructuresPage /></S> },
           { path: 'notifications',       element: <S><NotificationsPage /></S> },
+
+          // Company (join existing companies)
+          { path: 'companies',           element: <S><CompanyJoin /></S> },
+          { path: 'company-space',       element: <S><CompanySpace /></S> },
+          { path: 'company',             element: <Navigate to="/companies" replace /> },
+          { path: 'company/overview',    element: <Navigate to="/companies" replace /> },
+          { path: 'company/candidates',  element: <Navigate to="/companies" replace /> },
+          { path: 'company/challenges',  element: <Navigate to="/companies" replace /> },
+          { path: 'company/members',     element: <Navigate to="/companies" replace /> },
+          { path: 'company/exports',     element: <Navigate to="/companies" replace /> },
+          { path: 'company/settings',    element: <Navigate to="/companies" replace /> },
         ],
       },
 
@@ -131,6 +145,8 @@ export const router = createBrowserRouter([
           { path: 'admin',             element: <S><AdminDashboard /></S> },
           { path: 'admin/users',       element: <S><AdminUsers /></S> },
           { path: 'admin/problems',    element: <S><AdminProblems /></S> },
+          { path: 'admin/problems/new', element: <S><AdminProblem /></S> },
+          { path: 'admin/problems/:id/edit', element: <S><AdminProblem /></S> },
           { path: 'admin/submissions', element: <S><AdminSubmissions /></S> },
           { path: 'admin/reports',     element: <S><AdminReports /></S> },
           { path: 'admin/hackathons',  element: <S><AdminHackathons /></S> },
