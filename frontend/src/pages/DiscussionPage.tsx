@@ -18,6 +18,7 @@ type SortOption = 'trending' | 'newest' | 'most-voted';
 export function DiscussionPage() {
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
+  const companyId = searchParams.get('companyId') || undefined;
 
   const [selectedCategory, setSelectedCategory] = useState<string>(
     searchParams.get('category') || 'all',
@@ -42,8 +43,9 @@ export function DiscussionPage() {
     const params: Record<string, string> = {};
     if (selectedCategory !== 'all') params.category = selectedCategory;
     if (debouncedSearch) params.search = debouncedSearch;
+    if (companyId) params.companyId = companyId;
     setSearchParams(params, { replace: true });
-  }, [selectedCategory, debouncedSearch]);
+  }, [selectedCategory, debouncedSearch, companyId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,12 +63,14 @@ export function DiscussionPage() {
           search: debouncedSearch || undefined,
           tags: selectedCategory !== 'all' ? selectedCategory : undefined,
           sort: sortMap[sortBy],
+          companyId,
         });
         if (cancelled) return;
         if (res?.data?.length) {
           setDiscussions(
             res.data.map((d: any) => ({
               id: d.id,
+              companyId: d.companyId,
               title: d.title,
               content: d.content,
               author: {
@@ -162,7 +166,7 @@ export function DiscussionPage() {
               </div>
 
               {/* New post button */}
-              <Link to="/discussion/new">
+              <Link to={companyId ? `/discussion/new?companyId=${encodeURIComponent(companyId)}` : '/discussion/new'}>
                 <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold hover:opacity-90 transition-opacity shrink-0">
                   <Plus className="w-4 h-4" />
                   <span className="hidden sm:inline">Post</span>
@@ -199,7 +203,7 @@ export function DiscussionPage() {
                   <MessageSquare className="w-12 h-12 mx-auto text-[var(--text-muted)] mb-3 opacity-40" />
                   <p className="font-semibold text-[var(--text-primary)] mb-1">{t('discussion.noResults')}</p>
                   <p className="text-sm text-[var(--text-muted)] mb-5">Be the first to start a discussion.</p>
-                  <Link to="/discussion/new">
+                  <Link to={companyId ? `/discussion/new?companyId=${encodeURIComponent(companyId)}` : '/discussion/new'}>
                     <button className="px-5 py-2 rounded-full bg-[var(--brand-primary)] text-white text-sm font-bold hover:opacity-90 transition-opacity">
                       + Create Post
                     </button>

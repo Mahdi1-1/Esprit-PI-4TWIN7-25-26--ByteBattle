@@ -22,6 +22,9 @@ function relativeTime(dateStr: string): string {
 export function DiscussionPostCard({ post }: Props) {
   const cat = discussionCategories.find((c) => c.id === post.category);
   const score = post.upvotes - post.downvotes;
+  const discussionLink = post.companyId
+    ? `/discussion/${post.id}?companyId=${encodeURIComponent(post.companyId)}`
+    : `/discussion/${post.id}`;
 
   return (
     <div className="theme-card overflow-hidden hover:border-[var(--brand-primary)]/35 transition-colors group">
@@ -111,7 +114,7 @@ export function DiscussionPostCard({ post }: Props) {
           </div>
 
           {/* Title */}
-          <Link to={`/discussion/${post.id}`}>
+          <Link to={discussionLink}>
             <h3 className="text-[var(--text-primary)] font-semibold text-base leading-snug
                            group-hover:text-[var(--brand-primary)] transition-colors mb-1.5 line-clamp-2">
               {post.title}
@@ -144,7 +147,7 @@ export function DiscussionPostCard({ post }: Props) {
             </div>
 
             <Link
-              to={`/discussion/${post.id}`}
+              to={discussionLink}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded hover:bg-[var(--surface-2)] transition-colors font-semibold"
             >
               <MessageSquare className="w-3.5 h-3.5" />

@@ -20,6 +20,7 @@ export interface DiscussionComment {
 
 export interface DiscussionPost {
   id: string;
+  companyId?: string;
   title: string;
   author: {
     id?: string;

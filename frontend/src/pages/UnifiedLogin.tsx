@@ -38,12 +38,6 @@ export function UnifiedLogin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!email.trim() || !password.trim()) {
-      setError('Email and password are required.');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -161,7 +155,7 @@ export function UnifiedLogin() {
           </div>
 
           {/* Email/Password Form */}
-          <form onSubmit={handleLogin} noValidate className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             {/* Email */}
             <div className="space-y-2">
               <label

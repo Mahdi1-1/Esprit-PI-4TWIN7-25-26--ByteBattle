@@ -35,12 +35,6 @@ export function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!email.trim() || !password.trim()) {
-      setError('Email and password are required.');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     setVerificationInfo(null);
@@ -144,7 +138,7 @@ export function Login() {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Email"
                 type="email"

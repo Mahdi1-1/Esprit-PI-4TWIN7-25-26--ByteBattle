@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
@@ -59,6 +60,8 @@ function sortComments(comments: DiscussionComment[], mode: SortMode): Discussion
 export function DiscussionDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const companyId = searchParams.get('companyId') || undefined;
   const { user } = useAuth();
   const { t } = useLanguage();
 
@@ -88,12 +91,17 @@ export function DiscussionDetailPage() {
   // Sort
   const [sortMode, setSortMode] = useState<SortMode>('newest');
 
+  const discussionListRoute = companyId
+    ? `/discussion?companyId=${encodeURIComponent(companyId)}`
+    : '/discussion';
+
   const fetchPost = useCallback(async () => {
     try {
-      const d = await discussionsService.getById(id!);
+      const d = await discussionsService.getById(id!, companyId);
       if (d) {
         setPost({
           id: d.id,
+          companyId: d.companyId,
           title: d.title,
           content: d.content,
           author: {
@@ -125,7 +133,7 @@ export function DiscussionDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [id, user?.id]);
+  }, [id, user?.id, companyId]);
 
   useEffect(() => { fetchPost(); }, [fetchPost]);
 
@@ -166,7 +174,7 @@ export function DiscussionDetailPage() {
 
         <div className="w-full px-4 sm:px-6 lg:px-10 py-20 text-center">
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t('discussion.notFound')}</h2>
-          <Link to="/discussion" className="text-[var(--brand-primary)] hover:underline mt-4 inline-block">
+          <Link to={discussionListRoute} className="text-[var(--brand-primary)] hover:underline mt-4 inline-block">
             ← {t('discussion.backToForum')}
           </Link>
         </div>
@@ -201,7 +209,7 @@ export function DiscussionDetailPage() {
     if (window.confirm('Are you sure you want to delete this discussion?')) {
       try {
         await discussionsService.delete(post.id);
-        navigate('/discussion');
+        navigate(discussionListRoute);
       } catch (err) { console.error(err); }
     }
   };
@@ -333,7 +341,7 @@ export function DiscussionDetailPage() {
       <div className="max-w-[960px] mx-auto px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8">
         {/* Back Link */}
         <Link
-          to="/discussion"
+          to={discussionListRoute}
           className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -375,7 +383,9 @@ export function DiscussionDetailPage() {
                   <CheckCircle2 className="w-4 h-4" />
                 </button>
                 <Link
-                  to={`/discussion/edit/${post.id}`}
+                  to={companyId
+                    ? `/discussion/${post.id}/edit?companyId=${encodeURIComponent(companyId)}`
+                    : `/discussion/${post.id}/edit`}
                   className="p-2 text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:bg-[var(--surface-2)] rounded-[var(--radius-md)] transition-colors"
                   title="Edit discussion"
                 >

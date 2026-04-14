@@ -217,9 +217,10 @@ export class HackathonsController {
   getTeamSubmissions(
     @Param('id') hackathonId: string,
     @Param('teamId') teamId: string,
+    @CurrentUser('id') userId: string,
     @Query('challengeId') challengeId?: string,
   ) {
-    return this.submissionService.getTeamSubmissions(hackathonId, teamId, challengeId);
+    return this.submissionService.getTeamSubmissions(hackathonId, teamId, userId, challengeId);
   }
 
   // ════════════════════════════════════════════════════════
@@ -301,6 +302,46 @@ export class HackathonsController {
     @CurrentUser('id') adminId: string,
   ) {
     return this.hackathonsService.create(dto, adminId);
+  }
+
+  @Post('enterprise')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create enterprise private hackathon (company admin or platform admin)' })
+  createEnterpriseHackathon(
+    @Body() dto: CreateHackathonDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.hackathonsService.createEnterpriseHackathon(dto, user);
+  }
+
+  @Get(':id/candidates')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List enterprise challenge candidates (company admin or platform admin)' })
+  getEnterpriseCandidates(
+    @Param('id') hackathonId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.hackathonsService.getEnterpriseCandidates(hackathonId, user);
+  }
+
+  @Get(':id/candidates/:candidateUserId/submissions')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get per-challenge candidate submissions for enterprise hackathon' })
+  getEnterpriseCandidateSubmissions(
+    @Param('id') hackathonId: string,
+    @Param('candidateUserId') candidateUserId: string,
+    @CurrentUser() user: any,
+    @Query('challengeId') challengeId?: string,
+  ) {
+    return this.hackathonsService.getEnterpriseCandidateSubmissions(
+      hackathonId,
+      candidateUserId,
+      user,
+      challengeId,
+    );
   }
 
   @Patch(':id')

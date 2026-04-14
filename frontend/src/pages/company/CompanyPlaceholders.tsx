@@ -10,7 +10,7 @@ interface CompanyPlaceholderProps {
 function CompanyPlaceholder({ title, description }: CompanyPlaceholderProps) {
   return (
     <Layout>
-      <CompanyNavbar companyName="TechCorp Inc." userName="John Doe" userRole="owner" />
+      <CompanyNavbar companyName="TechCorp Inc." userName="John Doe" userRole="admin" />
       <div className="w-full px-4 sm:px-6 lg:px-10 py-10">
         <div className="max-w-3xl mx-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-8">
           <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-3">{title}</h1>
@@ -84,7 +84,7 @@ export function CompanyMembersPlaceholder() {
   return (
     <CompanyPlaceholder
       title="Team Members"
-      description="Company member and recruiter management placeholder page."
+        description="Company member management placeholder page."
     />
   );
 }

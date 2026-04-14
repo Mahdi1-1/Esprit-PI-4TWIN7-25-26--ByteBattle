@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,6 +17,13 @@ export class HackathonSubmissionService {
     private prisma: PrismaService,
     private queueService: QueueService,
   ) {}
+
+  private assertTeamMembership(team: { members: Array<{ userId: string }> }, userId: string) {
+    const isMember = team.members.some((member) => member.userId === userId);
+    if (!isMember) {
+      throw new ForbiddenException('You are not a member of this team');
+    }
+  }
 
   // ────────────────────────────────────────────────────────
   // T030 — Submit code during hackathon
@@ -36,6 +44,10 @@ export class HackathonSubmissionService {
 
     const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
     if (!team) throw new NotFoundException('Team not found');
+    if (team.hackathonId !== hackathonId) {
+      throw new BadRequestException('Team does not belong to this hackathon');
+    }
+    this.assertTeamMembership(team as any, userId);
     if (team.isDisqualified) {
       throw new BadRequestException('Your team has been disqualified');
     }
@@ -169,6 +181,19 @@ export class HackathonSubmissionService {
 
     if (!['active', 'frozen'].includes(hackathon.status)) {
       throw new BadRequestException('Run is only allowed during active or frozen phases');
+    }
+
+    const team = await this.prisma.hackathonTeam.findFirst({
+      where: {
+        hackathonId,
+        members: { some: { userId } },
+      },
+    });
+    if (!team) {
+      throw new ForbiddenException('You must belong to a team in this hackathon to run code');
+    }
+    if (team.isDisqualified) {
+      throw new ForbiddenException('Your team is disqualified and cannot run code');
     }
 
     const challenge = await this.prisma.challenge.findUnique({
@@ -381,7 +406,14 @@ export class HackathonSubmissionService {
   // Query helpers
   // ────────────────────────────────────────────────────────
 
-  async getTeamSubmissions(hackathonId: string, teamId: string, challengeId?: string) {
+  async getTeamSubmissions(hackathonId: string, teamId: string, requesterId: string, challengeId?: string) {
+    const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
+    if (!team) throw new NotFoundException('Team not found');
+    if (team.hackathonId !== hackathonId) {
+      throw new BadRequestException('Team does not belong to this hackathon');
+    }
+    this.assertTeamMembership(team as any, requesterId);
+
     const where: any = { hackathonId, teamId };
     if (challengeId) where.challengeId = challengeId;
 

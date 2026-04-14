@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/Button';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,6 +12,8 @@ export function EditDiscussionPage() {
   const { id } = useParams();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const companyId = searchParams.get('companyId') || undefined;
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -23,7 +26,7 @@ export function EditDiscussionPage() {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const d = await discussionsService.getById(id!);
+        const d = await discussionsService.getById(id!, companyId);
         if (d) {
           setTitle(d.title);
           setContent(d.content);
@@ -40,7 +43,7 @@ export function EditDiscussionPage() {
       }
     };
     fetchPost();
-  }, [id]);
+  }, [id, companyId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +61,13 @@ export function EditDiscussionPage() {
       await discussionsService.update(id!, {
         title,
         content,
-        // Wait, update is defined as: update(id: string, discussion: { title?: string; content?: string; tags?: string[] })
-        // We will pass category implicitly via any just in case backend takes it.
         category,
-        tags
-      } as any);
+        tags,
+      });
 
-      navigate(`/discussion/${id}`);
+      navigate(companyId
+        ? `/discussion/${id}?companyId=${encodeURIComponent(companyId)}`
+        : `/discussion/${id}`);
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || 'Failed to update discussion');
@@ -88,7 +91,7 @@ export function EditDiscussionPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <button
-          onClick={() => navigate(`/discussion/${id}`)}
+          onClick={() => navigate(companyId ? `/discussion/${id}?companyId=${encodeURIComponent(companyId)}` : `/discussion/${id}`)}
           className="flex items-center text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -164,7 +167,7 @@ export function EditDiscussionPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => navigate(`/discussion/${id}`)}
+              onClick={() => navigate(companyId ? `/discussion/${id}?companyId=${encodeURIComponent(companyId)}` : `/discussion/${id}`)}
               disabled={loading}
             >
               Cancel

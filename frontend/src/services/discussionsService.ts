@@ -7,6 +7,7 @@ export interface Discussion {
   authorId: string;
   author: { id: string; username: string; profileImage?: string };
   category: string;
+  companyId?: string;
   tags: string[];
   challengeId?: string;
   upvotes: string[];
@@ -44,8 +45,11 @@ export const discussionsService = {
     tags?: string;
     search?: string;
     sort?: string;
+    companyId?: string;
   }) {
-    const { data } = await api.get('/discussions', { params });
+    const { companyId, ...query } = params || {};
+    const path = companyId ? `/discussions/company/${companyId}` : '/discussions';
+    const { data } = await api.get(path, { params: query });
     return data;
   },
 
@@ -59,17 +63,18 @@ export const discussionsService = {
     return data;
   },
 
-  async getById(id: string) {
-    const { data } = await api.get(`/discussions/${id}`);
+  async getById(id: string, companyId?: string) {
+    const path = companyId ? `/discussions/company/${companyId}/${id}` : `/discussions/${id}`;
+    const { data } = await api.get(path);
     return data;
   },
 
-  async create(discussion: { title: string; content: string; tags: string[]; challengeId?: string }) {
+  async create(discussion: { title: string; content: string; category?: string; tags: string[]; challengeId?: string; companyId?: string }) {
     const { data } = await api.post('/discussions', discussion);
     return data;
   },
 
-  async update(id: string, discussion: { title?: string; content?: string; tags?: string[] }) {
+  async update(id: string, discussion: { title?: string; content?: string; category?: string; tags?: string[]; companyId?: string | null }) {
     const { data } = await api.patch(`/discussions/${id}`, discussion);
     return data;
   },

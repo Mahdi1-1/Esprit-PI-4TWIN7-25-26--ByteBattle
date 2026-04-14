@@ -90,6 +90,39 @@ export class ChallengesController {
     return this.challengesService.create(dto);
   }
 
+  @Post('company/code')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a private company code challenge (company admin)' })
+  createCompanyCodeChallenge(
+    @Body() dto: CreateCodeChallengeDto & { companyId: string },
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.challengesService.createCompanyCodeChallenge(dto, userId);
+  }
+
+  @Get('company/mine')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List private company challenges for current user memberships' })
+  getCompanyChallenges(
+    @CurrentUser('id') userId: string,
+    @Query('companyId') companyId?: string,
+  ) {
+    return this.challengesService.getCompanyChallenges(userId, companyId);
+  }
+
+  @Get('company/:id/results')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get member submissions/results for a private company challenge (company admin)' })
+  getCompanyChallengeResults(
+    @Param('id') challengeId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.challengesService.getCompanyChallengeResults(challengeId, userId);
+  }
+
   @Post('canvas')
   @Roles('admin')
   @ApiBearerAuth()

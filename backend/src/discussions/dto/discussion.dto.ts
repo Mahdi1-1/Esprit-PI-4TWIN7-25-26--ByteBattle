@@ -27,6 +27,11 @@ export class CreateDiscussionDto {
   @IsOptional()
   @IsString()
   challengeId?: string;
+
+  @ApiPropertyOptional({ description: 'Optional company scope for private company discussions' })
+  @IsOptional()
+  @IsString()
+  companyId?: string;
 }
 
 export class UpdateDiscussionDto {
@@ -54,6 +59,11 @@ export class UpdateDiscussionDto {
   @IsString({ each: true })
   @ArrayMaxSize(5)
   tags?: string[];
+
+  @ApiPropertyOptional({ description: 'Optional company scope for private company discussions' })
+  @IsOptional()
+  @IsString()
+  companyId?: string | null;
 }
 
 export class CreateCommentDto {

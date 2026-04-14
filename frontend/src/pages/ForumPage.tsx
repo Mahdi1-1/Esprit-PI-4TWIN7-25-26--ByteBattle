@@ -8,25 +8,57 @@ import {
 } from 'lucide-react';
 import { discussionCategories } from '../data/discussionData';
 import { discussionsService } from '../services/discussionsService';
+import { companiesService } from '../services/companiesService';
 
 export function ForumPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ totalPosts: 0, activeUsers: 0, solvedThreads: 0, thisWeek: 0 });
   const [popularTags, setPopularTags] = useState<{ tag: string; count: number }[]>([]);
+  const [companyPosts, setCompanyPosts] = useState<any[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingCompanyPosts, setLoadingCompanyPosts] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     Promise.all([
       discussionsService.getStats(),
       discussionsService.getPopularTags(),
+      companiesService.getMyCompanies(),
     ])
-      .then(([s, tags]) => {
+      .then(async ([s, tags, memberships]) => {
+        if (cancelled) return;
         setStats(s);
         if (Array.isArray(tags)) setPopularTags(tags.slice(0, 20));
+
+        const activeMembership = (memberships || []).find((m) => m.status === 'active');
+        if (activeMembership?.companyId) {
+          setActiveCompanyId(activeMembership.companyId);
+          setCompanyName(activeMembership.company?.name || null);
+          setLoadingCompanyPosts(true);
+          try {
+            const res = await discussionsService.getAll({ companyId: activeMembership.companyId, limit: 8, sort: 'popular' });
+            if (!cancelled) {
+              setCompanyPosts(Array.isArray(res?.data) ? res.data : []);
+            }
+          } catch {
+            if (!cancelled) setCompanyPosts([]);
+          } finally {
+            if (!cancelled) setLoadingCompanyPosts(false);
+          }
+        }
       })
       .catch(() => {})
-      .finally(() => setLoadingStats(false));
+      .finally(() => {
+        if (!cancelled) setLoadingStats(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const displayCategories = discussionCategories.filter((c) => c.id !== 'all');
@@ -80,6 +112,45 @@ export function ForumPage() {
 
           {/* ══ LEFT / MAIN ══ */}
           <div className="flex-1 min-w-0 space-y-5">
+
+            {companyName && (
+              <div className="theme-card px-4 py-4 border border-[var(--brand-primary)]/20 bg-[var(--brand-primary)]/5">
+                <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                  <div>
+                    <h2 className="font-bold text-sm text-[var(--text-primary)] uppercase tracking-wide">
+                      Company Discussions
+                    </h2>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      Posts from {companyName} are visible only to company members.
+                    </p>
+                  </div>
+                  <Link to={`/discussion?companyId=${encodeURIComponent(activeCompanyId || '')}`}>
+                    <button className="px-4 py-2 rounded-full bg-[var(--brand-primary)] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+                      Open Company Forum
+                    </button>
+                  </Link>
+                </div>
+
+                {loadingCompanyPosts ? (
+                  <div className="text-sm text-[var(--text-muted)]">Loading company posts…</div>
+                ) : companyPosts.length === 0 ? (
+                  <div className="text-sm text-[var(--text-muted)]">No company posts yet.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {companyPosts.slice(0, 3).map((post: any) => (
+                      <Link
+                        key={post.id}
+                        to={`/discussion/${post.id}?companyId=${encodeURIComponent(post.companyId)}`}
+                        className="block rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-1)] px-4 py-3 hover:border-[var(--brand-primary)]/30 transition-colors"
+                      >
+                        <div className="text-sm font-semibold text-[var(--text-primary)] line-clamp-1">{post.title}</div>
+                        <div className="text-xs text-[var(--text-muted)] mt-1 line-clamp-1">{post.content}</div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

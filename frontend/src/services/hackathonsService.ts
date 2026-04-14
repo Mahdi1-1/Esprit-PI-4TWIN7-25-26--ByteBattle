@@ -110,6 +110,11 @@ export const hackathonsService = {
     return data;
   },
 
+  async createEnterprise(hackathon: any) {
+    const { data } = await api.post('/hackathons/enterprise', hackathon);
+    return data;
+  },
+
   async update(id: string, hackathon: any) {
     const { data } = await api.patch(`/hackathons/${id}`, hackathon);
     return data;
@@ -157,6 +162,17 @@ export const hackathonsService = {
 
   async getAdminScoreboard(hackathonId: string) {
     const { data } = await api.get(`/hackathons/${hackathonId}/admin/scoreboard`);
+    return data;
+  },
+
+  async getEnterpriseCandidates(hackathonId: string) {
+    const { data } = await api.get(`/hackathons/${hackathonId}/candidates`);
+    return data;
+  },
+
+  async getEnterpriseCandidateSubmissions(hackathonId: string, candidateUserId: string, challengeId?: string) {
+    const params = challengeId ? { challengeId } : {};
+    const { data } = await api.get(`/hackathons/${hackathonId}/candidates/${candidateUserId}/submissions`, { params });
     return data;
   },
 

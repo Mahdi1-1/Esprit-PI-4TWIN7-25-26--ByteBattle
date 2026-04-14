@@ -112,6 +112,11 @@ export class UpdateHackathonDto {
   @IsOptional()
   @IsString()
   scope?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  companyId?: string;
 }
 
 export class TransitionStatusDto {

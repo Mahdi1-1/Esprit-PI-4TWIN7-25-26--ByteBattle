@@ -50,6 +50,33 @@ export class DiscussionsController {
     });
   }
 
+  @Get('company/:companyId')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List private discussions for a company (active members only)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'tags', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'sort', required: false, description: 'newest|oldest|popular|most-voted' })
+  findAllForCompany(
+    @Param('companyId') companyId: string,
+    @CurrentUser('id') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('tags') tags?: string,
+    @Query('search') search?: string,
+    @Query('sort') sort?: string,
+  ) {
+    return this.discussionsService.findCompanyDiscussions(userId, companyId, {
+      page: page ? +page : undefined,
+      limit: limit ? +limit : undefined,
+      tags,
+      search,
+      sort,
+    });
+  }
+
   // ─── Stats & Tags ──────────────────────────────────
   @Public()
   @Get('stats')
@@ -81,6 +108,18 @@ export class DiscussionsController {
   @ApiOperation({ summary: 'Get edit history of a discussion' })
   getRevisions(@Param('id') id: string) {
     return this.discussionsService.getRevisions(id);
+  }
+
+  @Get('company/:companyId/:id')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a private company discussion (active members only)' })
+  findOneForCompany(
+    @Param('companyId') companyId: string,
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.discussionsService.findOneCompanyDiscussion(companyId, id, userId);
   }
 
   @Public()

@@ -37,12 +37,57 @@ export class HackathonsService {
     private notificationEmitter: NotificationEmitterService,
   ) {}
 
+  private async assertEnterpriseCompanyAdmin(hackathonId: string, requester: { id?: string; role?: string }) {
+    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+
+    if (requester.role === 'admin') {
+      return hackathon;
+    }
+
+    if (!requester.id) {
+      throw new ForbiddenException('User not authenticated');
+    }
+
+    if (hackathon.scope !== 'enterprise' || !hackathon.companyId) {
+      throw new ForbiddenException('Candidate result access is restricted to enterprise company hackathons');
+    }
+
+    const membership = await this.prisma.companyMember.findUnique({
+      where: {
+        companyId_userId: {
+          companyId: hackathon.companyId,
+          userId: requester.id,
+        },
+      },
+    });
+
+    if (!membership || membership.status !== 'active' || membership.role !== 'admin') {
+      throw new ForbiddenException('Company admin access required');
+    }
+
+    return hackathon;
+  }
+
   // ────────────────────────────────────────────────────────
   // CRUD
   // ────────────────────────────────────────────────────────
 
   async create(dto: CreateHackathonDto, adminId: string) {
     const joinCode = generateJoinCode();
+
+    if (dto.scope === 'enterprise' && !dto.companyId) {
+      throw new BadRequestException('Enterprise hackathons must be linked to a company');
+    }
+
+    if (dto.companyId) {
+      const company = await this.prisma.company.findUnique({ where: { id: dto.companyId } });
+      if (!company || company.status !== 'active') {
+        throw new BadRequestException('Company not found or inactive');
+      }
+    }
 
     // Enterprise scope enforcement (Decision #23)
     let teamPolicy = dto.teamPolicy ?? { minSize: 1, maxSize: 3 };
@@ -67,6 +112,73 @@ export class HackathonsService {
         createdById: adminId,
       },
     });
+  }
+
+  async createEnterpriseHackathon(dto: CreateHackathonDto, requester: { id?: string; role?: string }) {
+    if (!requester?.id) {
+      throw new ForbiddenException('User not authenticated');
+    }
+
+    const companyId = dto.companyId;
+    if (!companyId) {
+      throw new BadRequestException('companyId is required for enterprise hackathons');
+    }
+
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company || company.status !== 'active') {
+      throw new BadRequestException('Company not found or inactive');
+    }
+
+    if (requester.role !== 'admin') {
+      const membership = await this.prisma.companyMember.findUnique({
+        where: {
+          companyId_userId: { companyId, userId: requester.id },
+        },
+      });
+
+      if (!membership || membership.status !== 'active' || membership.role !== 'admin') {
+        throw new ForbiddenException('Only company admins can create enterprise hackathons');
+      }
+    }
+
+    const createdDraft = await this.create(
+      {
+        ...dto,
+        scope: 'enterprise',
+        companyId,
+        teamPolicy: { minSize: 1, maxSize: 1 },
+      },
+      requester.id,
+    );
+
+    const created = await this.prisma.hackathon.update({
+      where: { id: createdDraft.id },
+      data: { status: 'lobby' },
+    });
+
+    const activeMemberIds = await this.prisma.companyMember.findMany({
+      where: { companyId, status: 'active' },
+      select: { userId: true },
+    });
+
+    await Promise.allSettled(
+      activeMemberIds.map((member) =>
+        this.notificationEmitter.emit({
+          userId: member.userId,
+          type: NotificationType.HACKATHON_ANNOUNCEMENT,
+          category: NotificationCategory.HACKATHON,
+          priority: NotificationPriority.HIGH,
+          title: `New enterprise challenge: ${created.title}`,
+          message: `${company.name} launched a new enterprise challenge.`,
+          actionUrl: `/company/challenges/${created.id}`,
+          entityId: created.id,
+          entityType: 'Hackathon',
+          senderId: requester.id,
+        }),
+      ),
+    );
+
+    return created;
   }
 
   async findAll(query: { page?: number; limit?: number; status?: string; scope?: string }) {
@@ -264,8 +376,172 @@ export class HackathonsService {
     if (dto.teamPolicy !== undefined) data.teamPolicy = dto.teamPolicy;
     if (dto.bannerUrl !== undefined) data.bannerUrl = dto.bannerUrl;
     if (dto.scope !== undefined) data.scope = dto.scope;
+    if (dto.companyId !== undefined) {
+      const company = await this.prisma.company.findUnique({ where: { id: dto.companyId } });
+      if (!company || company.status !== 'active') {
+        throw new BadRequestException('Company not found or inactive');
+      }
+      data.companyId = dto.companyId;
+    }
+
+    const nextScope = (dto.scope ?? hackathon.scope) as string;
+    const nextCompanyId = dto.companyId === undefined ? hackathon.companyId : dto.companyId;
+    if (nextScope === 'enterprise') {
+      if (!nextCompanyId) {
+        throw new BadRequestException('Enterprise hackathons must be linked to a company');
+      }
+      data.teamPolicy = { minSize: 1, maxSize: 1 };
+    }
 
     return this.prisma.hackathon.update({ where: { id }, data });
+  }
+
+  async getEnterpriseCandidates(hackathonId: string, requester: { id?: string; role?: string }) {
+    const hackathon = await this.assertEnterpriseCompanyAdmin(hackathonId, requester);
+
+    const teams = await this.prisma.hackathonTeam.findMany({
+      where: { hackathonId },
+      select: {
+        id: true,
+        name: true,
+        members: true,
+      },
+    });
+
+    const candidateIds = Array.from(
+      new Set(teams.flatMap((team) => team.members.map((member) => member.userId))),
+    );
+
+    if (candidateIds.length === 0) {
+      return {
+        hackathon: { id: hackathon.id, title: hackathon.title, companyId: hackathon.companyId },
+        candidates: [],
+      };
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: candidateIds } },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        profileImage: true,
+      },
+    });
+
+    const submissions = await this.prisma.hackathonSubmission.findMany({
+      where: {
+        hackathonId,
+        userId: { in: candidateIds },
+      },
+      select: {
+        userId: true,
+        challengeId: true,
+        verdict: true,
+        submittedAt: true,
+      },
+    });
+
+    const teamByUser = new Map<string, { id: string; name: string }>();
+    for (const team of teams) {
+      for (const member of team.members) {
+        if (!teamByUser.has(member.userId)) {
+          teamByUser.set(member.userId, { id: team.id, name: team.name });
+        }
+      }
+    }
+
+    const submissionsByUser = new Map<string, typeof submissions>();
+    for (const submission of submissions) {
+      const list = submissionsByUser.get(submission.userId) || [];
+      list.push(submission);
+      submissionsByUser.set(submission.userId, list);
+    }
+
+    const candidates = users.map((user) => {
+      const rows = submissionsByUser.get(user.id) || [];
+      const acceptedChallengeIds = new Set(
+        rows.filter((row) => row.verdict === 'AC').map((row) => row.challengeId),
+      );
+      const attemptedChallengeIds = new Set(rows.map((row) => row.challengeId));
+
+      return {
+        user,
+        team: teamByUser.get(user.id) || null,
+        stats: {
+          submissionCount: rows.length,
+          acceptedCount: rows.filter((row) => row.verdict === 'AC').length,
+          solvedChallengeCount: acceptedChallengeIds.size,
+          attemptedChallengeCount: attemptedChallengeIds.size,
+          lastSubmissionAt: rows.length
+            ? new Date(Math.max(...rows.map((row) => new Date(row.submittedAt).getTime())))
+            : null,
+        },
+      };
+    });
+
+    return {
+      hackathon: { id: hackathon.id, title: hackathon.title, companyId: hackathon.companyId },
+      candidates,
+    };
+  }
+
+  async getEnterpriseCandidateSubmissions(
+    hackathonId: string,
+    candidateUserId: string,
+    requester: { id?: string; role?: string },
+    challengeId?: string,
+  ) {
+    await this.assertEnterpriseCompanyAdmin(hackathonId, requester);
+
+    const candidateInHackathon = await this.prisma.hackathonTeam.findFirst({
+      where: {
+        hackathonId,
+        members: { some: { userId: candidateUserId } },
+      },
+      select: { id: true, name: true },
+    });
+
+    if (!candidateInHackathon) {
+      throw new NotFoundException('Candidate not found in this hackathon');
+    }
+
+    const where: {
+      hackathonId: string;
+      userId: string;
+      challengeId?: string;
+    } = {
+      hackathonId,
+      userId: candidateUserId,
+    };
+    if (challengeId) {
+      where.challengeId = challengeId;
+    }
+
+    const submissions = await this.prisma.hackathonSubmission.findMany({
+      where,
+      orderBy: { submittedAt: 'desc' },
+      select: {
+        id: true,
+        challengeId: true,
+        verdict: true,
+        language: true,
+        testsPassed: true,
+        testsTotal: true,
+        timeMs: true,
+        memMb: true,
+        attemptNumber: true,
+        penaltyMinutes: true,
+        submittedAt: true,
+      },
+    });
+
+    return {
+      team: candidateInHackathon,
+      submissions,
+    };
   }
 
   // ────────────────────────────────────────────────────────

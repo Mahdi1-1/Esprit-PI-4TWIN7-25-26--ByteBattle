@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/Button';
 import { useLanguage } from '../context/LanguageContext';
@@ -10,6 +11,8 @@ import { ArrowLeft, Send } from 'lucide-react';
 export function NewDiscussionPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const companyId = searchParams.get('companyId') || undefined;
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -34,13 +37,14 @@ export function NewDiscussionPage() {
       const newPost = await discussionsService.create({
         title,
         content,
-        // Hack: until backend fully parses category natively through dto, it seems we mapped it to tags maybe? No wait. Dto now supports category!
-        // Wait, discussionsService.create doesn't have category type. I'll pass it anyway and force any or update the service.
         category,
-        tags
-      } as any);
+        tags,
+        companyId,
+      });
 
-      navigate(`/discussion/${newPost.id}`);
+      navigate(companyId
+        ? `/discussion/${newPost.id}?companyId=${encodeURIComponent(companyId)}`
+        : `/discussion/${newPost.id}`);
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || 'Failed to create discussion');

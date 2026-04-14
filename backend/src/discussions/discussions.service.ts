@@ -23,8 +23,90 @@ export class DiscussionsService {
     return role === 'moderator' || role === 'admin';
   }
 
+  private async assertActiveCompanyMember(companyId: string, userId: string) {
+    const membership = await this.prisma.companyMember.findUnique({
+      where: {
+        companyId_userId: {
+          companyId,
+          userId,
+        },
+      },
+    });
+
+    if (!membership || membership.status !== 'active') {
+      throw new ForbiddenException('You are not an active member of this company');
+    }
+  }
+
+  private async assertDiscussionCompanyAccess(
+    discussion: { companyId?: string | null },
+    userId?: string,
+  ) {
+    if (!discussion.companyId) return;
+    if (!userId) {
+      throw new ForbiddenException('This discussion is private to company members');
+    }
+    await this.assertActiveCompanyMember(discussion.companyId, userId);
+  }
+
+  private buildDiscussionWhereClause(query: {
+    category?: string;
+    tags?: string;
+    search?: string;
+  },
+  companyId?: string,
+  ) {
+    const where: any = {
+      isHidden: false,
+      ...(companyId ? { companyId } : { companyId: null }),
+    };
+
+    if (query.category) {
+      where.category = query.category;
+    }
+
+    if (query.tags) {
+      where.tags = { hasSome: query.tags.split(',') };
+    }
+
+    if (query.search) {
+      const searchTerm = query.search.trim();
+      if (searchTerm) {
+        const searchOR = [
+          { title: { contains: searchTerm, mode: 'insensitive' as const } },
+          { content: { contains: searchTerm, mode: 'insensitive' as const } },
+          { tags: { hasSome: [searchTerm] } },
+        ];
+        if (where.tags) {
+          where.AND = [
+            { tags: where.tags },
+            { OR: searchOR },
+          ];
+          delete where.tags;
+        } else {
+          where.OR = searchOR;
+        }
+      }
+    }
+
+    return where;
+  }
+
+  private buildDiscussionOrderBy(sort?: string) {
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort === 'oldest') orderBy = { createdAt: 'asc' };
+    if (sort === 'popular') orderBy = { views: 'desc' };
+    if (sort === 'most-voted') orderBy = { upvotes: 'desc' };
+    if (sort === 'most-commented') orderBy = { commentCount: 'desc' };
+    return orderBy;
+  }
+
   // ─── Discussions ──────────────────────────────────
   async createDiscussion(userId: string, dto: CreateDiscussionDto) {
+    if (dto.companyId) {
+      await this.assertActiveCompanyMember(dto.companyId, userId);
+    }
+
     const discussion = await this.prisma.discussion.create({
       data: {
         title: dto.title,
@@ -33,11 +115,12 @@ export class DiscussionsService {
         tags: dto.tags,
         authorId: userId,
         challengeId: dto.challengeId,
+        companyId: dto.companyId,
       },
       include: {
         author: { select: { id: true, username: true, profileImage: true } },
       },
-    });
+    }) as any;
 
     // Badge trigger — fire-and-forget
     this.badgeEngine.onDiscussionCreated(userId).catch(() => {});
@@ -57,45 +140,50 @@ export class DiscussionsService {
     const limit = Number(query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const where: any = { isHidden: false };
+    const where = this.buildDiscussionWhereClause(query);
+    let orderBy: any = this.buildDiscussionOrderBy(query.sort);
 
-    if (query.category) {
-      where.category = query.category;
+    if (query.sort === 'unsolved') {
+      where.isSolved = false;
+      orderBy = { createdAt: 'desc' };
     }
 
-    // Tags filter (from category sidebar)
-    if (query.tags) {
-      where.tags = { hasSome: query.tags.split(',') };
-    }
+    const [discussions, total] = await Promise.all([
+      this.prisma.discussion.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        include: {
+          author: { select: { id: true, username: true, profileImage: true } },
+        },
+      }),
+      this.prisma.discussion.count({ where }),
+    ]);
 
-    // Search filter — searches in title, content, and tags
-    if (query.search) {
-      const searchTerm = query.search.trim();
-      if (searchTerm) {
-        // If tags filter is also active, wrap everything in AND
-        const searchOR = [
-          { title: { contains: searchTerm, mode: 'insensitive' as const } },
-          { content: { contains: searchTerm, mode: 'insensitive' as const } },
-          { tags: { hasSome: [searchTerm] } },
-        ];
-        if (where.tags) {
-          // Both tags filter + search: use AND to combine
-          where.AND = [
-            { tags: where.tags },
-            { OR: searchOR },
-          ];
-          delete where.tags;
-        } else {
-          where.OR = searchOR;
-        }
-      }
-    }
+    return { data: discussions, total, page, limit };
+  }
 
-    let orderBy: any = { createdAt: 'desc' };
-    if (query.sort === 'oldest') orderBy = { createdAt: 'asc' };
-    if (query.sort === 'popular') orderBy = { views: 'desc' };
-    if (query.sort === 'most-voted') orderBy = { upvotes: 'desc' }; // approximate
-    if (query.sort === 'most-commented') orderBy = { commentCount: 'desc' };
+  async findCompanyDiscussions(
+    userId: string,
+    companyId: string,
+    query: {
+      page?: number;
+      limit?: number;
+      category?: string;
+      tags?: string;
+      search?: string;
+      sort?: string;
+    },
+  ) {
+    await this.assertActiveCompanyMember(companyId, userId);
+
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const where = this.buildDiscussionWhereClause(query, companyId);
+    let orderBy: any = this.buildDiscussionOrderBy(query.sort);
 
     if (query.sort === 'unsolved') {
       where.isSolved = false;
@@ -160,7 +248,7 @@ export class DiscussionsService {
     return Array.isArray(result) ? result.map((r: any) => ({ tag: r._id, count: r.count })) : [];
   }
 
-  async findOneDiscussion(id: string) {
+  async findOneDiscussion(id: string, userId?: string) {
     const discussion = await this.prisma.discussion.findUnique({
       where: { id },
       include: {
@@ -173,8 +261,10 @@ export class DiscussionsService {
           },
         },
       },
-    });
+    }) as any;
     if (!discussion) throw new NotFoundException('Discussion not found');
+
+    await this.assertDiscussionCompanyAccess(discussion, userId);
 
     // Increment views
     await this.prisma.discussion.update({
@@ -201,9 +291,29 @@ export class DiscussionsService {
     return { ...discussion, comments: tree };
   }
 
+  async findOneCompanyDiscussion(companyId: string, id: string, userId: string) {
+    await this.assertActiveCompanyMember(companyId, userId);
+
+    const discussion = await this.findOneDiscussion(id, userId);
+    if ((discussion as any).companyId !== companyId) {
+      throw new NotFoundException('Discussion not found');
+    }
+
+    return discussion;
+  }
+
   async updateDiscussion(id: string, userId: string, dto: UpdateDiscussionDto, userRole?: string) {
     const discussion = await this.prisma.discussion.findUnique({ where: { id } });
     if (!discussion) throw new NotFoundException('Discussion not found');
+
+    if (dto.companyId && discussion.authorId !== userId && !this.canModerate(userRole)) {
+      throw new ForbiddenException('Only the author or moderators can change company scope');
+    }
+
+    if (dto.companyId) {
+      await this.assertActiveCompanyMember(dto.companyId, userId);
+    }
+
     if (discussion.authorId !== userId && !this.canModerate(userRole)) {
       throw new ForbiddenException('Not the author');
     }
@@ -229,8 +339,9 @@ export class DiscussionsService {
   }
 
   async getRevisions(discussionId: string) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id: discussionId } });
+    const discussion = await this.prisma.discussion.findUnique({ where: { id: discussionId } }) as any;
     if (!discussion) throw new NotFoundException('Discussion not found');
+    await this.assertDiscussionCompanyAccess(discussion);
 
     const revisions = await this.prisma.discussionRevision.findMany({
       where: { discussionId },
@@ -256,8 +367,9 @@ export class DiscussionsService {
   }
 
   async voteDiscussion(id: string, userId: string, type: 'upvote' | 'downvote') {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id } });
+    const discussion = await this.prisma.discussion.findUnique({ where: { id } }) as any;
     if (!discussion) throw new NotFoundException('Discussion not found');
+    await this.assertDiscussionCompanyAccess(discussion, userId);
     if (discussion.authorId === userId) throw new ForbiddenException('Cannot vote on your own discussion');
 
     const hasUpvoted = discussion.upvotes.includes(userId);
@@ -316,8 +428,9 @@ export class DiscussionsService {
   }
 
   async toggleSolved(id: string, userId: string) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id } });
+    const discussion = await this.prisma.discussion.findUnique({ where: { id } }) as any;
     if (!discussion) throw new NotFoundException('Discussion not found');
+    await this.assertDiscussionCompanyAccess(discussion, userId);
     if (discussion.authorId !== userId) throw new ForbiddenException('Not the author');
 
     return this.prisma.discussion.update({
@@ -333,6 +446,7 @@ export class DiscussionsService {
     });
 
     if (!comment) throw new NotFoundException('Comment not found');
+    await this.assertDiscussionCompanyAccess(comment.discussion as any, userId);
     if (comment.discussion.authorId !== userId) throw new ForbiddenException('Only the post author can mark best answers');
 
     const isCurrentlyBest = comment.isBestAnswer;
@@ -405,8 +519,9 @@ export class DiscussionsService {
   }
 
   async flagDiscussion(id: string, userId: string) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id } });
+    const discussion = await this.prisma.discussion.findUnique({ where: { id } }) as any;
     if (!discussion) throw new NotFoundException('Discussion not found');
+    await this.assertDiscussionCompanyAccess(discussion, userId);
 
     // Check if already flagged by this user
     if (discussion.flags.includes(userId)) {
@@ -426,8 +541,12 @@ export class DiscussionsService {
   }
 
   async flagComment(commentId: string, userId: string) {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      include: { discussion: true },
+    });
     if (!comment) throw new NotFoundException('Comment not found');
+    await this.assertDiscussionCompanyAccess(comment.discussion as any, userId);
 
     if (comment.flags.includes(userId)) {
       return { flagged: true, flagCount: comment.flags.length };
@@ -446,8 +565,9 @@ export class DiscussionsService {
 
   // ─── Comments ──────────────────────────────────
   async createComment(discussionId: string, userId: string, dto: CreateCommentDto) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id: discussionId } });
+    const discussion = await this.prisma.discussion.findUnique({ where: { id: discussionId } }) as any;
     if (!discussion) throw new NotFoundException('Discussion not found');
+    await this.assertDiscussionCompanyAccess(discussion, userId);
 
     let parentComment: any = null;
     if (dto.parentCommentId) {
@@ -518,8 +638,12 @@ export class DiscussionsService {
   }
 
   async updateComment(commentId: string, userId: string, dto: UpdateCommentDto, userRole?: string) {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      include: { discussion: true },
+    });
     if (!comment) throw new NotFoundException('Comment not found');
+    await this.assertDiscussionCompanyAccess(comment.discussion as any, userId);
     if (comment.authorId !== userId && !this.canModerate(userRole)) {
       throw new ForbiddenException('Not the author');
     }
@@ -534,8 +658,12 @@ export class DiscussionsService {
   }
 
   async deleteComment(commentId: string, userId: string, userRole?: string) {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      include: { discussion: true },
+    });
     if (!comment) throw new NotFoundException('Comment not found');
+    await this.assertDiscussionCompanyAccess(comment.discussion as any, userId);
     if (comment.authorId !== userId && !this.canModerate(userRole)) {
       throw new ForbiddenException('Not the author');
     }
@@ -560,8 +688,12 @@ export class DiscussionsService {
   }
 
   async voteComment(commentId: string, userId: string, type: 'upvote' | 'downvote') {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      include: { discussion: true },
+    });
     if (!comment) throw new NotFoundException('Comment not found');
+    await this.assertDiscussionCompanyAccess(comment.discussion as any, userId);
     if (comment.authorId === userId) throw new ForbiddenException('Cannot vote on your own comment');
 
     const hasUpvoted = comment.upvotes.includes(userId);

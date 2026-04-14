@@ -27,8 +27,16 @@ export class CompanyMemberResponseDto {
   companyId: string;
   userId: string;
   role: 'member' | 'recruiter' | 'admin';
-  status: 'pending' | 'active' | 'rejected';
+  status: 'pending' | 'active' | 'rejected' | 'suspended';
   joinedAt: Date;
+  user?: {
+    id: string;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string | null;
+  };
   company?: CompanyResponseDto;
 
   static fromPrisma(member: any): CompanyMemberResponseDto {
@@ -39,6 +47,16 @@ export class CompanyMemberResponseDto {
       role: member.role,
       status: member.status,
       joinedAt: member.joinedAt,
+      user: member.user
+        ? {
+            id: member.user.id,
+            username: member.user.username,
+            email: member.user.email,
+            firstName: member.user.firstName,
+            lastName: member.user.lastName,
+            profileImage: member.user.profileImage,
+          }
+        : undefined,
       company: member.company ? CompanyResponseDto.fromPrisma(member.company) : undefined,
     };
   }

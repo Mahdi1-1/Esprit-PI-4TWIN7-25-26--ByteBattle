@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 // import { any } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
@@ -35,6 +35,177 @@ export class ChallengesService {
     });
   }
 
+  async createCompanyCodeChallenge(dto: any, userId: string) {
+    const companyId = String(dto.companyId || '').trim();
+    if (!companyId) {
+      throw new BadRequestException('companyId is required');
+    }
+
+    const membership = await this.prisma.companyMember.findUnique({
+      where: { companyId_userId: { companyId, userId } },
+      include: { company: true },
+    });
+
+    if (!membership || membership.status !== 'active' || membership.role !== 'admin') {
+      throw new ForbiddenException('Only active company admins can create private company challenges');
+    }
+
+    if (membership.company?.status !== 'active') {
+      throw new ForbiddenException('Company is not active');
+    }
+
+    const existingTags = Array.isArray(dto.tags) ? dto.tags.map((tag: any) => String(tag).trim()).filter(Boolean) : [];
+    const tags = Array.from(new Set([...existingTags, `company:${companyId}`, 'company-private']));
+
+    return this.prisma.challenge.create({
+      data: {
+        title: dto.title,
+        kind: 'CODE',
+        difficulty: dto.difficulty as any,
+        tags,
+        descriptionMd: dto.statementMd || dto.descriptionMd || '',
+        status: (dto.status || 'draft') as any,
+        allowedLanguages: dto.allowedLanguages || [],
+        constraints: dto.constraints || {},
+        hints: dto.hints || [],
+        tests: dto.tests && dto.tests.length > 0 ? dto.tests.map((t: any) => ({
+          input: String(t.input || ''),
+          expectedOutput: String(t.expectedOutput || ''),
+          isHidden: Boolean(t.isHidden),
+        })) : [],
+        examples: dto.examples || [],
+        category: dto.category || 'company-private',
+        deliverables: dto.deliverables,
+        rubric: dto.rubric,
+        assets: dto.assets || [],
+      },
+    });
+  }
+
+  async getCompanyChallenges(userId: string, companyId?: string) {
+    const whereMembership: any = {
+      userId,
+      status: 'active',
+    };
+
+    if (companyId) {
+      whereMembership.companyId = companyId;
+    }
+
+    const memberships = await this.prisma.companyMember.findMany({
+      where: whereMembership,
+      select: { companyId: true },
+    });
+
+    const companyIds = memberships.map((membership) => membership.companyId);
+    if (companyIds.length === 0) {
+      return [];
+    }
+
+    const tagFilters = companyIds.map((id) => ({ tags: { has: `company:${id}` } }));
+
+    return this.prisma.challenge.findMany({
+      where: { OR: tagFilters },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        kind: true,
+        difficulty: true,
+        tags: true,
+        status: true,
+        category: true,
+        createdAt: true,
+        _count: { select: { submissions: true } },
+      },
+    });
+  }
+
+  async getCompanyChallengeResults(challengeId: string, userId: string) {
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { id: challengeId },
+      select: {
+        id: true,
+        title: true,
+        difficulty: true,
+        status: true,
+        tags: true,
+      },
+    });
+
+    if (!challenge) {
+      throw new NotFoundException('Challenge not found');
+    }
+
+    const companyTag = (challenge.tags || []).find((tag) => tag.startsWith('company:'));
+    const isCompanyPrivate = (challenge.tags || []).includes('company-private');
+    if (!companyTag || !isCompanyPrivate) {
+      throw new ForbiddenException('This challenge is not a private company challenge');
+    }
+
+    const companyId = companyTag.slice('company:'.length);
+
+    const membership = await this.prisma.companyMember.findUnique({
+      where: { companyId_userId: { companyId, userId } },
+      include: { company: true },
+    });
+
+    if (!membership || membership.status !== 'active' || membership.role !== 'admin') {
+      throw new ForbiddenException('Company admin access required');
+    }
+
+    if (membership.company?.status !== 'active') {
+      throw new ForbiddenException('Company is not active');
+    }
+
+    const memberRows = await this.prisma.companyMember.findMany({
+      where: { companyId, status: 'active' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    const memberUserIds = memberRows.map((row) => row.userId);
+
+    const submissions = await this.prisma.submission.findMany({
+      where: {
+        challengeId,
+        userId: { in: memberUserIds },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      challenge,
+      companyId,
+      submissions,
+      members: memberRows.map((row) => ({
+        user: row.user,
+        role: row.role,
+        status: row.status,
+      })),
+    };
+  }
+
   async findAll(query: {
     page?: number;
     limit?: number;
@@ -57,6 +228,11 @@ export class ChallengesService {
     } else {
       where.status = 'published'; // default to published for public
     }
+
+    where.NOT = [
+      { tags: { has: 'company-private' } },
+    ];
+
     if (query.tags) {
       where.tags = { hasSome: query.tags.split(',') };
     }

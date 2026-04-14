@@ -1,276 +1,242 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router';
 import { Layout } from '../../components/Layout';
 import { CompanyNavbar } from '../../components/CompanyNavbar';
 import { Button } from '../../components/Button';
-import { Badge } from '../../components/Badge';
-import { Search, Filter, Download, Mail, Eye, TrendingUp, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router';
-import { useLanguage } from '../../context/LanguageContext';
+import { companiesService, CompanyMembership } from '../../services/companiesService';
+import { hackathonsService } from '../../services/hackathonsService';
 
-interface Candidate {
+type EnterpriseCandidate = {
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string | null;
+  };
+  team: { id: string; name: string } | null;
+  stats: {
+    submissionCount: number;
+    acceptedCount: number;
+    solvedChallengeCount: number;
+    attemptedChallengeCount: number;
+    lastSubmissionAt: string | null;
+  };
+};
+
+type HackathonItem = {
   id: string;
-  name: string;
-  email: string;
-  challenge: string;
-  submittedAt: string;
-  score: number;
-  status: 'passed' | 'failed' | 'pending';
-  duration: number; // minutes
-}
+  title?: string;
+  status: string;
+  companyId?: string;
+};
 
 export function CompanyCandidatesList() {
-  const { direction } = useLanguage();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'passed' | 'failed' | 'pending'>('all');
-  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const { id: routeHackathonId } = useParams();
 
-  const candidates: Candidate[] = [
-    { id: '1', name: 'Alice Johnson', email: 'alice@example.com', challenge: 'Full Stack Developer', submittedAt: '2024-01-20', score: 95, status: 'passed', duration: 45 },
-    { id: '2', name: 'Bob Smith', email: 'bob@example.com', challenge: 'Frontend React', submittedAt: '2024-01-19', score: 92, status: 'passed', duration: 38 },
-    { id: '3', name: 'Carol Williams', email: 'carol@example.com', challenge: 'Backend API', submittedAt: '2024-01-18', score: 88, status: 'passed', duration: 52 },
-    { id: '4', name: 'David Brown', email: 'david@example.com', challenge: 'Full Stack Developer', submittedAt: '2024-01-17', score: 85, status: 'passed', duration: 60 },
-    { id: '5', name: 'Emma Davis', email: 'emma@example.com', challenge: 'DevOps Pipeline', submittedAt: '2024-01-16', score: 48, status: 'failed', duration: 75 },
-    { id: '6', name: 'Frank Wilson', email: 'frank@example.com', challenge: 'Frontend React', submittedAt: '2024-01-15', score: 0, status: 'pending', duration: 0 },
-    { id: '7', name: 'Grace Lee', email: 'grace@example.com', challenge: 'Backend API', submittedAt: '2024-01-14', score: 78, status: 'passed', duration: 55 },
-    { id: '8', name: 'Henry Martinez', email: 'henry@example.com', challenge: 'Full Stack Developer', submittedAt: '2024-01-13', score: 42, status: 'failed', duration: 90 }
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeMembership, setActiveMembership] = useState<CompanyMembership | null>(null);
+  const [hackathons, setHackathons] = useState<HackathonItem[]>([]);
+  const [selectedHackathonId, setSelectedHackathonId] = useState<string>('');
+  const [candidates, setCandidates] = useState<EnterpriseCandidate[]>([]);
 
-  const filteredCandidates = candidates.filter(candidate => {
-    const matchesSearch = candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         candidate.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         candidate.challenge.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || candidate.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  const loadBase = async () => {
+    const [memberships, response] = await Promise.all([
+      companiesService.getMyCompanies(),
+      hackathonsService.getAll({ scope: 'enterprise', limit: 100 }),
+    ]);
 
-  const handleSelectAll = () => {
-    if (selectedCandidates.length === filteredCandidates.length) {
-      setSelectedCandidates([]);
-    } else {
-      setSelectedCandidates(filteredCandidates.map(c => c.id));
+    const active =
+      (memberships || []).find(
+        (membership) => membership.status === 'active' && membership.company?.status === 'active',
+      ) || null;
+    setActiveMembership(active);
+
+    if (!active?.companyId) {
+      setHackathons([]);
+      setSelectedHackathonId('');
+      return;
     }
+
+    const rows = (Array.isArray(response?.data) ? response.data : []).filter(
+      (row: HackathonItem) => row.companyId === active.companyId,
+    );
+
+    setHackathons(rows);
+
+    const preferredId =
+      routeHackathonId && rows.some((row: HackathonItem) => row.id === routeHackathonId)
+        ? routeHackathonId
+        : rows[0]?.id || '';
+
+    setSelectedHackathonId(preferredId);
   };
 
-  const handleSelectCandidate = (id: string) => {
-    if (selectedCandidates.includes(id)) {
-      setSelectedCandidates(selectedCandidates.filter(cid => cid !== id));
-    } else {
-      setSelectedCandidates([...selectedCandidates, id]);
+  const loadCandidates = async (hackathonId: string) => {
+    if (!hackathonId) {
+      setCandidates([]);
+      return;
     }
+
+    const response = await hackathonsService.getEnterpriseCandidates(hackathonId);
+    setCandidates(Array.isArray(response?.candidates) ? response.candidates : []);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'passed': return <CheckCircle2 className="w-4 h-4" />;
-      case 'failed': return <XCircle className="w-4 h-4" />;
-      case 'pending': return <AlertCircle className="w-4 h-4" />;
-      default: return null;
-    }
-  };
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        await loadBase();
+      } catch (e: any) {
+        setError(e?.response?.data?.message || 'Unable to load enterprise candidates');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'passed': return 'easy';
-      case 'failed': return 'hard';
-      case 'pending': return 'medium';
-      default: return 'default';
-    }
-  };
+    run();
+  }, [routeHackathonId]);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!selectedHackathonId) {
+        setCandidates([]);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        await loadCandidates(selectedHackathonId);
+      } catch (e: any) {
+        setError(e?.response?.data?.message || 'Unable to load candidates for this challenge');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, [selectedHackathonId]);
+
+  const selectedHackathon = useMemo(
+    () => hackathons.find((hackathon) => hackathon.id === selectedHackathonId) || null,
+    [hackathons, selectedHackathonId],
+  );
+
+  const companyRole = activeMembership?.role !== 'member' ? 'admin' : 'member';
 
   return (
     <Layout>
-      <CompanyNavbar companyName="TechCorp Inc." userName="John Doe" userRole="recruiter" />
-      
-      <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6" dir={direction}>
-        {/* Header */}
-        <div className="flex items-start justify-between">
+      <CompanyNavbar
+        companyName={activeMembership?.company?.name || 'Company'}
+        userName="Company User"
+        userRole={companyRole}
+      />
+
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
-              Candidates
-            </h1>
-            <p className="text-[var(--text-secondary)]">
-              Review and manage candidate submissions
-            </p>
+            <h1 className="text-3xl font-bold text-[var(--text-primary)]">Members</h1>
+            <p className="text-[var(--text-secondary)] mt-1">Review enterprise member results by challenge.</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="secondary" size="md" className="gap-2">
-              <Download className="w-4 h-4" />
-              Export
-            </Button>
-            {selectedCandidates.length > 0 && (
-              <Button variant="primary" size="md" className="gap-2">
-                <Mail className="w-4 h-4" />
-                Contact ({selectedCandidates.length})
-              </Button>
-            )}
-          </div>
+          <Link to="/company/challenges">
+            <Button variant="secondary">Back to Challenges</Button>
+          </Link>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-            <div className="text-2xl font-bold text-[var(--text-primary)]">{candidates.length}</div>
-            <div className="text-sm text-[var(--text-secondary)]">Total Candidates</div>
+        {!activeMembership?.companyId ? (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6 text-[var(--text-secondary)]">
+            You need an active company membership to view candidates.
           </div>
-          <div className="p-4 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-            <div className="text-2xl font-bold text-[var(--state-success)]">
-              {candidates.filter(c => c.status === 'passed').length}
-            </div>
-            <div className="text-sm text-[var(--text-secondary)]">Passed</div>
-          </div>
-          <div className="p-4 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-            <div className="text-2xl font-bold text-[var(--state-error)]">
-              {candidates.filter(c => c.status === 'failed').length}
-            </div>
-            <div className="text-sm text-[var(--text-secondary)]">Failed</div>
-          </div>
-          <div className="p-4 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-            <div className="text-2xl font-bold text-[var(--state-warning)]">
-              {candidates.filter(c => c.status === 'pending').length}
-            </div>
-            <div className="text-sm text-[var(--text-secondary)]">Pending</div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className={`absolute ${direction === 'rtl' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]`} />
-              <input
-                type="text"
-                placeholder="Search candidates..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full ${direction === 'rtl' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]`}
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-2">
-              <Button
-                variant={filterStatus === 'all' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setFilterStatus('all')}
+        ) : (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-4">
+            <label className="block text-sm space-y-2">
+              <span className="font-medium text-[var(--text-primary)]">Challenge</span>
+              <select
+                value={selectedHackathonId}
+                onChange={(event) => setSelectedHackathonId(event.target.value)}
+                className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)]"
               >
-                All
-              </Button>
-              <Button
-                variant={filterStatus === 'passed' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setFilterStatus('passed')}
-              >
-                Passed
-              </Button>
-              <Button
-                variant={filterStatus === 'failed' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setFilterStatus('failed')}
-              >
-                Failed
-              </Button>
-              <Button
-                variant={filterStatus === 'pending' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setFilterStatus('pending')}
-              >
-                Pending
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full" dir={direction}>
-              <thead className="bg-[var(--surface-2)] border-b border-[var(--border-default)]">
-                <tr>
-                  <th className={`${direction === 'rtl' ? 'text-right' : 'text-left'} p-4`}>
-                    <input
-                      type="checkbox"
-                      checked={selectedCandidates.length === filteredCandidates.length && filteredCandidates.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded border-[var(--border-default)]"
-                    />
-                  </th>
-                  <th className={`${direction === 'rtl' ? 'text-right' : 'text-left'} p-4 font-semibold text-[var(--text-primary)]`}>Candidate</th>
-                  <th className={`${direction === 'rtl' ? 'text-right' : 'text-left'} p-4 font-semibold text-[var(--text-primary)]`}>Challenge</th>
-                  <th className={`${direction === 'rtl' ? 'text-right' : 'text-left'} p-4 font-semibold text-[var(--text-primary)]`}>Score</th>
-                  <th className={`${direction === 'rtl' ? 'text-right' : 'text-left'} p-4 font-semibold text-[var(--text-primary)]`}>Duration</th>
-                  <th className={`${direction === 'rtl' ? 'text-right' : 'text-left'} p-4 font-semibold text-[var(--text-primary)]`}>Status</th>
-                  <th className={`${direction === 'rtl' ? 'text-right' : 'text-left'} p-4 font-semibold text-[var(--text-primary)]`}>Date</th>
-                  <th className={`${direction === 'rtl' ? 'text-right' : 'text-left'} p-4 font-semibold text-[var(--text-primary)]`}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCandidates.map((candidate) => (
-                  <tr key={candidate.id} className="border-b border-[var(--border-default)] hover:bg-[var(--surface-2)] transition-colors">
-                    <td className="p-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedCandidates.includes(candidate.id)}
-                        onChange={() => handleSelectCandidate(candidate.id)}
-                        className="rounded border-[var(--border-default)]"
-                      />
-                    </td>
-                    <td className="p-4">
-                      <div>
-                        <div className="font-semibold text-[var(--text-primary)]">{candidate.name}</div>
-                        <div className="text-sm text-[var(--text-secondary)]">{candidate.email}</div>
-                      </div>
-                    </td>
-                    <td className="p-4 text-[var(--text-secondary)]">{candidate.challenge}</td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-[var(--brand-primary)]" />
-                        <span className="font-semibold text-[var(--text-primary)]">{candidate.score}%</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2 text-[var(--text-secondary)]">
-                        <Clock className="w-4 h-4" />
-                        <span>{candidate.duration}m</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <Badge variant={getStatusBadge(candidate.status) as any} className="gap-1">
-                        {getStatusIcon(candidate.status)}
-                        {candidate.status}
-                      </Badge>
-                    </td>
-                    <td className="p-4 text-[var(--text-secondary)]">
-                      {new Date(candidate.submittedAt).toLocaleDateString()}
-                    </td>
-                    <td className="p-4">
-                      <Link to={`/company/candidates/${candidate.id}`}>
-                        <Button variant="ghost" size="sm" className="gap-2">
-                          <Eye className="w-4 h-4" />
-                          View
-                        </Button>
-                      </Link>
-                    </td>
-                  </tr>
+                {hackathons.map((hackathon) => (
+                  <option key={hackathon.id} value={hackathon.id}>
+                    {(hackathon.title || 'Untitled challenge')} ({hackathon.status})
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </label>
           </div>
+        )}
 
-          {/* Pagination */}
-          <div className="p-4 border-t border-[var(--border-default)] flex items-center justify-between">
-            <div className="text-sm text-[var(--text-secondary)]">
-              Showing {filteredCandidates.length} of {candidates.length} candidates
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm">Previous</Button>
-              <Button variant="primary" size="sm">1</Button>
-              <Button variant="ghost" size="sm">2</Button>
-              <Button variant="ghost" size="sm">3</Button>
-              <Button variant="ghost" size="sm">Next</Button>
+        {loading ? (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6 text-[var(--text-secondary)]">
+            Loading candidates...
+          </div>
+        ) : error ? (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--state-error)]/30 bg-[var(--state-error)]/10 p-6 text-[var(--text-primary)]">
+            {Array.isArray(error) ? error[0] : error}
+          </div>
+        ) : !selectedHackathon ? (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6 text-[var(--text-secondary)]">
+            No enterprise challenges available.
+          </div>
+        ) : candidates.length === 0 ? (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6 text-[var(--text-secondary)]">
+            No candidates found for this challenge.
+          </div>
+        ) : (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[var(--surface-2)] border-b border-[var(--border-default)]">
+                  <tr>
+                    <th className="text-left p-3 font-semibold text-[var(--text-primary)]">Member</th>
+                    <th className="text-left p-3 font-semibold text-[var(--text-primary)]">Team</th>
+                    <th className="text-left p-3 font-semibold text-[var(--text-primary)]">Submissions</th>
+                    <th className="text-left p-3 font-semibold text-[var(--text-primary)]">Solved</th>
+                    <th className="text-left p-3 font-semibold text-[var(--text-primary)]">Last Submission</th>
+                    <th className="text-left p-3 font-semibold text-[var(--text-primary)]">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {candidates.map((candidate) => (
+                    <tr key={candidate.user.id} className="border-b border-[var(--border-default)]">
+                      <td className="p-3">
+                        <div className="font-medium text-[var(--text-primary)]">
+                          {candidate.user.firstName} {candidate.user.lastName}
+                        </div>
+                        <div className="text-xs text-[var(--text-secondary)]">
+                          @{candidate.user.username} � {candidate.user.email}
+                        </div>
+                      </td>
+                      <td className="p-3 text-[var(--text-secondary)]">{candidate.team?.name || 'N/A'}</td>
+                      <td className="p-3 text-[var(--text-secondary)]">{candidate.stats.submissionCount}</td>
+                      <td className="p-3 text-[var(--text-secondary)]">{candidate.stats.solvedChallengeCount}</td>
+                      <td className="p-3 text-[var(--text-secondary)]">
+                        {candidate.stats.lastSubmissionAt
+                          ? new Date(candidate.stats.lastSubmissionAt).toLocaleString()
+                          : 'N/A'}
+                      </td>
+                      <td className="p-3">
+                        <Link
+                          to={`/company/candidates/${candidate.user.id}?hackathonId=${encodeURIComponent(
+                            selectedHackathonId,
+                          )}`}
+                        >
+                          <Button size="sm" variant="secondary">
+                            Details
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </Layout>
   );

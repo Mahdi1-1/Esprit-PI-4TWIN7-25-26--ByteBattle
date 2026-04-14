@@ -31,6 +31,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { Button } from './Button';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router';
 import { avatarService } from '../services/avatarService';
 import { profileService } from '../services/profileService';
 import { NotificationBell } from './NotificationBell';
@@ -58,6 +59,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   const { isAuthenticated, user, logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showFontSizePanel, setShowFontSizePanel] = useState(false);
@@ -73,6 +75,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   const userRole = (user?.role || '').toLowerCase();
   const isAdmin = userRole === 'admin';
   const isUser = userRole === 'user';
+  const companyNavTarget = activeCompanyMembership ? '/company/overview' : '/companies';
 
   const displayAvatar = user?.profileImage
     ? profileService.getPhotoUrl(user.profileImage, user?.username || username || 'default')
@@ -96,7 +99,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
     { to: '/duel', icon: <Swords className="w-10 h-7" />, label: t('nav.duel') },
     { to: '/hackathon', icon: <Flag className="w-10 h-7" />, label: t('nav.hackathon') },
     { to: '/teams', icon: <Users className="w-10 h-7" />, label: t('nav.teams') },
-    { to: '/companies', icon: <Building2 className="w-10 h-7" />, label: 'Companies' },
+    { to: companyNavTarget, icon: <Building2 className="w-10 h-7" />, label: 'Company' },
     { to: '/leaderboard', icon: <Trophy className="w-10 h-7" />, label: t('nav.leaderboard') },
     { to: '/themes', icon: <Palette className="w-10 h-7" />, label: t('nav.themes') },
   ];
@@ -146,7 +149,8 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
       try {
         const memberships = await companiesService.getMyCompanies();
-        const activeMembership = (memberships || []).find((m) => m.status === 'active') || null;
+        const activeMembership =
+          (memberships || []).find((m) => m.status === 'active' && m.company?.status === 'active') || null;
         setActiveCompanyMembership(activeMembership);
       } catch {
         setActiveCompanyMembership(null);

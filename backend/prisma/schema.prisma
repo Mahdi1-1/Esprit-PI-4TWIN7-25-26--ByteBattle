@@ -92,6 +92,19 @@ enum UserStatus {
   banned
 }
 
+enum CompanyMemberRole {
+  member
+  recruiter
+  admin
+}
+
+enum CompanyMemberStatus {
+  pending
+  active
+  rejected
+  suspended
+}
+
 model Company {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   name       String
@@ -104,7 +117,8 @@ model Company {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  members CompanyMember[]
+  members     CompanyMember[]
+  discussions Discussion[]
 }
 
 model CompanyMember {
@@ -113,8 +127,8 @@ model CompanyMember {
   company   Company  @relation(fields: [companyId], references: [id])
   userId    String   @db.ObjectId
   user      User     @relation(fields: [userId], references: [id])
-  role      String
-  status    String
+  role      CompanyMemberRole
+  status    CompanyMemberStatus
   joinedAt  DateTime @default(now())
 
   @@unique([companyId, userId])
@@ -515,6 +529,8 @@ model Discussion {
   category     String   @default("general")
   authorId     String   @db.ObjectId
   author       User     @relation(fields: [authorId], references: [id])
+  companyId    String?  @db.ObjectId
+  company      Company? @relation(fields: [companyId], references: [id])
   tags         String[]
   challengeId  String?  @db.ObjectId
   upvotes      String[] @db.ObjectId
@@ -533,6 +549,7 @@ model Discussion {
 
   @@index([tags])
   @@index([category])
+  @@index([companyId])
   @@index([createdAt(sort: Desc)])
 }
 
