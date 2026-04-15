@@ -7,6 +7,7 @@ import { challengesService } from '../../services/challengesService';
 import { submissionsService } from '../../services/submissionsService';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
+import { CompanyNavbar } from '../../components/CompanyNavbar';
 
 type MemberChallenge = {
   id: string;
@@ -137,6 +138,11 @@ export function CompanySpace() {
 
   return (
     <Layout>
+      <CompanyNavbar
+        companyName={activeMembership.company?.name}
+        userName="You"
+        userRole={activeMembership.role || 'member'}
+      />
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
         <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">

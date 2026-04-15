@@ -1,0 +1,949 @@
+US-015 Console & débogage: relevant backend/frontend files
+
+---
+backend/src/submissions/submissions.controller.ts
+---
+import {
+  Controller, Get, Post, Param, Query, Body,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { SubmissionsService } from './submissions.service';
+import { CreateSubmissionDto, RunCodeDto } from './dto/create-submission.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+
+@ApiTags('Submissions')
+@ApiBearerAuth()
+@Controller('submissions')
+export class SubmissionsController {
+  constructor(private submissionsService: SubmissionsService) {}
+
+  @Post('code')
+  @Roles('user')
+  @ApiOperation({ summary: 'Submit a code solution' })
+  submitCode(@CurrentUser('id') userId: string, @Body() dto: CreateSubmissionDto) {
+    return this.submissionsService.create(userId, dto as any);
+  }
+
+  @Post('run')
+  @Roles('user')
+  @ApiOperation({ summary: 'Run code on sample tests (no submission created)' })
+  runCode(@CurrentUser('id') userId: string, @Body() dto: RunCodeDto) {
+    return this.submissionsService.runCode(userId, dto);
+  }
+
+  @Get('me')
+  @Roles('user')
+  @ApiOperation({ summary: 'Get current user submission history' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'kind', required: false })
+  @ApiQuery({ name: 'verdict', required: false })
+  getMyHistory(
+    @CurrentUser('id') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('kind') kind?: string,
+    @Query('verdict') verdict?: string,
+  ) {
+    return this.submissionsService.getUserHistory(userId, {
+      page: page ? +page : undefined,
+      limit: limit ? +limit : undefined,
+      kind, verdict,
+    });
+  }
+
+  @Get(':id')
+  @Roles('user')
+  @ApiOperation({ summary: 'Get submission by ID (owner or admin)' })
+  findOne(@Param('id') id: string, @CurrentUser() user: { id: string; role: string }) {
+    return this.submissionsService.findOne(id, user.id, user.role);
+  }
+
+  @Get(':id/status')
+  @Roles('user')
+  @ApiOperation({ summary: 'Get submission status (polling)' })
+  async getStatus(@Param('id') id: string, @CurrentUser() user: { id: string; role: string }) {
+    const submission = await this.submissionsService.findOne(id, user.id, user.role);
+    return {
+      status: submission.verdict,
+      score: submission.score,
+      timeMs: submission.timeMs,
+      memMb: submission.memMb,
+      testsPassed: submission.testsPassed,
+      testsTotal: submission.testsTotal,
+    };
+  }
+
+  @Post(':id/ai-review')
+  @Roles('user')
+  @ApiOperation({ summary: 'Generate AI review for a submission' })
+  async generateAiReview(@Param('id') id: string) {
+    return this.submissionsService.generateAiReview(id);
+  }
+
+  // Admin routes
+  @Get()
+  @Roles('admin')
+  @ApiOperation({ summary: 'List all submissions (admin)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'challengeId', required: false })
+  @ApiQuery({ name: 'verdict', required: false })
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('userId') userId?: string,
+    @Query('challengeId') challengeId?: string,
+    @Query('verdict') verdict?: string,
+  ) {
+    return this.submissionsService.findAll({
+      page: page ? +page : undefined,
+      limit: limit ? +limit : undefined,
+      userId, challengeId, verdict,
+    });
+  }
+}
+
+---
+backend/src/submissions/submissions.service.ts
+---
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { QueueService } from '../queue/queue.service';
+import { RunCodeDto } from './dto/create-submission.dto';
+import { AiService } from '../ai/ai.service';
+
+@Injectable()
+export class SubmissionsService {
+  private readonly logger = new Logger(SubmissionsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private queueService: QueueService,
+    private aiService: AiService,
+  ) { }
+
+  async create(userId: string, dto: any) {
+    const challengeId = dto.challengeId || dto.problemId;
+
+    if (!challengeId) throw new NotFoundException('Challenge ID not provided');
+
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { id: challengeId },
+    });
+    if (!challenge) throw new NotFoundException('Challenge not found');
+
+    const submission = await this.prisma.submission.create({
+      data: {
+        userId,
+        challengeId: challengeId,
+        kind: dto.kind as any,
+        context: dto.context || 'solo',
+        language: dto.language,
+        code: dto.code,
+        canvasJson: dto.canvasJson,
+        snapshotUrl: dto.snapshotUrl,
+        verdict: 'queued',
+        score: 0,
+      },
+    });
+
+    if (dto.kind === 'CODE' && dto.code) {
+      const tests = challenge.tests as { input: string; expectedOutput: string }[] || [];
+      
+      if (tests.length === 0) {
+        this.logger.warn(`Challenge ${challenge.id} has no test cases — auto-accepting submission`);
+        return this.prisma.submission.update({
+          where: { id: submission.id },
+          data: {
+            verdict: 'AC',
+            score: 100,
+            testsPassed: 0,
+            testsTotal: 0,
+            timeMs: 0,
+            memMb: 0,
+          },
+        });
+      }
+
+      const jobId = await this.queueService.addCodeExecutionJob({
+        submissionId: submission.id,
+        userId,
+        challengeId: challenge.id,
+        code: dto.code,
+        language: dto.language || 'javascript',
+        tests,
+        context: dto.context || 'solo',
+        duelId: dto.duelId,
+      });
+
+      return this.prisma.submission.update({
+        where: { id: submission.id },
+        data: { jobId },
+      });
+    }
+
+    return submission;
+  }
+
+  async runCode(userId: string, dto: RunCodeDto) {
+    this.logger.log(`User ${userId} running code — lang=${dto.language}`);
+
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { id: dto.challengeId },
+    });
+
+    if (!challenge) {
+      throw new NotFoundException('Challenge not found');
+    }
+
+    const tests = challenge.tests as { input: string; expectedOutput: string }[] || [];
+
+    if (tests.length === 0) {
+      this.logger.warn(`Challenge ${challenge.id} has no test cases`);
+      return {
+        passed: 0,
+        total: 0,
+        results: [],
+        verdict: 'No tests available',
+        totalTimeMs: 0,
+        maxMemMb: 0,
+      };
+    }
+
+    const result = await this.queueService.addEvaluateCodeJob({
+      userId,
+      language: dto.language,
+      code: dto.code,
+      tests,
+    });
+
+    return result;
+  }
+
+  async findAll(query: {
+    page?: number;
+    limit?: number;
+    userId?: string;
+    challengeId?: string;
+    verdict?: string;
+    kind?: string;
+  }) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.userId) where.userId = query.userId;
+    if (query.challengeId) where.challengeId = query.challengeId;
+    if (query.verdict) where.verdict = query.verdict;
+    if (query.kind) where.kind = query.kind;
+
+    const [submissions, total] = await Promise.all([
+      this.prisma.submission.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          challenge: {
+            select: { id: true, title: true, kind: true, difficulty: true },
+          },
+          user: { select: { id: true, username: true } },
+        },
+      }),
+      this.prisma.submission.count({ where }),
+    ]);
+
+    return { data: submissions, total, page, limit };
+  }
+
+  async findOne(id: string, requesterId?: string, requesterRole?: string) {
+    const submission = await this.prisma.submission.findUnique({
+      where: { id },
+      include: {
+        challenge: true,
+        user: { select: { id: true, username: true } },
+        aiReview: true,
+      },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+
+    if (requesterId && requesterRole !== 'admin' && submission.userId !== requesterId) {
+      throw new ForbiddenException('You can only view your own submissions');
+    }
+
+    return submission;
+  }
+
+  async generateAiReview(submissionId: string) {
+    const submission = await this.prisma.submission.findUnique({
+      where: { id: submissionId },
+      include: { challenge: true, aiReview: true },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+
+    if (submission.aiReview) {
+      return submission.aiReview;
+    }
+
+    if (!submission.code || !submission.challenge) {
+      throw new Error('Code or challenge not found');
+    }
+
+    try {
+      const startTime = Date.now();
+      const review = await this.aiService.reviewCode({
+        code: submission.code,
+        language: submission.language || 'javascript',
+        challengeTitle: submission.challenge.title,
+        challengeDescription: submission.challenge.descriptionMd || '',
+      });
+      const latencyMs = Date.now() - startTime;
+
+      const aiReview = await this.prisma.aIReview.create({
+        data: {
+          submissionId: submission.id,
+          score: review.score,
+          summary: review.summary,
+          strengths: review.strengths,
+          improvements: review.improvements,
+          bugs: review.bugs,
+          suggestions: review.suggestions,
+          complexity: review.complexity,
+          readability: review.readability,
+          bestPractices: review.bestPractices,
+          latencyMs,
+        },
+      });
+
+      return aiReview;
+    } catch (error) {
+      this.logger.error('Failed to generate AI review:', error);
+      throw error;
+    }
+  }
+
+  async getUserHistory(
+    userId: string,
+    query: {
+      page?: number;
+      limit?: number;
+      kind?: string;
+      verdict?: string;
+    },
+  ) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const where: any = { userId };
+    if (query.kind) where.kind = query.kind;
+    if (query.verdict) where.verdict = query.verdict;
+
+    const [submissions, total] = await Promise.all([
+      this.prisma.submission.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          challenge: {
+            select: { id: true, title: true, kind: true, difficulty: true },
+          },
+        },
+      }),
+      this.prisma.submission.count({ where }),
+    ]);
+
+    return { data: submissions, total, page, limit };
+  }
+}
+
+---
+backend/src/submissions/submissions.gateway.ts
+---
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  ConnectedSocket,
+  MessageBody,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+import { Logger } from '@nestjs/common';
+
+@WebSocketGateway({
+  cors: {
+    origin: '*',
+  },
+  namespace: 'submissions',
+})
+export class SubmissionsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  server: Server;
+
+  private readonly logger = new Logger(SubmissionsGateway.name);
+
+  handleConnection(client: Socket) {
+    this.logger.log(`Client connected to submissions: ${client.id}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    this.logger.log(`Client disconnected from submissions: ${client.id}`);
+  }
+
+  @SubscribeMessage('subscribe_user')
+  handleSubscribeUser(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { userId: string },
+  ) {
+    if (data && data.userId) {
+      const roomName = `user:${data.userId}`;
+      client.join(roomName);
+      this.logger.log(`Client ${client.id} joined room ${roomName}`);
+    }
+  }
+
+  emitSubmissionStatus(userId: string, data: any) {
+    this.server.to(`user:${userId}`).emit('submission_status', data);
+  }
+}
+
+---
+backend/src/submissions/dto/create-submission.dto.ts
+---
+import { IsString, IsEnum, IsOptional, IsInt, IsNumber } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateSubmissionDto {
+  @ApiProperty()
+  @IsString()
+  challengeId: string;
+
+  @ApiProperty({ enum: ['CODE', 'CANVAS'] })
+  @IsEnum(['CODE', 'CANVAS'] as const)
+  kind: 'CODE' | 'CANVAS';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  language?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  context?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  canvasJson?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  snapshotUrl?: string;
+}
+
+export class CreateCanvasSubmissionDto {
+  @ApiProperty()
+  @IsString()
+  challengeId: string;
+
+  @ApiProperty({ enum: ['CANVAS'] })
+  @IsEnum(['CANVAS'] as const)
+  kind: 'CANVAS';
+
+  @ApiProperty()
+  @IsString()
+  snapshotUrl: string;
+
+  @ApiProperty()
+  canvasJson: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  score?: number;
+}
+
+export class RunCodeDto {
+  @ApiProperty()
+  @IsString()
+  challengeId: string;
+
+  @ApiProperty()
+  @IsString()
+  language: string;
+
+  @ApiProperty()
+  @IsString()
+  code: string;
+}
+
+---
+backend/src/queue/queue.module.ts
+---
+import { forwardRef, Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
+import { SubmissionsModule } from '../submissions/submissions.module';
+import { QueueService } from './queue.service';
+import { BadgesModule } from '../badges/badges.module';
+
+const redisEnabled = process.env.REDIS_ENABLED !== 'false';
+
+@Module({
+  imports: [
+    ...(redisEnabled
+      ? [
+          BullModule.registerQueue({
+            name: 'code-execution',
+          }),
+        ]
+      : []),
+    forwardRef(() => SubmissionsModule),
+    BadgesModule,
+  ],
+  providers: [QueueService],
+  exports: [QueueService, BullModule],
+})
+export class QueueModule {}
+
+---
+backend/src/queue/queue.service.ts
+---
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue, QueueEvents } from 'bullmq';
+import { ConfigService } from '@nestjs/config';
+import { forwardRef, Inject } from '@nestjs/common';
+import { CodeExecutionJob } from './interfaces/code-execution-job.interface';
+import { SubmissionsGateway } from '../submissions/submissions.gateway';
+import { BadgeEngineService } from '../badges/badge-engine.service';
+
+@Injectable()
+export class QueueService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(QueueService.name);
+  public queueEvents: QueueEvents;
+
+  constructor(
+    @InjectQueue('code-execution') private readonly codeExecutionQueue: Queue,
+    private configService: ConfigService,
+    @Inject(forwardRef(() => SubmissionsGateway))
+    private submissionsGateway: SubmissionsGateway,
+    private badgeEngine: BadgeEngineService,
+  ) {}
+
+  async onModuleInit() {
+    this.queueEvents = new QueueEvents('code-execution', {
+      connection: {
+        host: this.configService.get('REDIS_HOST', 'localhost'),
+        port: this.configService.get<number>('REDIS_PORT', 6379),
+        password: this.configService.get('REDIS_PASSWORD', ''),
+      },
+    });
+
+    this.queueEvents.on('active', async ({ jobId }) => {
+      const job = await this.codeExecutionQueue.getJob(jobId);
+      if (job && job.name === 'execute-code') {
+        this.submissionsGateway.emitSubmissionStatus(job.data.userId, {
+          submissionId: job.data.submissionId,
+          status: 'executing',
+        });
+      }
+    });
+
+    this.queueEvents.on('completed', async ({ jobId, returnvalue }) => {
+      const job = await this.codeExecutionQueue.getJob(jobId);
+      if (job && job.name === 'execute-code') {
+        this.submissionsGateway.emitSubmissionStatus(job.data.userId, {
+          submissionId: job.data.submissionId,
+          status: 'completed',
+          result: returnvalue,
+        });
+
+        const result = returnvalue as any;
+        if (result?.verdict === 'AC' && job.data.context !== 'duel') {
+          this.badgeEngine.onSubmissionAccepted(job.data.userId, {
+            id: job.data.submissionId,
+            challengeId: job.data.challengeId,
+            language: job.data.language,
+            timeMs: result.totalTimeMs,
+            createdAt: new Date(),
+          }).catch(err => this.logger.error('Badge engine error (submission):', err));
+
+          this.badgeEngine.checkUserLevelBadges(job.data.userId)
+            .catch(err => this.logger.error('Badge engine error (level):', err));
+        }
+      }
+    });
+
+    this.queueEvents.on('failed', async ({ jobId, failedReason }) => {
+      const job = await this.codeExecutionQueue.getJob(jobId);
+      if (job && job.name === 'execute-code') {
+        this.submissionsGateway.emitSubmissionStatus(job.data.userId, {
+          submissionId: job.data.submissionId,
+          status: 'error',
+          error: failedReason,
+        });
+      }
+    });
+  }
+
+  async onModuleDestroy() {
+    await this.queueEvents.close();
+  }
+
+  async addCodeExecutionJob(jobData: CodeExecutionJob): Promise<string> {
+    const isDuel = jobData.context === 'duel';
+    
+    const job = await this.codeExecutionQueue.add(
+      'execute-code', 
+      jobData, 
+      {
+        priority: isDuel ? 1 : 2,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      }
+    );
+    
+    this.logger.log(`Enqueued code execution job ${job.id} for submission ${jobData.submissionId} (Priority: ${isDuel ? 'High' : 'Normal'})`);
+    
+    this.submissionsGateway.emitSubmissionStatus(jobData.userId, {
+      submissionId: jobData.submissionId,
+      status: 'queued',
+      jobId: job.id,
+    });
+
+    return job.id!;
+  }
+
+  async addRunCodeJob(jobData: any): Promise<any> {
+    const job = await this.codeExecutionQueue.add(
+      'run-code', 
+      jobData, 
+      {
+        priority: 1,
+        attempts: 1,
+        removeOnComplete: true,
+      }
+    );
+    this.logger.log(`Waiting for run-code job ${job.id} to finish synchronously`);
+    const returnValue = await job.waitUntilFinished(this.queueEvents);
+    return returnValue;
+  }
+
+  async addEvaluateCodeJob(jobData: any): Promise<any> {
+    const job = await this.codeExecutionQueue.add(
+      'evaluate-code',
+      jobData,
+      {
+        priority: 1,
+        attempts: 1,
+        removeOnComplete: true,
+      }
+    );
+    this.logger.log(`Waiting for evaluate-code job ${job.id} to finish synchronously`);
+    const returnValue = await job.waitUntilFinished(this.queueEvents);
+    return returnValue;
+  }
+}
+
+---
+backend/src/queue/interfaces/code-execution-job.interface.ts
+---
+export interface CodeExecutionJob {
+  submissionId: string;
+  userId: string;
+  challengeId: string;
+  code: string;
+  language: string;
+  tests: {
+    input: string;
+    expectedOutput: string;
+  }[];
+  context: 'solo' | 'duel' | 'hackathon';
+  duelId?: string;
+  hackathonId?: string;
+  hackathonTeamId?: string;
+  isRejudge?: boolean;
+}
+
+---
+frontend/src/pages/Problem.tsx (relevant excerpts)
+---
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, Link } from 'react-router';
+import { Button } from '../components/Button';
+import { DifficultyBadge, VerdictBadge } from '../components/Badge';
+import { CodeFocusManager } from '../components/CodeFocusManager';
+import { Select } from '../components/Input';
+import { challengesService } from '../services/challengesService';
+import { submissionsService } from '../services/submissionsService';
+import { adminService } from '../services/adminService';
+import { io } from 'socket.io-client';
+import { useAuth } from '../context/AuthContext';
+import Editor from "@monaco-editor/react";
+import { useEditorTheme, defineMonacoThemes } from '../context/EditorThemeContext';
+import { useAnticheat } from '../hooks/useAnticheat';
+import {
+  Play,
+  Send,
+  Lightbulb,
+  ChevronLeft,
+  Info,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Loader,
+  Sparkles
+} from 'lucide-react';
+import { toast } from 'react-hot-toast';
+
+// Always write your answer to stdout with print() / console.log() / fmt.Println().
+
+const LANGUAGES = [
+  { value: 'python', label: 'Python 3' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'c', label: 'C' },
+  { value: 'java', label: 'Java' },
+  { value: 'go', label: 'Go' },
+  { value: 'rust', label: 'Rust' },
+];
+
+const CODE_TEMPLATES: Record<string, string> = {
+  python: `import sys
+import json
+
+...`
+};
+
+// ... trimmed for length ...
+
+  useEffect(() => {
+    if (!user) return;
+
+    const newSocket = io(`${window.location.origin}/submissions`, {
+      transports: ['polling'],
+      withCredentials: true 
+    });
+
+    newSocket.on('connect', () => {
+      newSocket.emit('subscribe_user', { userId: user.id });
+    });
+
+    newSocket.on('submission_status', (data) => {
+      if (data.status === 'executing') {
+        toast.loading('Running...', { id: 'submission-toast' });
+      } else if (data.status === 'completed') {
+        setIsRunning(false);
+        const result = data.result || {};
+        setSubmissionResult({
+          id: data.submissionId,
+          verdict: result.verdict || 'OK',
+          testsPassed: result.passed || 0,
+          testsTotal: result.total || 0,
+          timeMs: result.totalTimeMs || result.timeMs || 0,
+          memMb: result.maxMemMb || result.memMb || 0,
+          stdout: result.results?.[0]?.actualOutput || result.stdout || ''
+        });
+        setShowResults(true);
+        toast.success('Exécution terminée !', { id: 'submission-toast' });
+      } else if (data.status === 'error') {
+        setIsRunning(false);
+        toast.error('Erreur: ' + data.error, { id: 'submission-toast' });
+      } else if (data.status === 'queued') {
+        toast.loading('Dans la file d\'attente...', { id: 'submission-toast' });
+      }
+    });
+
+    return () => {
+      newSocket.close();
+    };
+  }, [user]);
+
+  const handleRun = async () => {
+    if (!problem) return;
+    setIsRunning(true);
+    setShowResults(false);
+
+    try {
+      const result = await submissionsService.runCode({
+        challengeId: problem.id,
+        language: language,
+        code: code
+      });
+
+      setSubmissionResult({
+        verdict: result.verdict || 'OK',
+        testsPassed: result.passed || 0,
+        testsTotal: result.total || problem.tests?.length || 0,
+        timeMs: result.totalTimeMs || result.timeMs || 0,
+        memMb: result.maxMemMb || result.memMb || 0,
+        stdout: result.stdout || result.results?.[0]?.actualOutput || ''
+      });
+      setShowResults(true);
+      toast.success('Exécution terminée');
+    } catch (err) {
+      toast.error("Erreur lors de l'exécution");
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!problem) return;
+    setIsRunning(true);
+    setShowResults(false);
+
+    try {
+      const submission = await submissionsService.submitCode({
+        challengeId: problem.id,
+        kind: 'CODE',
+        language: language,
+        code: code,
+        context: 'solo'
+      });
+
+      submissionIdRef.current = submission?.id;
+      setAiReview(null);
+      toast.success('Code soumis ! En attente des résultats...');
+    } catch (err) {
+      toast.error('Erreur lors de la soumission');
+      setIsRunning(false);
+    }
+  };
+
+// ... other component code ...
+
+                {submissionResult.stdout && (
+                  <div className="mb-4">
+                    <span className="text-[var(--text-muted)] text-sm mb-1 block">Output / Console:</span>
+                    <pre className="p-3 bg-[var(--surface-2)] rounded font-code text-sm text-[var(--text-primary)] whitespace-pre-wrap">
+                      {submissionResult.stdout}
+                    </pre>
+                  </div>
+                )}
+
+---
+frontend/src/services/submissionsService.ts
+---
+import api from '../api/axios';
+
+export interface Submission {
+  id: string;
+  userId: string;
+  challengeId: string;
+  kind: 'CODE' | 'CANVAS';
+  score: number;
+  context: string;
+  language?: string;
+  code?: string;
+  verdict?: string;
+  testsPassed?: number;
+  testsTotal?: number;
+  timeMs?: number;
+  memMb?: number;
+  snapshotUrl?: string;
+  canvasJson?: any;
+  createdAt: string;
+  challenge?: any;
+  user?: any;
+  aiReview?: any;
+}
+
+export const submissionsService = {
+  async submitCode(data: {
+    challengeId: string;
+    kind: 'CODE';
+    language: string;
+    code: string;
+    context?: string;
+  }) {
+    const { data: result } = await api.post('/submissions/code', data);
+    return result;
+  },
+
+  async submitCanvas(data: {
+    challengeId: string;
+    kind: 'CANVAS';
+    canvasJson: any;
+    snapshotUrl?: string;
+    context?: string;
+  }) {
+    const { data: result } = await api.post('/submissions/canvas', data);
+    return result;
+  },
+
+  async submit(data: {
+    challengeId: string;
+    kind: 'CODE' | 'CANVAS';
+    language?: string;
+    code?: string;
+    context?: string;
+    canvasJson?: any;
+    snapshotUrl?: string;
+  }) {
+    const { data: result } = await api.post('/submissions', data);
+    return result;
+  },
+
+  async runCode(data: { challengeId: string; language: string; code: string }) {
+    const { data: result } = await api.post('/submissions/run', data);
+    return result;
+  },
+
+  async getMyHistory(params?: { page?: number; limit?: number; kind?: string; verdict?: string }) {
+    const { data } = await api.get('/submissions/me', { params });
+    return data;
+  },
+
+  async getById(id: string) {
+    const { data } = await api.get(`/submissions/${id}`);
+    return data;
+  },
+
+  async getAiReview(submissionId: string) {
+    const { data } = await api.get(`/submissions/${submissionId}/ai-review`);
+    return data;
+  },
+
+  async getAll(params?: any) {
+    const { data } = await api.get('/submissions', { params });
+    return data;
+  },
+};
+
+---
+frontend/src/data/models.ts (Submission type excerpt)
+---
+export interface Submission {
+  id: string;
+  accountId: string;
+  problemId: string;
+  language: Language;
+  code: string;
+  verdict: Verdict;
+  timeMs: number;
+  memMb: number;
+  testsPassed: number;
+  testsTotal: number;
+  stdout?: string;
+  stderr?: string;
+  createdAt: Date;
+}

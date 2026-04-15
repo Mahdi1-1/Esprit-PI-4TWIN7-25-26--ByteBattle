@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Excalidraw, exportToBlob } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI, ExcalidrawElement } from '@excalidraw/excalidraw/types/types';
 import { useTheme } from '../../context/ThemeContext';
+import { canvasService } from '../../services/canvasService';
 
 interface ExcalidrawCanvasProps {
   challengeId: string;
@@ -15,34 +16,82 @@ export function ExcalidrawCanvas({ challengeId, onSave, onExport, readOnly = fal
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
   const [elements, setElements] = useState<readonly ExcalidrawElement[]>([]);
   const [appState, setAppState] = useState<any>(null);
+  const [draftTimestamp, setDraftTimestamp] = useState<number>(0);
+  const draftSaveTimeout = useRef<number | null>(null);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount and merge with server draft if newer
   useEffect(() => {
+    let localTimestamp = 0;
     const savedDraft = localStorage.getItem(`canvas_draft_${challengeId}`);
     if (savedDraft) {
       try {
         const parsed = JSON.parse(savedDraft);
         setElements(parsed.elements || []);
         setAppState(parsed.appState || null);
+        localTimestamp = parsed.timestamp || 0;
+        setDraftTimestamp(localTimestamp);
       } catch (error) {
         console.error('Failed to load draft:', error);
       }
     }
+
+    const loadServerDraft = async () => {
+      try {
+        const serverDraft = await canvasService.getDraft(challengeId);
+        const serverDraftJson = serverDraft?.canvasJson;
+        const serverTimestamp = serverDraftJson?.timestamp || 0;
+
+        if (serverTimestamp > localTimestamp) {
+          setElements(serverDraftJson.elements || []);
+          setAppState(serverDraftJson.appState || null);
+          localStorage.setItem(`canvas_draft_${challengeId}`, JSON.stringify(serverDraftJson));
+          setDraftTimestamp(serverTimestamp);
+        }
+      } catch (error) {
+        console.error('Failed to load canvas draft from server:', error);
+      }
+    };
+
+    loadServerDraft();
   }, [challengeId]);
 
-  // Auto-save to localStorage
+  useEffect(() => {
+    return () => {
+      if (draftSaveTimeout.current) {
+        window.clearTimeout(draftSaveTimeout.current);
+      }
+    };
+  }, []);
+
+  const scheduleServerSave = useCallback((draftData: any) => {
+    if (draftSaveTimeout.current) {
+      window.clearTimeout(draftSaveTimeout.current);
+    }
+
+    draftSaveTimeout.current = window.setTimeout(async () => {
+      try {
+        await canvasService.saveDraft(challengeId, draftData);
+      } catch (error) {
+        console.error('Failed to persist canvas draft to server:', error);
+      }
+      draftSaveTimeout.current = null;
+    }, 1500);
+  }, [challengeId]);
+
+  // Auto-save to localStorage and server
   const handleChange = useCallback((newElements: readonly ExcalidrawElement[], newAppState: any) => {
     setElements(newElements);
     setAppState(newAppState);
 
-    // Debounced save to localStorage
     const draftData = {
       elements: newElements,
       appState: newAppState,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     localStorage.setItem(`canvas_draft_${challengeId}`, JSON.stringify(draftData));
-  }, [challengeId]);
+    setDraftTimestamp(draftData.timestamp);
+    scheduleServerSave(draftData);
+  }, [challengeId, scheduleServerSave]);
 
   // Save snapshot with PNG export
   const handleSaveSnapshot = useCallback(async () => {

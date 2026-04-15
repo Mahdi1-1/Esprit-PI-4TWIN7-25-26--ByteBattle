@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { CreateReportDto, UpdateReportStatusDto } from './dto/admin.dto';
+import { CreateReportDto, UpdateReportStatusDto, UpdateCompanyVerificationDto } from './dto/admin.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -71,6 +71,67 @@ export class AdminController {
   @ApiOperation({ summary: 'Update report status' })
   updateReport(@Param('id') id: string, @Body() dto: UpdateReportStatusDto) {
     return this.adminService.updateReportStatus(id, dto);
+  }
+
+  @Get('companies')
+  @Roles('admin')
+  @ApiOperation({ summary: 'List companies for admin review' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'verified', required: false })
+  getCompanies(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string,
+    @Query('verified') verified?: string,
+  ) {
+    return this.adminService.getCompanies({
+      page: page ? +page : undefined,
+      limit: limit ? +limit : undefined,
+      status,
+      verified,
+    });
+  }
+
+  @Get('companies/pending')
+  @Roles('admin')
+  @ApiOperation({ summary: 'List unverified companies pending review' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  getPendingCompanies(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.adminService.getPendingCompanies({
+      page: page ? +page : undefined,
+      limit: limit ? +limit : undefined,
+    });
+  }
+
+  @Patch('companies/:id/verify')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Verify or reject company' })
+  @ApiBody({ schema: { properties: { action: { type: 'string', enum: ['APPROVE', 'REJECT'] }, reason: { type: 'string' } } } })
+  verifyCompany(
+    @Param('id') companyId: string,
+    @Body('action') action: 'APPROVE' | 'REJECT',
+    @Body('reason') reason?: string,
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.verifyCompany(companyId, action, reason, actorId);
+  }
+
+  @Patch('companies/:id')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Update company verification or status' })
+  @ApiBody({ type: UpdateCompanyVerificationDto })
+  updateCompany(
+    @Param('id') companyId: string,
+    @Body() dto: UpdateCompanyVerificationDto,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.adminService.updateCompany(companyId, dto, actorId);
   }
 
   @Get('audit-logs')

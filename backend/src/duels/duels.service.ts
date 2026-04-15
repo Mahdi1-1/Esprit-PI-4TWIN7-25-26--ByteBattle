@@ -47,6 +47,7 @@ export interface DuelState {
 export class DuelsService {
   private readonly logger = new Logger(DuelsService.name);
   private redis: Redis;
+  private readonly redisEnabled: boolean;
 
   constructor(
     private prisma: PrismaService,
@@ -57,11 +58,16 @@ export class DuelsService {
     private notificationsGateway: NotificationsGateway,
     private badgeEngine: BadgeEngineService,
   ) {
-    this.redis = new Redis({
-      host: this.configService.get('REDIS_HOST', 'localhost'),
-      port: this.configService.get('REDIS_PORT', 6379),
-      password: this.configService.get('REDIS_PASSWORD'),
-    });
+    this.redisEnabled = this.configService.get<string>('REDIS_ENABLED', 'true') !== 'false';
+    if (this.redisEnabled) {
+      this.redis = new Redis({
+        host: this.configService.get('REDIS_HOST', 'localhost'),
+        port: this.configService.get('REDIS_PORT', 6379),
+        password: this.configService.get('REDIS_PASSWORD'),
+      });
+    } else {
+      this.logger.warn('Redis is disabled. Duel live state is unavailable.');
+    }
   }
 
   /**
@@ -480,6 +486,9 @@ export class DuelsService {
     ]);
 
     try {
+      if (!this.redisEnabled || !this.redis) {
+        throw new Error('Redis disabled');
+      }
       const pipeline = this.redis.pipeline();
       if (p1Stats && (p1Stats as any).elo !== undefined) pipeline.zadd('leaderboard:elo', (p1Stats as any).elo, state.player1.id);
       if (p2Stats && (p2Stats as any).elo !== undefined) pipeline.zadd('leaderboard:elo', (p2Stats as any).elo, state.player2.id);
@@ -592,6 +601,9 @@ export class DuelsService {
    * 📜 Récupérer l'état du duel depuis Redis
    */
   async getDuelState(duelId: string): Promise<DuelState> {
+    if (!this.redisEnabled || !this.redis) {
+      throw new BadRequestException('Duels are temporarily unavailable while Redis is disabled');
+    }
     const state = await this.redis.get(`duel:${duelId}`);
     if (!state) {
       throw new NotFoundException('Duel state not found');
@@ -603,6 +615,9 @@ export class DuelsService {
    * 💾 Sauvegarder l'état du duel dans Redis
    */
   async setDuelState(duelId: string, state: DuelState) {
+    if (!this.redisEnabled || !this.redis) {
+      throw new BadRequestException('Duels are temporarily unavailable while Redis is disabled');
+    }
     await this.redis.setex(`duel:${duelId}`, 7200, JSON.stringify(state)); // 2h TTL
   }
 

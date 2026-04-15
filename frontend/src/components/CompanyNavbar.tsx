@@ -1,22 +1,49 @@
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { Building2, Users, FileText, Download, Settings, LogOut, Bell, Search } from 'lucide-react';
 import { Button } from '../components/Button';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useState, useEffect, useRef } from 'react';
+import api from '../api/axios';
 
 interface CompanyNavbarProps {
   companyName?: string;
+  companyId?: string;
   companyLogo?: string;
   userName?: string;
-  userRole?: 'owner' | 'recruiter';
+  userRole?: 'owner' | 'recruiter' | 'member';
 }
 
-export function CompanyNavbar({ companyName = 'TechCorp Inc.', companyLogo, userName = 'John Doe', userRole = 'owner' }: CompanyNavbarProps) {
+export function CompanyNavbar({ companyName: initialName, companyId: initialCompanyId, companyLogo, userName = 'User', userRole = 'member' }: CompanyNavbarProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [companyName, setCompanyName] = useState(initialName || 'Company');
+  const [companyId, setCompanyId] = useState(initialCompanyId || '');
+  const [loading, setLoading] = useState(!initialName);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function fetchMyCompany() {
+      if (initialName) {
+        setCompanyName(initialName);
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await api.get('/companies/my-company');
+        if (res.data) {
+          setCompanyName(res.data.name || 'Company');
+          setCompanyId(res.data.id || '');
+        }
+      } catch {
+        // Not a member of any company
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMyCompany();
+  }, [initialName]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -30,6 +57,14 @@ export function CompanyNavbar({ companyName = 'TechCorp Inc.', companyLogo, user
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  if (loading) {
+    return (
+      <nav className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-default)] h-16 flex items-center justify-center">
+        <div className="animate-spin w-6 h-6 border-2 border-[var(--brand-primary)] border-t-transparent rounded-full" />
+      </nav>
+    );
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-default)] backdrop-blur-sm bg-opacity-95">
@@ -108,7 +143,7 @@ export function CompanyNavbar({ companyName = 'TechCorp Inc.', companyLogo, user
               </div>
               <div className="hidden md:block text-left">
                 <div className="text-sm font-semibold text-[var(--text-primary)]">{userName}</div>
-                <div className="text-xs text-[var(--text-secondary)] capitalize">{userRole}</div>
+                <div className="text-xs text-[var(--text-secondary)] capitalize">{userRole || 'member'}</div>
               </div>
             </button>
 

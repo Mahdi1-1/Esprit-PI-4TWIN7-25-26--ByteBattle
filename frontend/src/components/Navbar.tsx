@@ -38,6 +38,7 @@ import { UserSearchBar } from './UserSearchBar';
 import { useNotifications } from '../context/NotificationContext';
 import { Bell } from 'lucide-react';
 import { companiesService, CompanyMembership } from '../services/companiesService';
+import { JoinCompanyModal } from './company/JoinCompanyModal';
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -50,6 +51,7 @@ interface NavLink {
   to: string;
   icon: React.ReactNode;
   label: string;
+  onClick?: () => void;
 }
 
 export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
@@ -63,6 +65,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   const [showFontSizePanel, setShowFontSizePanel] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [activeCompanyMembership, setActiveCompanyMembership] = useState<CompanyMembership | null>(null);
+  const [showJoinCompanyModal, setShowJoinCompanyModal] = useState(false);
 
   const fontSizePanelRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -95,8 +98,8 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
     { to: '/interview', icon: <Bot className="w-10 h-7" />, label: t('nav.interview') },
     { to: '/duel', icon: <Swords className="w-10 h-7" />, label: t('nav.duel') },
     { to: '/hackathon', icon: <Flag className="w-10 h-7" />, label: t('nav.hackathon') },
+        {to: '/company/overview', icon: <Building2 className="w-10 h-7" />, label: 'Join Company' },
     { to: '/teams', icon: <Users className="w-10 h-7" />, label: t('nav.teams') },
-    { to: '/companies', icon: <Building2 className="w-10 h-7" />, label: 'Companies' },
     { to: '/leaderboard', icon: <Trophy className="w-10 h-7" />, label: t('nav.leaderboard') },
     { to: '/themes', icon: <Palette className="w-10 h-7" />, label: t('nav.themes') },
   ];
@@ -201,11 +204,10 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
   };
 
   // ─── Reusable Desktop Nav Link ───
-  const DesktopNavLink = ({ to, icon, label }: NavLink) => {
+  const DesktopNavLink = ({ to, icon, label, onClick }: NavLink) => {
     const [hovered, setHovered] = useState(false);
-    return (
-      <Link
-        to={to}
+    const content = (
+      <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         className="
@@ -214,6 +216,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
           w-9 h-9
           rounded-[var(--radius-md)]
           transition-colors duration-150
+          cursor-pointer
         "
         style={{
           color: hovered ? 'var(--brand-primary)' : 'var(--text-secondary)',
@@ -257,29 +260,58 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
           />
           {label}
         </span>
-      </Link>
+      </div>
     );
+
+    if (onClick) {
+      return <div onClick={onClick}>{content}</div>;
+    }
+
+    return <Link to={to}>{content}</Link>;
   };
 
   // ─── Reusable Mobile Nav Link ───
-  const MobileNavLink = ({ to, icon, label }: NavLink) => (
-    <Link
-      to={to}
-      className="
-        flex items-center gap-3
-        px-4 py-3
-        text-[var(--text-primary)]
-        hover:bg-[var(--surface-2)]
-        active:bg-[var(--surface-3)]
-        rounded-[var(--radius-md)]
-        transition-colors duration-150
-      "
-      onClick={closeMobileMenu}
-    >
-      <span className="text-[var(--text-secondary)]">{icon}</span>
-      <span className="font-medium">{label}</span>
-    </Link>
-  );
+  const MobileNavLink = ({ to, icon, label, onClick }: NavLink) => {
+    if (onClick) {
+      return (
+        <div
+          onClick={() => { onClick(); setMobileMenuOpen(false); }}
+          className="
+            flex items-center gap-3
+            px-4 py-3
+            text-[var(--text-primary)]
+            hover:bg-[var(--surface-2)]
+            active:bg-[var(--surface-3)]
+            rounded-[var(--radius-md)]
+            transition-colors duration-150
+            cursor-pointer
+          "
+        >
+          {icon}
+          <span className="font-medium">{label}</span>
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        to={to}
+        onClick={closeMobileMenu}
+        className="
+          flex items-center gap-3
+          px-4 py-3
+          text-[var(--text-primary)]
+          hover:bg-[var(--surface-2)]
+          active:bg-[var(--surface-3)]
+          rounded-[var(--radius-md)]
+          transition-colors duration-150
+        "
+      >
+        <span className="text-[var(--text-secondary)]">{icon}</span>
+        <span className="font-medium">{label}</span>
+      </Link>
+    );
+  };
 
   // ─── Icon Button ───
   const IconButton = ({
@@ -313,34 +345,60 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
   return (
     <>
+      <JoinCompanyModal
+        isOpen={showJoinCompanyModal}
+        onClose={() => setShowJoinCompanyModal(false)}
+      />
       <nav className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border-default)]">
         <div className="w-full px-3 sm:px-4 lg:px-6 xl:px-10">
           <div className="flex items-center justify-between h-20 sm:h-24">
 
-            {/* ═══ Logo ═══ */}
-            <Link
-              to="/dashboard"
-              className="flex items-center gap-2 group shrink-0"
-            >
-              <BBLogo className="h-16 sm:h-20 lg:h-24 w-auto" />
-              <span className="
-                hidden sm:inline
-                font-semibold
-                text-[var(--text-primary)]
-                group-hover:text-[var(--brand-primary)]
-                transition-colors
-                font-title
-                text-sm lg:text-base
-              ">
-                ByteBattle
-              </span>
-            </Link>
+            {/* ═══ Logo + Join Company Button ═══ */}
+            <div className="flex items-center gap-3 shrink-0">
+              <Link
+                to="/dashboard"
+                className="flex items-center gap-2 group"
+              >
+                <BBLogo className="h-16 sm:h-20 lg:h-24 w-auto" />
+                <span className="
+                  hidden sm:inline
+                  font-semibold
+                  text-[var(--text-primary)]
+                  group-hover:text-[var(--brand-primary)]
+                  transition-colors
+                  font-title
+                  text-sm lg:text-base
+                ">
+                  ByteBattle
+                </span>
+              </Link>
+
+              {/* Join Company Button — desktop only, logged-in users without company */}
+              {loggedIn && isUser && !user?.companyRole && (
+                <button
+                  onClick={() => setShowJoinCompanyModal(true)}
+                  className="
+                    flex items-center gap-1.5
+                    px-3 py-1.5
+                    text-xs font-semibold
+                    rounded-[var(--radius-md)]
+                    border border-[var(--brand-primary)]/40
+                    text-[var(--brand-primary)]
+                    hover:bg-[var(--brand-primary)]/10
+                    transition-colors duration-150
+                  "
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  Join Company
+                </button>
+              )}
+            </div>
 
             {/* ═══ Desktop Navigation (lg+) ═══ */}
             {loggedIn && activeLinks.length > 0 && (
               <div className="hidden lg:flex items-center gap-1 mx-4">
                 {activeLinks.map((link) => (
-                  <DesktopNavLink key={link.to} {...link} />
+                  <DesktopNavLink key={link.onClick ? 'join-company' : link.to} {...link} />
                 ))}
               </div>
             )}
@@ -719,7 +777,7 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
 
               {/* Nav Links */}
               {activeLinks.map((link) => (
-                <MobileNavLink key={link.to} {...link} />
+                <MobileNavLink key={link.onClick ? 'join-company' : link.to} {...link} />
               ))}
 
               {/* User Section */}
@@ -762,6 +820,16 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
                     }
                     label="Notifications"
                   />
+
+                  {/* Join Company — mobile (only if no company) */}
+                  {!user?.companyRole && (
+                    <MobileNavLink
+                      to="/companies"
+                      icon={<Building2 className="w-10 h-7" />}
+                      label="Join Company"
+                      onClick={() => setShowJoinCompanyModal(true)}
+                    />
+                  )}
                 </>
               )}
 
