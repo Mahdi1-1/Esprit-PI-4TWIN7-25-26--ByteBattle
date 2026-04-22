@@ -3,6 +3,7 @@
 		"@google/generative-ai": "^0.24.1",
 		"@monaco-editor/react": "^4.7.0",
 		"@nestjs/passport": "^11.0.5",
+		"@xyflow/react": "^12.10.2",
 		"class-transformer": "^0.5.1",
 		"class-validator": "^0.15.1",
 		"passport": "^0.7.0",

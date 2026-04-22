@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router';
 import { companiesService, CompanyMembership } from '../../services/companiesService';
 import { companyService } from '../../services/companyService';
 import { useCurrentCompanyId } from '../../hooks/useCurrentCompanyId';
+import { getCompanyPermissions } from '../../constants/companyPermissions';
 
 export function CompanyOverview() {
   const navigate = useNavigate();
@@ -74,8 +75,10 @@ export function CompanyOverview() {
 
   const company = activeMembership?.company;
   const companyName = company?.name || 'Company Dashboard';
-  const roleLabel = activeMembership?.role || 'guest';
-  const canCreateChallenge = roleLabel === 'owner' || roleLabel === 'recruiter';
+  const permissions = getCompanyPermissions(activeMembership?.role ?? null);
+  const canCreateChallenge = permissions.canCreateChallenges;
+  const canViewCandidates = permissions.canViewCandidates;
+  const canViewReports = permissions.canViewReports;
 
   const stats = useMemo(
     () => [
@@ -94,10 +97,12 @@ export function CompanyOverview() {
   };
 
   const handleViewCandidates = () => {
+    if (!canViewCandidates) return;
     navigate('/company/candidates');
   };
 
   const handleExportReports = () => {
+    if (!canViewReports) return;
     if (companyId) {
       window.open(`/api/companies/${companyId}/export?format=csv`, '_blank');
     }
@@ -135,7 +140,7 @@ export function CompanyOverview() {
 
   return (
     <Layout>
-      <CompanyNavbar />
+      {/* <CompanyNavbar /> */}
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-8">
         {/* Header */}
         <div className="flex flex-col gap-4 lg:flex-row items-start justify-between">
@@ -215,7 +220,9 @@ export function CompanyOverview() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-[var(--text-primary)]">Top Candidates</h2>
-              <Button variant="ghost" size="sm" onClick={handleViewCandidates}>View All</Button>
+              {canViewCandidates && (
+                <Button variant="ghost" size="sm" onClick={handleViewCandidates}>View All</Button>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -264,21 +271,25 @@ export function CompanyOverview() {
             </div>
           )}
 
-          <div className="block" onClick={handleViewCandidates}>
-            <div className="p-6 bg-gradient-to-br from-[var(--state-info)]/20 to-[var(--state-info)]/5 border border-[var(--state-info)]/30 rounded-[var(--radius-lg)] hover:scale-[1.02] transition-transform cursor-pointer">
-              <Users className="w-8 h-8 text-[var(--state-info)] mb-3" />
-              <h3 className="font-semibold text-[var(--text-primary)] mb-1">View Candidates</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Browse all candidate submissions</p>
+          {canViewCandidates && (
+            <div className="block" onClick={handleViewCandidates}>
+              <div className="p-6 bg-gradient-to-br from-[var(--state-info)]/20 to-[var(--state-info)]/5 border border-[var(--state-info)]/30 rounded-[var(--radius-lg)] hover:scale-[1.02] transition-transform cursor-pointer">
+                <Users className="w-8 h-8 text-[var(--state-info)] mb-3" />
+                <h3 className="font-semibold text-[var(--text-primary)] mb-1">View Candidates</h3>
+                <p className="text-sm text-[var(--text-secondary)]">Browse all candidate submissions</p>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="block" onClick={handleExportReports}>
-            <div className="p-6 bg-gradient-to-br from-[var(--state-success)]/20 to-[var(--state-success)]/5 border border-[var(--state-success)]/30 rounded-[var(--radius-lg)] hover:scale-[1.02] transition-transform cursor-pointer">
-              <FileText className="w-8 h-8 text-[var(--state-success)] mb-3" />
-              <h3 className="font-semibold text-[var(--text-primary)] mb-1">Export Reports</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Download candidate performance data</p>
+          {canViewReports && (
+            <div className="block" onClick={handleExportReports}>
+              <div className="p-6 bg-gradient-to-br from-[var(--state-success)]/20 to-[var(--state-success)]/5 border border-[var(--state-success)]/30 rounded-[var(--radius-lg)] hover:scale-[1.02] transition-transform cursor-pointer">
+                <FileText className="w-8 h-8 text-[var(--state-success)] mb-3" />
+                <h3 className="font-semibold text-[var(--text-primary)] mb-1">Export Reports</h3>
+                <p className="text-sm text-[var(--text-secondary)]">Download candidate performance data</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </Layout>

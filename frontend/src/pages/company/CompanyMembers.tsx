@@ -8,8 +8,9 @@ import { EmployeeTable } from '../../components/company/EmployeeTable';
 import { VerificationBanner } from '../../components/company/VerificationBanner';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrentCompanyId } from '../../hooks/useCurrentCompanyId';
-import { companyService, Company, CompanyMember, CompanyRole } from '../../services/companyService';
-import { AlertCircle, UserPlus, Search, ArrowLeft } from 'lucide-react';
+import { companyService, Company, CompanyMember, CompanyRole, CompanyTeam } from '../../services/companyService';
+import { AlertCircle, UserPlus, Search, ArrowLeft, Users } from 'lucide-react';
+
 
 export function CompanyMembers() {
   const { companyId: urlCompanyId } = useParams<{ companyId: string }>();
@@ -19,9 +20,14 @@ export function CompanyMembers() {
   const [error, setError] = useState<string | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [members, setMembers] = useState<CompanyMember[]>([]);
+  const [teams, setTeams] = useState<CompanyTeam[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+
+  const [newTeamName, setNewTeamName] = useState('');
+  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [teamError, setTeamError] = useState<string | null>(null);
 
   const currentUserRole = user?.companyRole as CompanyRole || null;
   const canInvite = currentUserRole === 'owner' || currentUserRole === 'recruiter';
@@ -37,12 +43,14 @@ export function CompanyMembers() {
 
     setLoading(true);
     try {
-      const [companyData, membersData] = await Promise.all([
+      const [companyData, membersData, teamsData] = await Promise.all([
         companyService.getCompany(companyId),
         companyService.getCompanyMembers(companyId),
+        companyService.getCompanyTeams(companyId),
       ]);
       setCompany(companyData);
       setMembers(membersData);
+      setTeams(teamsData);
       setError(null);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to load members');
@@ -62,6 +70,34 @@ export function CompanyMembers() {
 
   const handleRoleChanged = (memberId: string, newRole: CompanyRole) => {
     setMembers(members.map(m => m.id === memberId ? { ...m, role: newRole } : m));
+  };
+
+  const handleTeamAssigned = (memberId: string, teamId: string | null) => {
+    setMembers(members.map(m => {
+      if (m.id === memberId) {
+        const team = teams.find(t => t.id === teamId);
+        return { ...m, teamId: teamId || undefined, team };
+      }
+      return m;
+    }));
+  };
+
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTeamName.trim() || !companyId || !canManage) return;
+
+    setIsCreatingTeam(true);
+    setTeamError(null);
+
+    try {
+      const created = await companyService.createCompanyTeam(companyId, { name: newTeamName.trim() });
+      setTeams([...teams, created]);
+      setNewTeamName('');
+    } catch (err: any) {
+      setTeamError(err?.response?.data?.message || 'Failed to create team');
+    } finally {
+      setIsCreatingTeam(false);
+    }
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -114,7 +150,7 @@ export function CompanyMembers() {
 
   return (
     <Layout>
-      <CompanyNavbar companyName={company.name} userName={user?.username || 'User'} userRole={currentUserRole || 'member'} />
+      {/* <CompanyNavbar companyName={company.name} userName={user?.username || 'User'} userRole={currentUserRole || 'member'} /> */}
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
         <div className="flex items-center gap-4">
           <Link to={`/companies/${companyId}/dashboard`}>
@@ -160,13 +196,41 @@ export function CompanyMembers() {
           </div>
         )}
 
+        {canManage && (
+          <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Create a New Team
+            </h2>
+            <form onSubmit={handleCreateTeam} className="flex gap-4">
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  placeholder="E.g. Frontend Engineering, Marketing..."
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  disabled={isCreatingTeam}
+                />
+              </div>
+              <Button type="submit" variant="secondary" disabled={isCreatingTeam || !newTeamName.trim()}>
+                {isCreatingTeam ? 'Creating...' : 'Create Team'}
+              </Button>
+            </form>
+            {teamError && (
+              <p className="text-sm text-[var(--state-error)] mt-2">{teamError}</p>
+            )}
+          </div>
+        )}
+
         <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6">
           <EmployeeTable
             members={activeMembers}
+            teams={teams}
             companyId={companyId!}
             currentUserRole={currentUserRole || 'member'}
             onMemberRemoved={handleMemberRemoved}
             onRoleChanged={handleRoleChanged}
+            onTeamAssigned={handleTeamAssigned}
           />
         </div>
       </div>

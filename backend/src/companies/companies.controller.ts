@@ -105,8 +105,7 @@ export class CompaniesController {
     if (!user?.id) {
       throw new BadRequestException('User not authenticated');
     }
-    const newCode = await this.companiesService.regenerateJoinCode(companyId, user.id);
-    return { joinCode: newCode };
+    return this.companiesService.regenerateJoinCode(companyId, user.id);
   }
 
   @Patch(':id')
@@ -198,6 +197,46 @@ export class CompaniesController {
     return this.companiesService.updateMemberRole(companyId, targetUserId, role, user.id);
   }
 
+  @Get(':id/teams')
+  @UseGuards(JwtAuthGuard)
+  async getCompanyTeams(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getCompanyTeams(companyId, user.id);
+  }
+
+  @Post(':id/teams')
+  @UseGuards(JwtAuthGuard)
+  async createCompanyTeam(
+    @Param('id') companyId: string,
+    @Body('name') name: string,
+    @Body('description') description: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.createCompanyTeam(companyId, user.id, name, description);
+  }
+
+  @Patch(':id/members/:userId/team')
+  @UseGuards(JwtAuthGuard)
+  async assignMemberToTeam(
+    @Param('id') companyId: string,
+    @Param('userId') targetUserId: string,
+    @Body('teamId') teamId: string | null,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.assignMemberToTeam(companyId, targetUserId, teamId, user.id);
+  }
+
   @Delete(':id/members/:userId')
   @UseGuards(JwtAuthGuard)
   async removeMember(
@@ -255,7 +294,7 @@ export class CompaniesController {
     );
   }
 
-  @Get(':id/roadmaps')
+  @Get(':id([0-9a-fA-F]{24})/roadmaps')
   @UseGuards(JwtAuthGuard)
   async getCompanyRoadmaps(
     @Param('id') companyId: string,
@@ -267,7 +306,7 @@ export class CompaniesController {
     return this.companiesService.getCompanyRoadmaps(companyId, user.id);
   }
 
-  @Post(':id/roadmaps')
+  @Post(':id([0-9a-fA-F]{24})/roadmaps')
   @UseGuards(JwtAuthGuard)
   async createCompanyRoadmap(
     @Param('id') companyId: string,
@@ -280,7 +319,7 @@ export class CompaniesController {
     return this.companiesService.createCompanyRoadmap(companyId, user.id, dto);
   }
 
-  @Post(':id/roadmaps/:roadmapId/assign')
+  @Post(':id([0-9a-fA-F]{24})/roadmaps/:roadmapId/assign')
   @UseGuards(JwtAuthGuard)
   async assignRoadmap(
     @Param('id') companyId: string,
@@ -299,7 +338,7 @@ export class CompaniesController {
     );
   }
 
-  @Patch(':id/roadmaps/:roadmapId/progress')
+  @Patch(':id([0-9a-fA-F]{24})/roadmaps/:roadmapId/progress')
   @UseGuards(JwtAuthGuard)
   async updateRoadmapProgress(
     @Param('id') companyId: string,
@@ -378,6 +417,31 @@ export class CompaniesController {
   @Get(':id/jobs')
   async getCompanyJobs(@Param('id') companyId: string) {
     return this.companiesService.getCompanyJobs(companyId);
+  }
+
+  @Get(':id/hiring/candidates')
+  @UseGuards(JwtAuthGuard)
+  async getHiringCandidates(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+    @Query('search') search?: string,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getHiringCandidates(companyId, user.id, search);
+  }
+
+  @Get(':id/hiring/dashboard')
+  @UseGuards(JwtAuthGuard)
+  async getHiringDashboard(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getHiringDashboard(companyId, user.id);
   }
 
   @Post(':id/jobs')

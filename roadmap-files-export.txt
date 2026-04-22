@@ -1,0 +1,2293 @@
+===== frontend/src/pages/company/CompanyRoadmapBuilder.tsx =====
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Background,
+  Controls,
+  MiniMap,
+  MarkerType,
+  useReactFlow,
+  type NodeTypes,
+  type Node,
+  type Edge,
+  type Connection,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import {
+  ArrowLeft,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+  ExternalLink,
+  Loader2,
+  Eye,
+  EyeOff,
+  Send,
+} from 'lucide-react';
+import { Layout } from '../../components/Layout';
+import { Button } from '../../components/Button';
+import { useAuth } from '../../context/AuthContext';
+import {
+  roadmapService,
+  type RoadmapDetail,
+  type RoadmapNode,
+  type RoadmapProgressStatus,
+  type RoadmapNodeType,
+  type RoadmapNodeStyle,
+  type RoadmapResource,
+} from '../../services/roadmapService';
+import RoadmapNodeComponent from '../../components/company/roadmap/RoadmapNodeComponent';
+
+const nodeTypes: NodeTypes = { roadmapNode: RoadmapNodeComponent as any };
+
+type ResourceType = 'article' | 'video' | 'course' | 'docs';
+const ROADMAP_DRAFT_STORAGE_KEY = 'company-roadmap-draft-id';
+
+type CanvasNodeData = {
+  label: string;
+  nodeStyle: RoadmapNodeStyle;
+  nodeType: RoadmapNodeType;
+  progressStatus: RoadmapProgressStatus;
+  description: string;
+  resources: RoadmapResource[];
+} & Record<string, unknown>;
+
+interface BuilderCanvasProps {
+  nodes: Node<CanvasNodeData>[];
+  edges: Edge[];
+  onNodeDragStop: (_event: unknown, node: Node<CanvasNodeData>) => void;
+  onConnect: (connection: Connection) => void;
+  onPaneClick: (position: { x: number; y: number }) => void;
+  onSelectNode: (nodeId: string) => void;
+  onDeleteEdge: (edgeId: string) => void;
+  previewMode: boolean;
+}
+
+interface AddNodeForm {
+  title: string;
+  description: string;
+  type: RoadmapNodeType;
+  style: RoadmapNodeStyle;
+}
+
+interface EditNodeForm {
+  title: string;
+  description: string;
+  type: RoadmapNodeType;
+  style: RoadmapNodeStyle;
+}
+
+function BuilderCanvas({
+  nodes,
+  edges,
+  onNodeDragStop,
+  onConnect,
+  onPaneClick,
+  onSelectNode,
+  onDeleteEdge,
+  previewMode,
+}: BuilderCanvasProps) {
+  const { screenToFlowPosition } = useReactFlow();
+
+  const handlePaneClick = useCallback(
+    (event: any) => {
+      if (previewMode) return;
+      const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      onPaneClick(position);
+    },
+    [previewMode, screenToFlowPosition, onPaneClick],
+  );
+
+  const handleEdgesDelete = useCallback(
+    (edgesToDelete: Edge[]) => {
+      edgesToDelete.forEach((edge) => onDeleteEdge(edge.id));
+    },
+    [onDeleteEdge],
+  );
+
+  return (
+    <ReactFlow<Node<CanvasNodeData>, Edge>
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nodeTypes}
+      onNodeDragStop={onNodeDragStop}
+      onConnect={onConnect}
+      onPaneClick={handlePaneClick}
+      onNodeClick={(_, node) => onSelectNode(node.id)}
+      onEdgesDelete={handleEdgesDelete}
+      fitView
+      fitViewOptions={{ padding: 0.2 }}
+      nodesDraggable={!previewMode}
+      nodesConnectable={!previewMode}
+      panOnScroll
+      zoomOnScroll
+      minZoom={0.3}
+      maxZoom={2}
+      deleteKeyCode="Delete"
+      attributionPosition="bottom-left"
+      style={{ background: 'var(--surface-1)' }}
+    >
+      <Background gap={24} color="var(--border-default)" />
+      <Controls showInteractive={false} />
+      <MiniMap zoomable pannable />
+    </ReactFlow>
+  );
+}
+
+export function CompanyRoadmapBuilder() {
+  const { roadmapId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [roadmap, setRoadmap] = useState<RoadmapDetail | null>(null);
+  const [nodes, setNodes] = useState<Node<CanvasNodeData>[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+  const [selectedNode, setSelectedNode] = useState<RoadmapNode | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newNodePosition, setNewNodePosition] = useState({ x: 0, y: 0 });
+  const [addForm, setAddForm] = useState<AddNodeForm>({
+    title: '',
+    description: '',
+    type: 'topic',
+    style: 'required',
+  });
+  const [editForm, setEditForm] = useState<EditNodeForm>({
+    title: '',
+    description: '',
+    type: 'topic',
+    style: 'required',
+  });
+  const [previewMode, setPreviewMode] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [newResourceTitle, setNewResourceTitle] = useState('');
+  const [newResourceUrl, setNewResourceUrl] = useState('');
+  const [newResourceType, setNewResourceType] = useState<ResourceType>('article');
+
+  const canManage = user?.companyRole === 'owner' || user?.companyRole === 'recruiter';
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    if (!canManage) {
+      navigate(roadmapId ? `/company/roadmaps/${roadmapId}` : '/company/roadmaps', { replace: true });
+      return;
+    }
+
+    const run = async () => {
+      if (!roadmapId) {
+        const storedDraftId = localStorage.getItem(ROADMAP_DRAFT_STORAGE_KEY);
+        if (storedDraftId) {
+          navigate(`/company/roadmaps/${storedDraftId}/build`, { replace: true });
+          return;
+        }
+
+        try {
+          setLoading(true);
+          setError(null);
+          const created = await roadmapService.createRoadmap({
+            title: 'New Roadmap',
+            description: 'Draft roadmap',
+          });
+          localStorage.setItem(ROADMAP_DRAFT_STORAGE_KEY, created.id);
+          navigate(`/company/roadmaps/${created.id}/build`, { replace: true });
+        } catch (createError: any) {
+          setError(createError?.response?.data?.message || 'Failed to create roadmap draft');
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const data = await roadmapService.getRoadmapDetail(roadmapId);
+        localStorage.setItem(ROADMAP_DRAFT_STORAGE_KEY, roadmapId);
+        setRoadmap(data);
+
+        const mappedNodes: Node<CanvasNodeData>[] = data.nodes.map((node) => ({
+          id: node.id,
+          type: 'roadmapNode',
+          position: { x: node.positionX, y: node.positionY },
+          data: {
+            label: node.title,
+            nodeStyle: node.style,
+            nodeType: node.type,
+            progressStatus: null,
+            description: node.description || '',
+            resources: node.resources || [],
+          },
+        }));
+
+        const mappedEdges: Edge[] = data.edges.map((edge) => ({
+          id: edge.id,
+          source: edge.sourceId,
+          target: edge.targetId,
+          type: 'smoothstep',
+          markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+          style: { stroke: 'var(--border-default)', strokeWidth: 2 },
+        }));
+
+        setNodes(mappedNodes);
+        setEdges(mappedEdges);
+      } catch (loadError: any) {
+        setError(loadError?.response?.data?.message || 'Failed to load roadmap');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, [user, canManage, roadmapId, navigate]);
+
+  const handleNodeDragStop = useCallback(
+    async (_event: unknown, node: Node<CanvasNodeData>) => {
+      if (!roadmapId) return;
+
+      await roadmapService.updateNode(roadmapId, node.id, {
+        positionX: node.position.x,
+        positionY: node.position.y,
+      });
+
+      setNodes((current) =>
+        current.map((item) =>
+          item.id === node.id
+            ? {
+                ...item,
+                position: { x: node.position.x, y: node.position.y },
+              }
+            : item,
+        ),
+      );
+
+      setRoadmap((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          nodes: current.nodes.map((n) =>
+            n.id === node.id ? { ...n, positionX: node.position.x, positionY: node.position.y } : n,
+          ),
+        };
+      });
+    },
+    [roadmapId],
+  );
+
+  const handleConnect = useCallback(
+    async (connection: Connection) => {
+      if (!roadmapId || !connection.source || !connection.target) return;
+
+      const edge = await roadmapService.createEdge(roadmapId, connection.source, connection.target);
+
+      const localEdge: Edge = {
+        id: edge.id,
+        source: edge.sourceId,
+        target: edge.targetId,
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        style: { stroke: 'var(--border-default)', strokeWidth: 2 },
+      };
+
+      setEdges((current) => [...current, localEdge]);
+
+      setRoadmap((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          edges: [...current.edges, edge],
+        };
+      });
+    },
+    [roadmapId],
+  );
+
+  const handlePaneClick = useCallback(
+    (position: { x: number; y: number }) => {
+      if (previewMode) return;
+      setNewNodePosition(position);
+      setShowAddModal(true);
+    },
+    [previewMode],
+  );
+
+  const handleAddNode = useCallback(async () => {
+    if (!roadmapId || !addForm.title.trim()) return;
+
+    const created = await roadmapService.createNode(roadmapId, {
+      title: addForm.title.trim(),
+      description: addForm.description.trim() || undefined,
+      type: addForm.type,
+      style: addForm.style,
+      positionX: newNodePosition.x,
+      positionY: newNodePosition.y,
+    });
+
+    setNodes((current) => [
+      ...current,
+      {
+        id: created.id,
+        type: 'roadmapNode',
+        position: { x: created.positionX, y: created.positionY },
+        data: {
+          label: created.title,
+          nodeStyle: created.style,
+          nodeType: created.type,
+          progressStatus: null,
+          description: created.description || '',
+          resources: created.resources || [],
+        },
+      },
+    ]);
+
+    setRoadmap((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        nodes: [...current.nodes, created],
+      };
+    });
+
+    setShowAddModal(false);
+    setAddForm({ title: '', description: '', type: 'topic', style: 'required' });
+  }, [roadmapId, addForm, newNodePosition]);
+
+  const handleSelectNode = useCallback(
+    (nodeId: string) => {
+      const match = roadmap?.nodes.find((node) => node.id === nodeId) || null;
+      setSelectedNode(match);
+      if (match) {
+        setEditForm({
+          title: match.title,
+          description: match.description ?? '',
+          type: match.type,
+          style: match.style,
+        });
+      }
+    },
+    [roadmap],
+  );
+
+  const handleUpdateNode = useCallback(async () => {
+    if (!roadmapId || !selectedNode) return;
+
+    const updated = await roadmapService.updateNode(roadmapId, selectedNode.id, {
+      title: editForm.title.trim(),
+      description: editForm.description.trim() || undefined,
+      type: editForm.type,
+      style: editForm.style,
+    });
+
+    setNodes((current) =>
+      current.map((item) =>
+        item.id === updated.id
+          ? {
+              ...item,
+              data: {
+                ...item.data,
+                label: updated.title,
+                nodeStyle: updated.style,
+                nodeType: updated.type,
+                description: updated.description || '',
+              },
+            }
+          : item,
+      ),
+    );
+
+    setRoadmap((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        nodes: current.nodes.map((node) => (node.id === updated.id ? updated : node)),
+      };
+    });
+
+    setSelectedNode(updated);
+  }, [roadmapId, selectedNode, editForm]);
+
+  const handleDeleteNode = useCallback(async () => {
+    if (!roadmapId || !selectedNode) return;
+
+    await roadmapService.deleteNode(roadmapId, selectedNode.id);
+
+    setNodes((current) => current.filter((item) => item.id !== selectedNode.id));
+    setEdges((current) =>
+      current.filter((edge) => edge.source !== selectedNode.id && edge.target !== selectedNode.id),
+    );
+
+    setRoadmap((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        nodes: current.nodes.filter((node) => node.id !== selectedNode.id),
+        edges: current.edges.filter(
+          (edge) => edge.sourceId !== selectedNode.id && edge.targetId !== selectedNode.id,
+        ),
+      };
+    });
+
+    setSelectedNode(null);
+  }, [roadmapId, selectedNode]);
+
+  const handleDeleteEdge = useCallback(
+    async (edgeId: string) => {
+      if (!roadmapId) return;
+
+      await roadmapService.deleteEdge(roadmapId, edgeId);
+
+      setEdges((current) => current.filter((edge) => edge.id !== edgeId));
+      setRoadmap((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          edges: current.edges.filter((edge) => edge.id !== edgeId),
+        };
+      });
+    },
+    [roadmapId],
+  );
+
+  const handlePublishToggle = useCallback(async () => {
+    if (!roadmapId || !roadmap) return;
+
+    setPublishLoading(true);
+    try {
+      const updated = await roadmapService.updateRoadmap(roadmapId, {
+        isPublished: !roadmap.isPublished,
+      });
+      setRoadmap((current) => (current ? { ...current, isPublished: updated.isPublished } : current));
+    } finally {
+      setPublishLoading(false);
+    }
+  }, [roadmapId, roadmap]);
+
+  const handleAddResource = useCallback(async () => {
+    if (!roadmapId || !selectedNode || !newResourceTitle.trim() || !newResourceUrl.trim()) return;
+
+    const created = await roadmapService.createResource(roadmapId, selectedNode.id, {
+      title: newResourceTitle.trim(),
+      url: newResourceUrl.trim(),
+      type: newResourceType,
+    });
+
+    setSelectedNode((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        resources: [...current.resources, created],
+      };
+    });
+
+    setRoadmap((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        nodes: current.nodes.map((node) =>
+          node.id === selectedNode.id
+            ? { ...node, resources: [...(node.resources ?? []), created] }
+            : node,
+        ),
+      };
+    });
+
+    setNodes((current) =>
+      current.map((node) =>
+        node.id === selectedNode.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                resources: [...(node.data.resources ?? []), created],
+              },
+            }
+          : node,
+      ),
+    );
+
+    setNewResourceTitle('');
+    setNewResourceUrl('');
+    setNewResourceType('article');
+  }, [roadmapId, selectedNode, newResourceTitle, newResourceUrl, newResourceType]);
+
+  const handleDeleteResource = useCallback(
+    async (resourceId: string) => {
+      if (!roadmapId || !selectedNode) return;
+
+      await roadmapService.deleteResource(roadmapId, selectedNode.id, resourceId);
+
+      setSelectedNode((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          resources: current.resources.filter((resource) => resource.id !== resourceId),
+        };
+      });
+
+      setRoadmap((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          nodes: current.nodes.map((node) =>
+            node.id === selectedNode.id
+              ? {
+                  ...node,
+                  resources: node.resources.filter((resource) => resource.id !== resourceId),
+                }
+              : node,
+          ),
+        };
+      });
+
+      setNodes((current) =>
+        current.map((node) =>
+          node.id === selectedNode.id
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  resources: node.data.resources.filter((resource) => resource.id !== resourceId),
+                },
+              }
+            : node,
+        ),
+      );
+    },
+    [roadmapId, selectedNode],
+  );
+
+  if (!canManage && user) {
+    return (
+      <Layout>
+        <div className="w-full px-4 sm:px-6 lg:px-10 py-8 text-[var(--state-error)]">
+          You are not authorized to access the roadmap builder.
+        </div>
+      </Layout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="w-full px-4 sm:px-6 lg:px-10 py-8 flex items-center gap-2 text-[var(--text-secondary)]">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Loading roadmap builder...
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="w-full px-4 sm:px-6 lg:px-10 py-8 text-[var(--state-error)]">{error}</div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <button
+                onClick={() => navigate('/company/roadmaps')}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <h1 className="text-3xl font-semibold text-[var(--text-primary)]">Roadmap Builder</h1>
+            </div>
+            <p className="text-[var(--text-secondary)] mt-2">
+              Drag, connect, and edit roadmap nodes. Use preview mode to inspect the member experience.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant={previewMode ? 'secondary' : 'ghost'}
+              onClick={() => setPreviewMode((prev) => !prev)}
+            >
+              {previewMode ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+              {previewMode ? 'Edit Mode' : 'Preview Mode'}
+            </Button>
+            <Button variant="primary" onClick={handlePublishToggle} loading={publishLoading}>
+              <Send className="w-4 h-4 mr-2" />
+              {roadmap?.isPublished ? 'Unpublish' : 'Publish'}
+            </Button>
+            {roadmapId && (
+              <Button variant="secondary" onClick={() => navigate(`/company/roadmaps/${roadmapId}`)}>
+                <Pencil className="w-4 h-4 mr-2" />
+                View Member Version
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_0.9fr] gap-6">
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] overflow-hidden h-[720px]">
+            <ReactFlowProvider>
+              <BuilderCanvas
+                nodes={nodes}
+                edges={edges}
+                onNodeDragStop={handleNodeDragStop}
+                onConnect={handleConnect}
+                onPaneClick={handlePaneClick}
+                onSelectNode={handleSelectNode}
+                onDeleteEdge={handleDeleteEdge}
+                previewMode={previewMode}
+              />
+            </ReactFlowProvider>
+          </div>
+
+          <div className="space-y-6">
+            <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">Roadmap Details</h2>
+              <div className="text-sm text-[var(--text-secondary)] space-y-2">
+                <p>
+                  <span className="font-semibold text-[var(--text-primary)]">Title:</span> {roadmap?.title || '-'}
+                </p>
+                <p>
+                  <span className="font-semibold text-[var(--text-primary)]">Published:</span>{' '}
+                  {roadmap?.isPublished ? 'Yes' : 'No'}
+                </p>
+                <p>
+                  <span className="font-semibold text-[var(--text-primary)]">Nodes:</span> {roadmap?.nodes.length ?? 0}
+                </p>
+                <p>
+                  <span className="font-semibold text-[var(--text-primary)]">Edges:</span> {roadmap?.edges.length ?? 0}
+                </p>
+              </div>
+            </div>
+
+            {selectedNode && (
+              <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Edit Node</h2>
+                  <button
+                    onClick={() => setSelectedNode(null)}
+                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-[var(--text-primary)]">Title</label>
+                  <input
+                    value={editForm.title}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-4 py-2.5 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+                  />
+
+                  <label className="block text-sm font-medium text-[var(--text-primary)]">Description</label>
+                  <textarea
+                    rows={4}
+                    value={editForm.description}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-4 py-2.5 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Type</label>
+                      <select
+                        value={editForm.type}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, type: e.target.value as RoadmapNodeType }))
+                        }
+                        className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)]"
+                      >
+                        <option value="topic">Topic</option>
+                        <option value="subtopic">Subtopic</option>
+                        <option value="resource">Resource</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Style</label>
+                      <select
+                        value={editForm.style}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, style: e.target.value as RoadmapNodeStyle }))
+                        }
+                        className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)]"
+                      >
+                        <option value="required">Required</option>
+                        <option value="optional">Optional</option>
+                        <option value="alternative">Alternative</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <Button onClick={handleUpdateNode} variant="primary" className="w-full">
+                    Save Changes
+                  </Button>
+                </div>
+
+                <div className="pt-4 border-t border-[var(--border-default)]">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Resources</h3>
+
+                  {selectedNode.resources?.map((resource) => (
+                    <div
+                      key={resource.id}
+                      className="flex items-center justify-between py-2 border-b border-[var(--border-default)]"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ExternalLink className="w-4 h-4 text-[var(--text-muted)]" />
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm text-[var(--brand-primary)] hover:underline truncate max-w-[200px]"
+                        >
+                          {resource.title}
+                        </a>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--text-muted)] capitalize">
+                          {resource.type}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteResource(resource.id)}
+                        className="text-[var(--text-muted)] hover:text-[var(--state-error)]"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="mt-3 space-y-2">
+                    <input
+                      placeholder="Resource title"
+                      value={newResourceTitle}
+                      onChange={(e) => setNewResourceTitle(e.target.value)}
+                      className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                    />
+                    <input
+                      placeholder="https://..."
+                      value={newResourceUrl}
+                      onChange={(e) => setNewResourceUrl(e.target.value)}
+                      className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                    />
+                    <div className="flex gap-2">
+                      <select
+                        value={newResourceType}
+                        onChange={(e) => setNewResourceType(e.target.value as ResourceType)}
+                        className="flex-1 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                      >
+                        <option value="article">Article</option>
+                        <option value="video">Video</option>
+                        <option value="course">Course</option>
+                        <option value="docs">Docs</option>
+                      </select>
+                      <Button
+                        onClick={handleAddResource}
+                        size="sm"
+                        disabled={!newResourceTitle.trim() || !newResourceUrl.trim()}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[var(--border-default)]">
+                  <Button
+                    onClick={handleDeleteNode}
+                    variant="ghost"
+                    className="w-full text-[var(--state-error)] hover:bg-[var(--state-error)]/10"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete Node
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">Quick Actions</h2>
+              <Button
+                onClick={() => {
+                  setNewNodePosition({ x: 200, y: 200 });
+                  setShowAddModal(true);
+                }}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Add Node
+              </Button>
+              <p className="text-xs text-[var(--text-muted)] mt-2">
+                Tip: Click on empty canvas space to add a node at that position.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-center justify-center">
+            <div className="w-full max-w-lg rounded-[var(--radius-lg)] bg-[var(--surface-1)] border border-[var(--border-default)] p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-[var(--text-primary)]">Create New Node</h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Title</label>
+                  <input
+                    value={addForm.title}
+                    onChange={(e) => setAddForm((prev) => ({ ...prev, title: e.target.value }))}
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-4 py-2.5 text-[var(--text-primary)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Description</label>
+                  <textarea
+                    rows={4}
+                    value={addForm.description}
+                    onChange={(e) => setAddForm((prev) => ({ ...prev, description: e.target.value }))}
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-4 py-2.5 text-[var(--text-primary)]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Type</label>
+                    <select
+                      value={addForm.type}
+                      onChange={(e) => setAddForm((prev) => ({ ...prev, type: e.target.value as RoadmapNodeType }))}
+                      className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)]"
+                    >
+                      <option value="topic">Topic</option>
+                      <option value="subtopic">Subtopic</option>
+                      <option value="resource">Resource</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Style</label>
+                    <select
+                      value={addForm.style}
+                      onChange={(e) => setAddForm((prev) => ({ ...prev, style: e.target.value as RoadmapNodeStyle }))}
+                      className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-3 py-2 text-[var(--text-primary)]"
+                    >
+                      <option value="required">Required</option>
+                      <option value="optional">Optional</option>
+                      <option value="alternative">Alternative</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddNode} variant="primary">
+                    <Plus className="w-4 h-4 mr-2" /> Add Node
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}
+
+export default CompanyRoadmapBuilder;
+
+===== frontend/src/pages/company/CompanyRoadmapDetail.tsx =====
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Background,
+  Controls,
+  MiniMap,
+  MarkerType,
+  useReactFlow,
+  type Node,
+  type Edge,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import {
+  ArrowLeft,
+  Pencil,
+  X,
+  CheckCircle,
+  Clock,
+  SkipForward,
+  XCircle,
+  FileText,
+  Play,
+  GraduationCap,
+  BookOpen,
+  Loader2,
+  ExternalLink,
+} from 'lucide-react';
+import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
+import RoadmapNodeComponent from '../../components/company/roadmap/RoadmapNodeComponent';
+
+const nodeTypes = { roadmapNode: RoadmapNodeComponent };
+
+type ProgressStatus = 'done' | 'in_progress' | 'skipped';
+
+interface RoadmapResource {
+  id: string;
+  title: string;
+  url: string;
+  type: 'article' | 'video' | 'course' | 'docs';
+}
+
+interface RoadmapNodeData {
+  label: string;
+  nodeStyle: 'required' | 'optional' | 'alternative';
+  nodeType: 'topic' | 'subtopic' | 'resource';
+  progressStatus: ProgressStatus | null;
+  description?: string;
+  resources?: RoadmapResource[];
+}
+
+interface RoadmapResponse {
+  id: string;
+  title: string;
+  description?: string;
+  isPublished: boolean;
+  nodes: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    type: 'topic' | 'subtopic' | 'resource';
+    style: 'required' | 'optional' | 'alternative';
+    positionX: number;
+    positionY: number;
+    resources: RoadmapResource[];
+  }>;
+  edges: Array<{
+    id: string;
+    sourceId: string;
+    targetId: string;
+  }>;
+  progress: Record<string, ProgressStatus>;
+}
+
+interface DetailCanvasProps {
+  nodes: Node<RoadmapNodeData>[];
+  edges: Edge[];
+  onNodeClick: (nodeId: string) => void;
+}
+
+function DetailCanvas({ nodes, edges, onNodeClick }: DetailCanvasProps) {
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    if (nodes.length > 0) {
+      fitView({ padding: 0.2 });
+    }
+  }, [nodes, fitView]);
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nodeTypes}
+      onNodeClick={(_, node) => onNodeClick(node.id)}
+      fitView
+      fitViewOptions={{ padding: 0.2 }}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      panOnScroll
+      zoomOnScroll
+      minZoom={0.2}
+      maxZoom={2}
+      attributionPosition="bottom-left"
+      style={{ background: 'var(--surface-1)' }}
+    >
+      <Background gap={24} color="var(--border-default)" />
+      <Controls showInteractive={false} />
+      <MiniMap
+        zoomable
+        pannable
+        nodeColor={(node) => {
+          const status = (node.data as RoadmapNodeData | undefined)?.progressStatus;
+          if (status === 'done') return '#16a34a';
+          if (status === 'in_progress') return '#2563eb';
+          if (status === 'skipped') return '#6b7280';
+          return 'var(--surface-2)';
+        }}
+        style={{ background: 'var(--surface-2)' }}
+      />
+    </ReactFlow>
+  );
+}
+
+export function CompanyRoadmapDetail() {
+  const { roadmapId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [roadmap, setRoadmap] = useState<{ id: string; title: string; description?: string; isPublished: boolean } | null>(null);
+  const [nodes, setNodes] = useState<Node<RoadmapNodeData>[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+  const [selectedNode, setSelectedNode] = useState<(Node<RoadmapNodeData>) | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updatingNodeId, setUpdatingNodeId] = useState<string | null>(null);
+
+  const canManage = user?.companyRole === 'owner' || user?.companyRole === 'recruiter';
+
+  useEffect(() => {
+    if (!roadmapId) {
+      setError('Missing roadmap id.');
+      setLoading(false);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const { data } = await api.get<RoadmapResponse>(`/companies/my-company/roadmaps/${roadmapId}`);
+
+        setRoadmap({
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          isPublished: data.isPublished,
+        });
+
+        const mappedNodes: Node<RoadmapNodeData>[] = data.nodes.map((node) => ({
+          id: node.id,
+          type: 'roadmapNode',
+          position: { x: node.positionX, y: node.positionY },
+          data: {
+            label: node.title,
+            nodeStyle: node.style,
+            nodeType: node.type,
+            progressStatus: data.progress[node.id] || null,
+            description: node.description || '',
+            resources: node.resources || [],
+          },
+        }));
+
+        const mappedEdges: Edge[] = data.edges.map((edge) => ({
+          id: edge.id,
+          source: edge.sourceId,
+          target: edge.targetId,
+          type: 'smoothstep',
+          markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+          style: { stroke: 'var(--border-default)', strokeWidth: 2 },
+        }));
+
+        setNodes(mappedNodes);
+        setEdges(mappedEdges);
+      } catch (loadError: any) {
+        setError(loadError?.response?.data?.message || 'Failed to load roadmap.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [roadmapId]);
+
+  const completionStats = useMemo(() => {
+    const total = nodes.length;
+    const done = nodes.filter((node) => node.data.progressStatus === 'done').length;
+    const percentage = total > 0 ? Math.round((done / total) * 100) : 0;
+    return { total, done, percentage };
+  }, [nodes]);
+
+  const handleNodeClick = useCallback(
+    (nodeId: string) => {
+      const match = nodes.find((node) => node.id === nodeId) || null;
+      setSelectedNode(match);
+    },
+    [nodes],
+  );
+
+  const handleClosePanel = useCallback(() => {
+    setSelectedNode(null);
+  }, []);
+
+  const handleProgressUpdate = useCallback(
+    async (nodeId: string, status: ProgressStatus | null) => {
+      if (!roadmapId) return;
+      setUpdatingNodeId(nodeId);
+      try {
+        await api.patch(`/companies/my-company/roadmaps/${roadmapId}/progress`, {
+          nodeId,
+          status,
+        });
+
+        setNodes((current) =>
+          current.map((node) =>
+            node.id === nodeId
+              ? { ...node, data: { ...node.data, progressStatus: status } }
+              : node,
+          ),
+        );
+
+        setSelectedNode((current) =>
+          current && current.id === nodeId
+            ? { ...current, data: { ...current.data, progressStatus: status } }
+            : current,
+        );
+      } finally {
+        setUpdatingNodeId(null);
+      }
+    },
+    [roadmapId],
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center w-full" style={{ height: 'calc(100vh - 8rem)' }}>
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center w-full" style={{ height: 'calc(100vh - 8rem)' }}>
+        <div className="text-[var(--state-error)]">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full" style={{ height: 'calc(100vh - 8rem)' }}>
+      <div className="h-14 flex items-center justify-between px-4 sm:px-6 lg:px-10 border-b border-[var(--border-default)] bg-[var(--surface-1)]">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/company/roadmaps')}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <h1 className="text-lg font-bold text-[var(--text-primary)]">{roadmap?.title}</h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="px-3 py-1.5 rounded-full bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] text-sm font-semibold">
+            {completionStats.done} / {completionStats.total} completed ({completionStats.percentage}%)
+          </div>
+          {canManage && roadmapId && (
+            <button
+              onClick={() => navigate(`/company/roadmaps/${roadmapId}/build`)}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white text-sm font-semibold"
+            >
+              <Pencil className="w-4 h-4" /> Edit
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex" style={{ height: 'calc(100vh - 8rem - 56px)' }}>
+        <div className="flex-1 relative">
+          <ReactFlowProvider>
+            <DetailCanvas nodes={nodes} edges={edges} onNodeClick={handleNodeClick} />
+          </ReactFlowProvider>
+
+          {!loading && nodes.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center text-[var(--text-muted)]">
+              This roadmap has no nodes yet.
+            </div>
+          )}
+        </div>
+
+        {selectedNode && (
+          <div className="w-[400px] border-l border-[var(--border-default)] bg-[var(--surface-1)] overflow-y-auto shrink-0">
+            <div className="p-6 space-y-6">
+              <div className="flex items-start justify-between">
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">{selectedNode.data.label}</h2>
+                <button onClick={handleClosePanel} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleProgressUpdate(selectedNode.id, 'done')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium transition-colors ${
+                    selectedNode.data.progressStatus === 'done'
+                      ? 'bg-[#16a34a] text-white'
+                      : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[#16a34a]/20'
+                  }`}
+                  disabled={updatingNodeId === selectedNode.id}
+                >
+                  <CheckCircle className="w-4 h-4" /> Done
+                </button>
+                <button
+                  onClick={() => handleProgressUpdate(selectedNode.id, 'in_progress')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium transition-colors ${
+                    selectedNode.data.progressStatus === 'in_progress'
+                      ? 'bg-[#2563eb] text-white'
+                      : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[#2563eb]/20'
+                  }`}
+                  disabled={updatingNodeId === selectedNode.id}
+                >
+                  <Clock className="w-4 h-4" /> In Progress
+                </button>
+                <button
+                  onClick={() => handleProgressUpdate(selectedNode.id, 'skipped')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium transition-colors ${
+                    selectedNode.data.progressStatus === 'skipped'
+                      ? 'bg-[#6b7280] text-white'
+                      : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[#6b7280]/20'
+                  }`}
+                  disabled={updatingNodeId === selectedNode.id}
+                >
+                  <SkipForward className="w-4 h-4" /> Skip
+                </button>
+                <button
+                  onClick={() => handleProgressUpdate(selectedNode.id, null)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[var(--state-error)]/20 hover:text-[var(--state-error)] transition-colors"
+                  disabled={updatingNodeId === selectedNode.id}
+                >
+                  <XCircle className="w-4 h-4" /> Clear
+                </button>
+              </div>
+
+              {updatingNodeId === selectedNode.id && (
+                <div className="flex justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-[var(--brand-primary)]" />
+                </div>
+              )}
+
+              <div className="h-px bg-[var(--border-default)]" />
+
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">About</h3>
+                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">
+                  {selectedNode.data.description || 'No description provided.'}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">Learning Resources</h3>
+                {selectedNode.data.resources && selectedNode.data.resources.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedNode.data.resources.map((resource) => (
+                      <a
+                        key={resource.id}
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-[var(--radius-md)] bg-[var(--surface-2)] hover:bg-[var(--surface-3)] transition-colors group"
+                      >
+                        {resource.type === 'article' && <FileText className="w-4 h-4 text-[var(--text-muted)]" />}
+                        {resource.type === 'video' && <Play className="w-4 h-4 text-[var(--text-muted)]" />}
+                        {resource.type === 'course' && <GraduationCap className="w-4 h-4 text-[var(--text-muted)]" />}
+                        {resource.type === 'docs' && <BookOpen className="w-4 h-4 text-[var(--text-muted)]" />}
+                        <span className="text-sm text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors flex-1 truncate">
+                          {resource.title}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface-1)] text-[var(--text-muted)] uppercase font-medium">
+                          {resource.type}
+                        </span>
+                        <ExternalLink className="w-3 h-3 text-[var(--text-muted)]" />
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-[var(--text-muted)]">No resources added yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+===== frontend/src/pages/company/CompanyRoadmaps.tsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { Layout } from '../../components/Layout';
+import { Button } from '../../components/Button';
+import { roadmapService, RoadmapSummary } from '../../services/roadmapService';
+import { useAuth } from '../../context/AuthContext';
+import { RoadmapProgressBar } from '../../components/company/roadmap/RoadmapProgressBar';
+
+export function CompanyRoadmaps() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [roadmaps, setRoadmaps] = useState<RoadmapSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const canManage = user?.companyRole === 'owner' || user?.companyRole === 'recruiter';
+
+  useEffect(() => {
+    const loadRoadmaps = async () => {
+      try {
+        setLoading(true);
+        const data = await roadmapService.getRoadmaps();
+        setRoadmaps(data);
+      } catch (err: any) {
+        setError(err?.response?.data?.message || 'Unable to load roadmaps');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRoadmaps();
+  }, []);
+
+  return (
+    <Layout>
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--text-primary)]">Company Roadmaps</h1>
+            <p className="text-[var(--text-secondary)] mt-2 max-w-2xl">
+              View your company learning pathways, track progress per node, and maintain a shared roadmap for every member.
+            </p>
+          </div>
+          {canManage && (
+            <Button variant="primary" size="lg" onClick={() => navigate('/company/roadmaps/create')}>
+              Create Roadmap
+            </Button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="text-[var(--text-secondary)]">Loading roadmaps...</div>
+        ) : error ? (
+          <div className="text-[var(--state-error)]">{error}</div>
+        ) : roadmaps.length === 0 ? (
+          <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-8 text-center text-[var(--text-secondary)]">
+            No roadmaps published yet. {canManage ? 'Start by creating one.' : 'Ask your company admin to publish a roadmap.'}
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {roadmaps.map((roadmap) => (
+              <button
+                key={roadmap.id}
+                onClick={() => navigate(`/company/roadmaps/${roadmap.id}`)}
+                className="text-left rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6 transition-all hover:border-[var(--brand-primary)]"
+              >
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-[var(--text-primary)]">{roadmap.title}</h2>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">{roadmap.description || 'No description provided.'}</p>
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    {roadmap.isPublished ? 'Published' : 'Draft'}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <RoadmapProgressBar completed={Math.round((roadmap.completionPercentage / 100) * roadmap.nodeCount)} total={roadmap.nodeCount} />
+                  <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+                    <span>{roadmap.nodeCount} nodes</span>
+                    <span>{roadmap.completionPercentage}% complete</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}
+
+===== frontend/src/components/company/roadmap/RoadmapNodeComponent.tsx =====
+import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Circle, CheckCircle, Clock, SkipForward } from 'lucide-react';
+
+type ProgressStatus = 'done' | 'in_progress' | 'skipped';
+
+interface RoadmapNodeData {
+  label: string;
+  nodeStyle: 'required' | 'optional' | 'alternative';
+  nodeType: 'topic' | 'subtopic' | 'resource';
+  progressStatus: ProgressStatus | null;
+  description?: string;
+  resources?: any[];
+}
+
+function getStatusStyles(status: ProgressStatus | null) {
+  if (status === 'done') {
+    return {
+      background: 'rgba(22, 163, 74, 0.1)',
+      borderColor: '#16a34a',
+      labelColor: '#16a34a',
+      icon: <CheckCircle className="w-4 h-4 text-[#16a34a]" />,
+    };
+  }
+  if (status === 'in_progress') {
+    return {
+      background: 'rgba(37, 99, 235, 0.1)',
+      borderColor: '#2563eb',
+      labelColor: '#2563eb',
+      icon: <Clock className="w-4 h-4 text-[#2563eb]" />,
+    };
+  }
+  if (status === 'skipped') {
+    return {
+      background: 'rgba(107, 114, 128, 0.1)',
+      borderColor: '#6b7280',
+      labelColor: '#6b7280',
+      icon: <SkipForward className="w-4 h-4 text-[#6b7280]" />,
+    };
+  }
+
+  return {
+    background: 'var(--surface-1)',
+    borderColor: 'var(--border-default)',
+    labelColor: 'var(--text-primary)',
+    icon: <Circle className="w-4 h-4 text-[var(--text-muted)]" />,
+  };
+}
+
+function RoadmapNodeComponent({ data }: NodeProps<RoadmapNodeData>) {
+  const { background, borderColor, labelColor, icon } = getStatusStyles(data.progressStatus);
+  const borderStyle = data.nodeStyle === 'optional'
+    ? 'dashed'
+    : data.nodeStyle === 'alternative'
+      ? 'dotted'
+      : 'solid';
+
+  return (
+    <div
+      className="min-w-[180px] max-w-[240px] px-4 py-3 cursor-pointer"
+      style={{
+        borderRadius: '12px',
+        background,
+        border: `2px solid ${borderColor}`,
+        borderStyle,
+        transition: 'all 0.2s ease',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      }}
+    >
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          background: 'var(--border-default)',
+          width: 8,
+          height: 8,
+          border: '2px solid var(--surface-1)',
+        }}
+      />
+
+      <div className="flex items-center gap-2">
+        <span className="shrink-0">{icon}</span>
+        <span
+          className="text-sm font-semibold truncate"
+          style={{ color: labelColor }}
+          title={data.label}
+        >
+          {data.label}
+        </span>
+      </div>
+
+      <div className="mt-2">
+        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wider bg-[var(--surface-2)] text-[var(--text-muted)]">
+          {data.nodeType}
+        </span>
+      </div>
+
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          background: 'var(--border-default)',
+          width: 8,
+          height: 8,
+          border: '2px solid var(--surface-1)',
+        }}
+      />
+    </div>
+  );
+}
+
+export default RoadmapNodeComponent;
+export { RoadmapNodeComponent };
+
+===== frontend/src/components/company/roadmap/NodeDetailPanel.tsx =====
+import { CheckCircle2, RotateCcw, ArrowRight, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { RoadmapNode, RoadmapProgressStatus } from '../../../services/roadmapService';
+
+interface NodeDetailPanelProps {
+  isOpen: boolean;
+  node: RoadmapNode | null;
+  progressStatus: RoadmapProgressStatus;
+  onClose: () => void;
+  onStatusChange: (status: RoadmapProgressStatus) => void;
+}
+
+const buttonClasses = 'flex-1 px-3 py-2 rounded-[var(--radius-md)] border border-[var(--border-default)] text-sm font-medium transition-colors';
+
+export function NodeDetailPanel({ isOpen, node, progressStatus, onClose, onStatusChange }: NodeDetailPanelProps) {
+  if (!isOpen || !node) {
+    return null;
+  }
+
+  return (
+    <div className="fixed top-0 right-0 z-50 h-full w-full max-w-[400px] bg-[var(--surface-1)] border-l border-[var(--border-default)] shadow-2xl overflow-y-auto">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-default)]">
+        <div>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)]">{node.title}</h2>
+          <p className="text-xs text-[var(--text-muted)]">{node.type} · {node.style}</p>
+        </div>
+        <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="p-5 space-y-5">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onStatusChange('done')}
+              className={`${buttonClasses} ${progressStatus === 'done' ? 'bg-[var(--state-success)]/15 text-[var(--state-success)] border-[var(--state-success)]' : 'hover:bg-[var(--surface-2)]'}`}
+            >
+              <CheckCircle2 className="w-4 h-4 inline-block mr-1" /> Done
+            </button>
+            <button
+              onClick={() => onStatusChange('in_progress')}
+              className={`${buttonClasses} ${progressStatus === 'in_progress' ? 'bg-[var(--state-info)]/15 text-[var(--state-info)] border-[var(--state-info)]' : 'hover:bg-[var(--surface-2)]'}`}
+            >
+              <RotateCcw className="w-4 h-4 inline-block mr-1" /> In Progress
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onStatusChange('skipped')}
+              className={`${buttonClasses} ${progressStatus === 'skipped' ? 'bg-[var(--text-muted)]/15 text-[var(--text-muted)] border-[var(--text-muted)]' : 'hover:bg-[var(--surface-2)]'}`}
+            >
+              <ArrowRight className="w-4 h-4 inline-block mr-1" /> Skip
+            </button>
+            <button
+              onClick={() => onStatusChange(null)}
+              className={`${buttonClasses} hover:bg-[var(--surface-2)] text-[var(--text-secondary)]`}
+            >
+              <X className="w-4 h-4 inline-block mr-1" /> Clear
+            </button>
+          </div>
+        </div>
+
+        <div className="h-px bg-[var(--border-default)]" />
+
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Description</h3>
+          {node.description ? (
+            <div className="prose prose-sm max-w-none text-[var(--text-secondary)] prose-a:text-[var(--brand-primary)] prose-a:underline">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{node.description}</ReactMarkdown>
+            </div>
+          ) : (
+            <p className="text-[var(--text-muted)]">No description provided.</p>
+          )}
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Resources</h3>
+          {node.resources.length === 0 ? (
+            <p className="text-[var(--text-muted)]">No resources added yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {node.resources.map((resource) => (
+                <a
+                  key={resource.id}
+                  href={resource.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-4 py-3 hover:border-[var(--brand-primary)] transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-[var(--text-primary)]">{resource.title}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{resource.type}</p>
+                    </div>
+                    <span className="text-[var(--brand-primary)] text-xs">Open</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+===== frontend/src/components/company/roadmap/RoadmapProgressBar.tsx =====
+interface RoadmapProgressBarProps {
+  completed: number;
+  total: number;
+}
+
+export function RoadmapProgressBar({ completed, total }: RoadmapProgressBarProps) {
+  const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm text-[var(--text-secondary)]">
+        <span>{completed} of {total} topics completed</span>
+        <span>{percentage}%</span>
+      </div>
+      <div className="h-2 rounded-full bg-[var(--surface-2)] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-[var(--brand-primary)] transition-all duration-300"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+===== frontend/src/services/roadmapService.ts =====
+import api from '../api/axios';
+
+export type RoadmapNodeType = 'topic' | 'subtopic' | 'resource';
+export type RoadmapNodeStyle = 'required' | 'optional' | 'alternative';
+export type RoadmapProgressStatus = 'done' | 'in_progress' | 'skipped' | null;
+
+export interface RoadmapSummary {
+  id: string;
+  title: string;
+  description?: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  nodeCount: number;
+  completionPercentage: number;
+}
+
+export interface RoadmapResource {
+  id: string;
+  nodeId: string;
+  title: string;
+  url: string;
+  type: string;
+}
+
+export interface RoadmapNode {
+  id: string;
+  title: string;
+  description?: string;
+  type: RoadmapNodeType;
+  style: RoadmapNodeStyle;
+  positionX: number;
+  positionY: number;
+  resources: RoadmapResource[];
+}
+
+export interface RoadmapEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+}
+
+export interface RoadmapDetail {
+  id: string;
+  title: string;
+  description?: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  nodes: RoadmapNode[];
+  edges: RoadmapEdge[];
+  progress: Record<string, Exclude<RoadmapProgressStatus, null>>;
+}
+
+export const roadmapService = {
+  async getRoadmaps(): Promise<RoadmapSummary[]> {
+    const { data } = await api.get('/companies/my-company/roadmaps');
+    return data;
+  },
+
+  async getRoadmapDetail(roadmapId: string): Promise<RoadmapDetail> {
+    const { data } = await api.get('/companies/my-company/roadmaps/' + roadmapId);
+    return data;
+  },
+
+  async updateProgress(roadmapId: string, nodeId: string, status: RoadmapProgressStatus) {
+    const { data } = await api.patch('/companies/my-company/roadmaps/' + roadmapId + '/progress', {
+      nodeId,
+      status,
+    });
+    return data as { nodeId: string; status: RoadmapProgressStatus; completionPercentage: number };
+  },
+
+  async createRoadmap(dto: { title: string; description?: string }) {
+    const { data } = await api.post('/companies/my-company/roadmaps', dto);
+    return data as RoadmapSummary;
+  },
+
+  async updateRoadmap(roadmapId: string, dto: { title?: string; description?: string; isPublished?: boolean }) {
+    const { data } = await api.patch('/companies/my-company/roadmaps/' + roadmapId, dto);
+    return data as RoadmapSummary;
+  },
+
+  async deleteRoadmap(roadmapId: string) {
+    await api.delete('/companies/my-company/roadmaps/' + roadmapId);
+  },
+
+  async createNode(roadmapId: string, dto: {
+    title: string;
+    description?: string;
+    type: RoadmapNodeType;
+    style: RoadmapNodeStyle;
+    positionX: number;
+    positionY: number;
+  }) {
+    const { data } = await api.post('/companies/my-company/roadmaps/' + roadmapId + '/nodes', dto);
+    return data as RoadmapNode;
+  },
+
+  async updateNode(roadmapId: string, nodeId: string, dto: Partial<{
+    title: string;
+    description: string;
+    type: RoadmapNodeType;
+    style: RoadmapNodeStyle;
+    positionX: number;
+    positionY: number;
+  }>) {
+    const { data } = await api.patch('/companies/my-company/roadmaps/' + roadmapId + '/nodes/' + nodeId, dto);
+    return data as RoadmapNode;
+  },
+
+  async deleteNode(roadmapId: string, nodeId: string) {
+    await api.delete('/companies/my-company/roadmaps/' + roadmapId + '/nodes/' + nodeId);
+  },
+
+  async createEdge(roadmapId: string, sourceId: string, targetId: string) {
+    const { data } = await api.post('/companies/my-company/roadmaps/' + roadmapId + '/edges', { sourceId, targetId });
+    return data as RoadmapEdge;
+  },
+
+  async deleteEdge(roadmapId: string, edgeId: string) {
+    await api.delete('/companies/my-company/roadmaps/' + roadmapId + '/edges/' + edgeId);
+  },
+
+  async createResource(roadmapId: string, nodeId: string, dto: { title: string; url: string; type: string }) {
+    const { data } = await api.post('/companies/my-company/roadmaps/' + roadmapId + '/nodes/' + nodeId + '/resources', dto);
+    return data as RoadmapResource;
+  },
+
+  async deleteResource(roadmapId: string, nodeId: string, resourceId: string) {
+    await api.delete('/companies/my-company/roadmaps/' + roadmapId + '/nodes/' + nodeId + '/resources/' + resourceId);
+  },
+};
+
+===== backend/src/roadmaps/roadmaps.controller.ts =====
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, IsNumber, Min } from 'class-validator';
+import { RoadmapsService, RoadmapProgressStatus } from './roadmaps.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CompanyRoleAuthGuard, SetCompanyRole } from '../auth/guards/company-role.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
+class CreateRoadmapDto {
+  @ApiProperty({ description: 'Roadmap title' })
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @ApiPropertyOptional({ description: 'Roadmap description markdown' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+class UpdateRoadmapDto {
+  @ApiPropertyOptional({ description: 'Roadmap title' })
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiPropertyOptional({ description: 'Roadmap description' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Publish status' })
+  @IsOptional()
+  @IsBoolean()
+  isPublished?: boolean;
+}
+
+class CreateNodeDto {
+  @ApiProperty() @IsString() @IsNotEmpty() title: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
+  @ApiProperty({ enum: ['topic', 'subtopic', 'resource'] }) @IsIn(['topic', 'subtopic', 'resource']) type: string;
+  @ApiProperty({ enum: ['required', 'optional', 'alternative'] }) @IsIn(['required', 'optional', 'alternative']) style: string;
+  @ApiProperty() @IsNumber() positionX: number;
+  @ApiProperty() @IsNumber() positionY: number;
+}
+
+class UpdateNodeDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() title?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
+  @ApiPropertyOptional({ enum: ['topic', 'subtopic', 'resource'] }) @IsOptional() @IsIn(['topic', 'subtopic', 'resource']) type?: string;
+  @ApiPropertyOptional({ enum: ['required', 'optional', 'alternative'] }) @IsOptional() @IsIn(['required', 'optional', 'alternative']) style?: string;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() positionX?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() positionY?: number;
+}
+
+class CreateEdgeDto {
+  @ApiProperty() @IsString() sourceId: string;
+  @ApiProperty() @IsString() targetId: string;
+}
+
+class CreateResourceDto {
+  @ApiProperty() @IsString() @IsNotEmpty() title: string;
+  @ApiProperty() @IsUrl() url: string;
+  @ApiProperty({ enum: ['article', 'video', 'course', 'docs'] }) @IsString() type: string;
+}
+
+class UpdateRoadmapProgressDto {
+  @ApiProperty({ description: 'Roadmap node id' })
+  @IsString()
+  @IsNotEmpty()
+  nodeId: string;
+
+  @ApiPropertyOptional({ enum: ['done', 'in_progress', 'skipped', null] })
+  @IsOptional()
+  @IsIn(['done', 'in_progress', 'skipped', null])
+  status: RoadmapProgressStatus | null;
+}
+
+@ApiTags('Company Roadmaps')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('companies/my-company/roadmaps')
+export class RoadmapsController {
+  constructor(private readonly roadmapsService: RoadmapsService) {}
+
+  private resolveCompanyId(user: any) {
+    const companyId = user?.companyId || user?.company?.id;
+    if (!companyId) {
+      throw new BadRequestException('User is not part of a company');
+    }
+    return companyId;
+  }
+
+  @Get()
+  async findPublishedRoadmaps(@CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.getPublishedRoadmaps(companyId, user.id);
+  }
+
+  @Get(':roadmapId')
+  async findRoadmapById(@Param('roadmapId') roadmapId: string, @CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.getRoadmapDetail(companyId, roadmapId, user.id);
+  }
+
+  @Patch(':roadmapId/progress')
+  async updateProgress(
+    @Param('roadmapId') roadmapId: string,
+    @Body() dto: UpdateRoadmapProgressDto,
+    @CurrentUser() user: any,
+  ) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.patchProgress(companyId, roadmapId, user.id, dto.nodeId, dto.status ?? null);
+  }
+
+  @Post()
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async createRoadmap(@Body() dto: CreateRoadmapDto, @CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.createRoadmap(companyId, user.id, dto);
+  }
+
+  @Patch(':roadmapId')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async updateRoadmap(@Param('roadmapId') roadmapId: string, @Body() dto: UpdateRoadmapDto, @CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.updateRoadmap(companyId, roadmapId, dto);
+  }
+
+  @Delete(':roadmapId')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async deleteRoadmap(@Param('roadmapId') roadmapId: string, @CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.deleteRoadmap(companyId, roadmapId);
+  }
+
+  @Post(':roadmapId/nodes')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async createNode(@Param('roadmapId') roadmapId: string, @Body() dto: CreateNodeDto, @CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.createNode(companyId, roadmapId, dto);
+  }
+
+  @Patch(':roadmapId/nodes/:nodeId')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async updateNode(
+    @Param('roadmapId') roadmapId: string,
+    @Param('nodeId') nodeId: string,
+    @Body() dto: UpdateNodeDto,
+    @CurrentUser() user: any,
+  ) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.updateNode(companyId, roadmapId, nodeId, dto);
+  }
+
+  @Delete(':roadmapId/nodes/:nodeId')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async deleteNode(@Param('roadmapId') roadmapId: string, @Param('nodeId') nodeId: string, @CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.deleteNode(companyId, roadmapId, nodeId);
+  }
+
+  @Post(':roadmapId/edges')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async createEdge(@Param('roadmapId') roadmapId: string, @Body() dto: CreateEdgeDto, @CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.createEdge(companyId, roadmapId, dto);
+  }
+
+  @Delete(':roadmapId/edges/:edgeId')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async deleteEdge(@Param('roadmapId') roadmapId: string, @Param('edgeId') edgeId: string, @CurrentUser() user: any) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.deleteEdge(companyId, roadmapId, edgeId);
+  }
+
+  @Post(':roadmapId/nodes/:nodeId/resources')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async createResource(
+    @Param('roadmapId') roadmapId: string,
+    @Param('nodeId') nodeId: string,
+    @Body() dto: CreateResourceDto,
+    @CurrentUser() user: any,
+  ) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.createResource(companyId, roadmapId, nodeId, dto);
+  }
+
+  @Delete(':roadmapId/nodes/:nodeId/resources/:resourceId')
+  @UseGuards(CompanyRoleAuthGuard)
+  @SetCompanyRole(['owner', 'recruiter'])
+  async deleteResource(
+    @Param('roadmapId') roadmapId: string,
+    @Param('nodeId') nodeId: string,
+    @Param('resourceId') resourceId: string,
+    @CurrentUser() user: any,
+  ) {
+    const companyId = this.resolveCompanyId(user);
+    return this.roadmapsService.deleteResource(companyId, roadmapId, nodeId, resourceId);
+  }
+}
+
+===== backend/src/roadmaps/roadmaps.service.ts =====
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+export type RoadmapProgressStatus = 'done' | 'in_progress' | 'skipped';
+
+@Injectable()
+export class RoadmapsService {
+  constructor(private prisma: PrismaService) {}
+
+  private async validateCompanyRoadmap(companyId: string, roadmapId: string) {
+    const roadmap = await this.prisma.roadmap.findUnique({
+      where: { id: roadmapId },
+      include: { company: true },
+    });
+
+    if (!roadmap || roadmap.companyId !== companyId) {
+      throw new NotFoundException('Roadmap not found for this company');
+    }
+
+    return roadmap;
+  }
+
+  async getPublishedRoadmaps(companyId: string, userId: string) {
+    const roadmaps = await this.prisma.roadmap.findMany({
+      where: { companyId, isPublished: true },
+      include: {
+        nodes: { select: { id: true } },
+        progress: { where: { userId }, select: { status: true, nodeId: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return roadmaps.map((roadmap) => {
+      const nodeCount = roadmap.nodes.length;
+      const doneCount = roadmap.progress.filter((progress) => progress.status === 'done').length;
+      return {
+        id: roadmap.id,
+        title: roadmap.title,
+        description: roadmap.description,
+        isPublished: roadmap.isPublished,
+        createdAt: roadmap.createdAt,
+        updatedAt: roadmap.updatedAt,
+        nodeCount,
+        completionPercentage: nodeCount === 0 ? 0 : Math.round((doneCount / nodeCount) * 100),
+      };
+    });
+  }
+
+  async getRoadmapDetail(companyId: string, roadmapId: string, userId: string) {
+    const roadmap = await this.prisma.roadmap.findUnique({
+      where: { id: roadmapId },
+      include: {
+        nodes: {
+          orderBy: { createdAt: 'asc' },
+          include: { resources: true },
+        },
+        edges: true,
+      },
+    });
+
+    if (!roadmap || roadmap.companyId !== companyId) {
+      throw new NotFoundException('Roadmap not found for this company');
+    }
+
+    const progressEntries = await this.prisma.roadmapProgress.findMany({
+      where: { roadmapId, userId },
+      select: { nodeId: true, status: true },
+    });
+
+    const progress = progressEntries.reduce((acc, entry) => {
+      acc[entry.nodeId] = entry.status as RoadmapProgressStatus;
+      return acc;
+    }, {} as Record<string, RoadmapProgressStatus>);
+
+    return {
+      id: roadmap.id,
+      title: roadmap.title,
+      description: roadmap.description,
+      isPublished: roadmap.isPublished,
+      createdAt: roadmap.createdAt,
+      updatedAt: roadmap.updatedAt,
+      nodes: roadmap.nodes.map((node) => ({
+        id: node.id,
+        title: node.title,
+        description: node.description,
+        type: node.type,
+        style: node.style,
+        positionX: node.positionX,
+        positionY: node.positionY,
+        resources: node.resources.map((resource) => ({
+          id: resource.id,
+          nodeId: resource.nodeId,
+          title: resource.title,
+          url: resource.url,
+          type: resource.type,
+        })),
+      })),
+      edges: roadmap.edges.map((edge) => ({
+        id: edge.id,
+        sourceId: edge.sourceId,
+        targetId: edge.targetId,
+      })),
+      progress,
+    };
+  }
+
+  async getCompletionPercentage(roadmapId: string, userId: string) {
+    const totalNodes = await this.prisma.roadmapNode.count({ where: { roadmapId } });
+    if (totalNodes === 0) {
+      return 0;
+    }
+
+    const doneCount = await this.prisma.roadmapProgress.count({
+      where: { roadmapId, userId, status: 'done' },
+    });
+
+    return Math.round((doneCount / totalNodes) * 100);
+  }
+
+  async patchProgress(companyId: string, roadmapId: string, userId: string, nodeId: string, status: RoadmapProgressStatus | null) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+
+    const node = await this.prisma.roadmapNode.findUnique({ where: { id: nodeId } });
+    if (!node || node.roadmapId !== roadmapId) {
+      throw new NotFoundException('Roadmap node not found');
+    }
+
+    if (!status) {
+      await this.prisma.roadmapProgress.deleteMany({ where: { roadmapId, nodeId, userId } });
+    } else {
+      await this.prisma.roadmapProgress.upsert({
+        where: { userId_nodeId: { userId, nodeId } },
+        create: { userId, roadmapId, nodeId, status },
+        update: { status },
+      });
+    }
+
+    return {
+      nodeId,
+      status,
+      completionPercentage: await this.getCompletionPercentage(roadmapId, userId),
+    };
+  }
+
+  async createRoadmap(companyId: string, createdById: string, dto: { title: string; description?: string }) {
+    return this.prisma.roadmap.create({
+      data: {
+        companyId,
+        title: dto.title,
+        description: dto.description || null,
+        createdById,
+      },
+    });
+  }
+
+  async updateRoadmap(companyId: string, roadmapId: string, dto: { title?: string; description?: string; isPublished?: boolean }) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+    return this.prisma.roadmap.update({
+      where: { id: roadmapId },
+      data: {
+        title: dto.title,
+        description: dto.description,
+        isPublished: dto.isPublished,
+      },
+    });
+  }
+
+  async deleteRoadmap(companyId: string, roadmapId: string) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+    await this.prisma.roadmap.delete({ where: { id: roadmapId } });
+    return { success: true };
+  }
+
+  async createNode(companyId: string, roadmapId: string, dto: { title: string; description?: string; type: string; style: string; positionX: number; positionY: number }) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+    return this.prisma.roadmapNode.create({
+      data: {
+        roadmapId,
+        title: dto.title,
+        description: dto.description || null,
+        type: dto.type,
+        style: dto.style,
+        positionX: dto.positionX,
+        positionY: dto.positionY,
+      },
+    });
+  }
+
+  async updateNode(companyId: string, roadmapId: string, nodeId: string, dto: { title?: string; description?: string; type?: string; style?: string; positionX?: number; positionY?: number }) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+    const node = await this.prisma.roadmapNode.findUnique({ where: { id: nodeId } });
+    if (!node || node.roadmapId !== roadmapId) {
+      throw new NotFoundException('Roadmap node not found');
+    }
+    return this.prisma.roadmapNode.update({
+      where: { id: nodeId },
+      data: {
+        title: dto.title,
+        description: dto.description,
+        type: dto.type,
+        style: dto.style,
+        positionX: dto.positionX,
+        positionY: dto.positionY,
+      },
+    });
+  }
+
+  async deleteNode(companyId: string, roadmapId: string, nodeId: string) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+    const node = await this.prisma.roadmapNode.findUnique({ where: { id: nodeId } });
+    if (!node || node.roadmapId !== roadmapId) {
+      throw new NotFoundException('Roadmap node not found');
+    }
+    await this.prisma.roadmapNode.delete({ where: { id: nodeId } });
+    return { success: true };
+  }
+
+  async createEdge(companyId: string, roadmapId: string, dto: { sourceId: string; targetId: string }) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+
+    const [sourceNode, targetNode] = await Promise.all([
+      this.prisma.roadmapNode.findUnique({ where: { id: dto.sourceId } }),
+      this.prisma.roadmapNode.findUnique({ where: { id: dto.targetId } }),
+    ]);
+
+    if (!sourceNode || !targetNode || sourceNode.roadmapId !== roadmapId || targetNode.roadmapId !== roadmapId) {
+      throw new BadRequestException('Source and target nodes must belong to the same roadmap');
+    }
+
+    return this.prisma.roadmapEdge.create({
+      data: {
+        roadmapId,
+        sourceId: dto.sourceId,
+        targetId: dto.targetId,
+      },
+    });
+  }
+
+  async deleteEdge(companyId: string, roadmapId: string, edgeId: string) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+    const edge = await this.prisma.roadmapEdge.findUnique({ where: { id: edgeId } });
+    if (!edge || edge.roadmapId !== roadmapId) {
+      throw new NotFoundException('Roadmap edge not found');
+    }
+    await this.prisma.roadmapEdge.delete({ where: { id: edgeId } });
+    return { success: true };
+  }
+
+  async createResource(companyId: string, roadmapId: string, nodeId: string, dto: { title: string; url: string; type: string }) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+    const node = await this.prisma.roadmapNode.findUnique({ where: { id: nodeId } });
+    if (!node || node.roadmapId !== roadmapId) {
+      throw new NotFoundException('Roadmap node not found');
+    }
+
+    return this.prisma.roadmapResource.create({
+      data: {
+        nodeId,
+        title: dto.title,
+        url: dto.url,
+        type: dto.type,
+      },
+    });
+  }
+
+  async deleteResource(companyId: string, roadmapId: string, nodeId: string, resourceId: string) {
+    await this.validateCompanyRoadmap(companyId, roadmapId);
+    const resource = await this.prisma.roadmapResource.findUnique({ where: { id: resourceId } });
+    if (!resource || resource.nodeId !== nodeId) {
+      throw new NotFoundException('Roadmap resource not found');
+    }
+    const node = await this.prisma.roadmapNode.findUnique({ where: { id: nodeId } });
+    if (!node || node.roadmapId !== roadmapId) {
+      throw new NotFoundException('Roadmap node not found');
+    }
+    await this.prisma.roadmapResource.delete({ where: { id: resourceId } });
+    return { success: true };
+  }
+}

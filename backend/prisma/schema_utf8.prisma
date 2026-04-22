@@ -1,4 +1,4 @@
-// ─── Prisma Schema — ByteBattle (MongoDB) ───────────────────
+﻿// â”€â”€â”€ Prisma Schema â€” ByteBattle (MongoDB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 generator client {
   provider = "prisma-client-js"
@@ -10,7 +10,7 @@ datasource db {
 }
 
 // ---------------------------------------------------------
-// 👤 USERS & COMPANIES
+// ðŸ‘¤ USERS & COMPANIES
 // ---------------------------------------------------------
 
 type Avatar {
@@ -196,19 +196,6 @@ model Company {
   forumPosts       CompanyForumPost[]
   badgeAssignments CompanyBadgeAssignment[]
   notifications    CompanyNotification[]
-  teams            CompanyTeam[]
-}
-
-model CompanyTeam {
-  id          String              @id @default(auto()) @map("_id") @db.ObjectId
-  companyId   String              @db.ObjectId
-  company     Company             @relation(fields: [companyId], references: [id])
-  name        String
-  description String?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  members     CompanyMembership[]
 }
 
 model CompanyMembership {
@@ -219,8 +206,6 @@ model CompanyMembership {
   user        User                       @relation(fields: [userId], references: [id])
   role        CompanyRole                @default(member)
   status      CompanyMembershipStatus    @default(pending)
-  teamId      String?                    @db.ObjectId
-  team        CompanyTeam?               @relation(fields: [teamId], references: [id])
   joinedAt    DateTime                   @default(now())
   requestedAt DateTime                   @default(now())
 
@@ -425,7 +410,7 @@ model CompanyForumPost {
 }
 
 // ---------------------------------------------------------
-// 💻 CHALLENGES & SUBMISSIONS
+// ðŸ’» CHALLENGES & SUBMISSIONS
 // ---------------------------------------------------------
 
 model Challenge {
@@ -450,7 +435,7 @@ model Challenge {
   companyId    String?  @db.ObjectId
   visibility   String  @default("public") // "public" or "employees_only"
   
-  // Paramètres pour les duels
+  // ParamÃ¨tres pour les duels
   isDuelEnabled    Boolean         @default(true)
   duelTimeLimit    Int?            // Override du temps limite pour ce challenge
 
@@ -485,7 +470,7 @@ enum ChallengeStatus {
 }
 
 // ---------------------------------------------------------
-// 🎤 AI INTERVIEW DOMAINS & LANGUAGES
+// ðŸŽ¤ AI INTERVIEW DOMAINS & LANGUAGES
 // ---------------------------------------------------------
 
 enum InterviewDomain {
@@ -536,7 +521,7 @@ model Submission {
   @@index([createdAt(sort: Desc)])
 }
 
-// ✨ UPDATED: AI Review Model with Gemini integration
+// âœ¨ UPDATED: AI Review Model with Gemini integration
 model AIReview {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   submissionId  String     @unique @db.ObjectId
@@ -579,7 +564,7 @@ model AIReview {
 }
 
 // ---------------------------------------------------------
-// 🏆 HACKATHONS & TEAMS
+// ðŸ† HACKATHONS & TEAMS
 // ---------------------------------------------------------
 
 model Hackathon {
@@ -602,7 +587,7 @@ model Hackathon {
   cancelledReason String?
   createdById     String?         @db.ObjectId
 
-  // Legacy relation (existing Team model — DO NOT REMOVE)
+  // Legacy relation (existing Team model â€” DO NOT REMOVE)
   teams Team[]
 
   // New hackathon-specific relations
@@ -680,7 +665,7 @@ type TeamJoinRequest {
 }
 
 // ---------------------------------------------------------
-// 🏆 HACKATHON TEAMS & SUBMISSIONS (NEW — separate from Team)
+// ðŸ† HACKATHON TEAMS & SUBMISSIONS (NEW â€” separate from Team)
 // ---------------------------------------------------------
 
 model HackathonTeam {
@@ -815,7 +800,7 @@ model YjsDocumentSnapshot {
 }
 
 // ---------------------------------------------------------
-// 💬 FORUM & AI INTERVIEWS
+// ðŸ’¬ FORUM & AI INTERVIEWS
 // ---------------------------------------------------------
 
 model Discussion {
@@ -883,7 +868,7 @@ model Notification {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   recipientId String    @db.ObjectId
   recipient   User      @relation("UserNotifications", fields: [recipientId], references: [id])
-  type        String    // 32 types across 7 categories — see specs/011-notification-system/data-model.md
+  type        String    // 32 types across 7 categories â€” see specs/011-notification-system/data-model.md
   category    String    // hackathon | duel | discussion | submission | canvas | achievement | system
   priority    String    @default("medium") // critical | high | medium | low
   title       String
@@ -891,7 +876,7 @@ model Notification {
   actionUrl   String?
   entityId    String?
   entityType  String?
-  senderId    String?   // snapshot — NOT a FK relation
+  senderId    String?   // snapshot â€” NOT a FK relation
   senderName  String?
   senderPhoto String?
   isRead      Boolean   @default(false)
@@ -951,7 +936,7 @@ type AIMessage {
 }
 
 // ---------------------------------------------------------
-// 🛡️ MODERATION & LOGS
+// ðŸ›¡ï¸ MODERATION & LOGS
 // ---------------------------------------------------------
 
 model Badge {
@@ -1000,7 +985,7 @@ model AuditLog {
 }
 
 // ---------------------------------------------------------
-// ⚔️ DUELS 
+// âš”ï¸ DUELS 
 // ---------------------------------------------------------
 
 model Duel {
@@ -1016,28 +1001,28 @@ model Duel {
   challengeId   String       @db.ObjectId
   challenge     Challenge    @relation(fields: [challengeId], references: [id])
   
-  // État du duel
+  // Ã‰tat du duel
   status        DuelStatus   @default(waiting)
   winnerId      String?      @db.ObjectId
   winner        User?        @relation("DuelWinner", fields: [winnerId], references: [id])
   
-  // Règles
+  // RÃ¨gles
   timeLimit     Int          @default(1800) // 30 minutes en secondes
   difficulty    Difficulty
   
   // Soumissions
   player1Score  Int          @default(0)
   player2Score  Int          @default(0)
-  player1Time   Int?         // Temps de résolution en ms
+  player1Time   Int?         // Temps de rÃ©solution en ms
   player2Time   Int?
   player1Tests  Int          @default(0)
   player2Tests  Int          @default(0)
   
-  // Langages utilisés par chaque joueur
+  // Langages utilisÃ©s par chaque joueur
   player1Language String?
   player2Language String?
 
-  // Code source final de chaque joueur (persisté à la fin du duel)
+  // Code source final de chaque joueur (persistÃ© Ã  la fin du duel)
   player1Code    String?
   player2Code    String?
 
@@ -1047,7 +1032,7 @@ model Duel {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   
-  // Événements du duel
+  // Ã‰vÃ©nements du duel
   events        DuelEvent[]
 
   @@index([player1Id])
@@ -1058,11 +1043,11 @@ model Duel {
 
 enum DuelStatus {
   waiting      // En attente du 2e joueur
-  ready        // Les 2 joueurs sont connectés
+  ready        // Les 2 joueurs sont connectÃ©s
   active       // Duel en cours
-  completed    // Terminé
-  cancelled    // Annulé
-  abandoned    // Un joueur a quitté
+  completed    // TerminÃ©
+  cancelled    // AnnulÃ©
+  abandoned    // Un joueur a quittÃ©
 }
 
 type DuelEvent {

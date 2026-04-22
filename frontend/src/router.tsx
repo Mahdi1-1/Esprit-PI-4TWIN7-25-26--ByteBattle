@@ -3,7 +3,7 @@
 // and stays compatible with Vite's Fast Refresh.
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import React, { Suspense, lazy } from 'react';
-import { AppShell, PrivateGuard, AdminGuard, PublicGuard, S } from './routes';
+import { AppShell, PrivateGuard, AdminGuard, PublicGuard, S, CompanyRoleGuard } from './routes';
 
 // ─── Lazy Pages ───
 const Landing              = lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })));
@@ -48,12 +48,15 @@ const CompanySpace         = lazy(() => import('./pages/company/CompanySpace').t
 const CompanyOverview      = lazy(() => import('./pages/company/CompanyOverview').then(m => ({ default: m.CompanyOverview })));
 const CompanyDashboard    = lazy(() => import('./pages/company/CompanyDashboard').then(m => ({ default: m.CompanyDashboard })));
 const CompanyMembers       = lazy(() => import('./pages/company/CompanyMembers').then(m => ({ default: m.CompanyMembers })));
+const CompanyTeams         = lazy(() => import('./pages/company/CompanyTeams').then(m => ({ default: m.CompanyTeams })));
 const CompanyRoadmaps      = lazy(() => import('./pages/company/CompanyRoadmaps').then(m => ({ default: m.CompanyRoadmaps })));
+const CompanyRoadmapDetail = lazy(() => import('./pages/company/CompanyRoadmapDetail').then(m => ({ default: m.CompanyRoadmapDetail })));
+const CompanyRoadmapBuilder = lazy(() => import('./pages/company/CompanyRoadmapBuilder').then(m => ({ default: m.CompanyRoadmapBuilder })));
 const CompanyCourses       = lazy(() => import('./pages/company/CompanyCourses').then(m => ({ default: m.CompanyCourses })));
 const CompanyJobs          = lazy(() => import('./pages/company/CompanyJobs').then(m => ({ default: m.CompanyJobs })));
 const CompanyHiring        = lazy(() => import('./pages/company/CompanyHiring').then(m => ({ default: m.CompanyHiring })));
 const CompanyNotifications = lazy(() => import('./pages/company/CompanyNotifications').then(m => ({ default: m.CompanyNotifications })));
-const CompanyVerify = lazy(() => import('./pages/company/CompanyVerify').then(m => ({ default: m.CompanyVerify })));
+const CompanyVerify = lazy(() => import('./pages/company/CompanyVerify').then(m => ({ default: m.CompanyVerifyPage })));
 const HelpVerification = lazy(() => import('./pages/HelpVerification').then(m => ({ default: m.HelpVerification })));
 
 // ─── Admin pages ───
@@ -67,6 +70,7 @@ const AdminReports          = lazy(() => import('./pages/admin/AdminReports').th
 const AdminHackathons       = lazy(() => import('./pages/admin/AdminHackathons').then(m => ({ default: m.AdminHackathons })));
 const AdminCompanies      = lazy(() => import('./pages/admin/AdminCompanies').then(m => ({ default: m.AdminCompanies })));
 const CreateChallenge      = lazy(() => import('./pages/company/CreateChallenge').then(m => ({ default: m.CreateChallenge })));
+const CompanyChallengesList = lazy(() => import('./pages/company/CompanyChallengesList').then(m => ({ default: m.CompanyChallengesList })));
 
 export const router = createBrowserRouter([
   {
@@ -142,28 +146,127 @@ export const router = createBrowserRouter([
           { path: 'company-space', element: <S><CompanySpace /></S> },
           { path: 'company',             element: <S><CompanyOverview /></S> },
           { path: 'company/overview',    element: <S><CompanyOverview /></S> },
-          { path: 'company/candidates',  element: <S><CompanyHiring /></S> },
-          { path: 'company/challenges',  element: <S><CompanyRoadmaps /></S> },
+          {
+            path: 'company/candidates',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CompanyHiring />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
+         // { path: 'company/challenges',  element: <S><CompanyChallenges /></S> },
+          { path: 'company/company-challenges', element: <S><CompanyChallengesList /></S> },
+          { path: 'company/roadmaps', element: <S><CompanyRoadmaps /></S> },
+          {
+            path: 'company/roadmaps/create',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CompanyRoadmapBuilder />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
+          { path: 'company/roadmaps/:roadmapId', element: <S><CompanyRoadmapDetail /></S> },
+          {
+            path: 'company/roadmaps/:roadmapId/build',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CompanyRoadmapBuilder />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
           { path: 'company/members',     element: <S><CompanyMembers /></S> },
-          { path: 'company/exports',     element: <S><CompanyOverview /></S> },
-          { path: 'company/settings',    element: <S><CompanyOverview /></S> },
+          {
+            path: 'company/exports',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CompanyOverview />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
+          {
+            path: 'company/settings',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner']}>
+                  <CompanyOverview />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
 
           // Company Hub (accessible by all members)
           { path: 'companies/:companyId/dashboard', element: <S><CompanyDashboard /></S> },
           { path: 'companies/:companyId/members', element: <S><CompanyMembers /></S> },
           { path: 'companies/:companyId/roadmaps', element: <S><CompanyRoadmaps /></S> },
+          {
+            path: 'companies/:companyId/roadmaps/create',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CompanyRoadmapBuilder />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
+          { path: 'companies/:companyId/roadmaps/:roadmapId', element: <S><CompanyRoadmapDetail /></S> },
+          {
+            path: 'companies/:companyId/roadmaps/:roadmapId/build',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CompanyRoadmapBuilder />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
           { path: 'companies/:companyId/courses', element: <S><CompanyCourses /></S> },
           { path: 'companies/:companyId/jobs', element: <S><CompanyJobs /></S> },
-          { path: 'companies/:companyId/hiring', element: <S><CompanyHiring /></S> },
+          {
+            path: 'companies/:companyId/hiring',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CompanyHiring />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
           { path: 'companies/:companyId/notifications', element: <S><CompanyNotifications /></S> },
           { path: 'companies/:companyId/verify', element: <S><CompanyVerify /></S> },
 
           // Legacy routes with /company/ prefix (always visible)
           { path: 'company/dashboard',   element: <S><CompanyDashboard /></S> },
           { path: 'company/challenges',  element: <S><CompanyRoadmaps /></S> },
-          { path: 'company/challenges/create', element: <S><CreateChallenge /></S> },
-          { path: 'company/candidates',  element: <S><CompanyHiring /></S> },
-          { path: 'company/team',        element: <S><CompanyMembers /></S> },
+          {
+            path: 'company/challenges/create',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CreateChallenge />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
+          {
+            path: 'company/candidates',
+            element: (
+              <S>
+                <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+                  <CompanyHiring />
+                </CompanyRoleGuard>
+              </S>
+            ),
+          },
+          { path: 'company/members',     element: <S><CompanyMembers /></S> },
+          { path: 'company/teams',       element: <S><CompanyTeams /></S> },
           { path: 'company/reports',     element: <S><CompanyDashboard /></S> },
 
           // Help

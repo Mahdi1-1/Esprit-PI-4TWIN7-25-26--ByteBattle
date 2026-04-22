@@ -1,93 +1,133 @@
 import api from '../api/axios';
 
-export interface Challenge {
-  id: string;
-  title: string;
-  difficulty: string;
-  tags: string[];
-}
+export type RoadmapNodeType = 'topic' | 'subtopic' | 'resource';
+export type RoadmapNodeStyle = 'required' | 'optional' | 'alternative';
+export type RoadmapProgressStatus = 'done' | 'in_progress' | 'skipped' | null;
 
-export interface CompanyRoadmap {
+export interface RoadmapSummary {
   id: string;
-  companyId: string;
   title: string;
   description?: string;
-  type: 'platform' | 'custom';
-  challengeIds: string[];
-  order: number;
-  visibility: 'public' | 'employees_only';
+  isPublished: boolean;
   createdAt: string;
-  challenges?: Challenge[];
+  updatedAt: string;
+  nodeCount: number;
+  completionPercentage: number;
 }
 
-export interface RoadmapAssignment {
+export interface RoadmapResource {
   id: string;
-  roadmapId: string;
-  userId: string;
-  user: {
-    id: string;
-    username: string;
-    profileImage?: string;
-  };
-  assignedBy: string;
-  assignedAt: string;
-  completedAt?: string;
-  progress: number;
+  nodeId: string;
+  title: string;
+  url: string;
+  type: string;
+}
+
+export interface RoadmapNode {
+  id: string;
+  title: string;
+  description?: string;
+  type: RoadmapNodeType;
+  style: RoadmapNodeStyle;
+  positionX: number;
+  positionY: number;
+  resources: RoadmapResource[];
+}
+
+export interface RoadmapEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+}
+
+export interface RoadmapDetail {
+  id: string;
+  title: string;
+  description?: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  nodes: RoadmapNode[];
+  edges: RoadmapEdge[];
+  progress: Record<string, Exclude<RoadmapProgressStatus, null>>;
 }
 
 export const roadmapService = {
-  async getCompanyRoadmaps(companyId: string): Promise<CompanyRoadmap[]> {
-    const { data } = await api.get(`/companies/${companyId}/roadmaps`);
+  async getRoadmaps(): Promise<RoadmapSummary[]> {
+    const { data } = await api.get('/companies/my-company/roadmaps');
     return data;
   },
 
-  async getRoadmap(roadmapId: string): Promise<CompanyRoadmap> {
-    const { data } = await api.get(`/roadmaps/${roadmapId}`);
+  async getRoadmapDetail(roadmapId: string): Promise<RoadmapDetail> {
+    const { data } = await api.get('/companies/my-company/roadmaps/' + roadmapId);
     return data;
   },
 
-  async createRoadmap(companyId: string, dto: {
+  async updateProgress(roadmapId: string, nodeId: string, status: RoadmapProgressStatus) {
+    const { data } = await api.patch('/companies/my-company/roadmaps/' + roadmapId + '/progress', {
+      nodeId,
+      status,
+    });
+    return data as { nodeId: string; status: RoadmapProgressStatus; completionPercentage: number };
+  },
+
+  async createRoadmap(dto: { title: string; description?: string }) {
+    const { data } = await api.post('/companies/my-company/roadmaps', dto);
+    return data as RoadmapSummary;
+  },
+
+  async updateRoadmap(roadmapId: string, dto: { title?: string; description?: string; isPublished?: boolean }) {
+    const { data } = await api.patch('/companies/my-company/roadmaps/' + roadmapId, dto);
+    return data as RoadmapSummary;
+  },
+
+  async deleteRoadmap(roadmapId: string) {
+    await api.delete('/companies/my-company/roadmaps/' + roadmapId);
+  },
+
+  async createNode(roadmapId: string, dto: {
     title: string;
     description?: string;
-    type: 'platform' | 'custom';
-    challengeIds?: string[];
-    visibility: 'public' | 'employees_only';
-  }): Promise<CompanyRoadmap> {
-    const { data } = await api.post(`/companies/${companyId}/roadmaps`, dto);
-    return data;
+    type: RoadmapNodeType;
+    style: RoadmapNodeStyle;
+    positionX: number;
+    positionY: number;
+  }) {
+    const { data } = await api.post('/companies/my-company/roadmaps/' + roadmapId + '/nodes', dto);
+    return data as RoadmapNode;
   },
 
-  async updateRoadmap(roadmapId: string, dto: {
-    title?: string;
-    description?: string;
-    challengeIds?: string[];
-    visibility?: 'public' | 'employees_only';
-    order?: number;
-  }): Promise<CompanyRoadmap> {
-    const { data } = await api.patch(`/roadmaps/${roadmapId}`, dto);
-    return data;
+  async updateNode(roadmapId: string, nodeId: string, dto: Partial<{
+    title: string;
+    description: string;
+    type: RoadmapNodeType;
+    style: RoadmapNodeStyle;
+    positionX: number;
+    positionY: number;
+  }>) {
+    const { data } = await api.patch('/companies/my-company/roadmaps/' + roadmapId + '/nodes/' + nodeId, dto);
+    return data as RoadmapNode;
   },
 
-  async deleteRoadmap(roadmapId: string): Promise<void> {
-    await api.delete(`/roadmaps/${roadmapId}`);
+  async deleteNode(roadmapId: string, nodeId: string) {
+    await api.delete('/companies/my-company/roadmaps/' + roadmapId + '/nodes/' + nodeId);
   },
 
-  async assignRoadmap(roadmapId: string, userIds: string[], dueDate?: string): Promise<void> {
-    await api.post(`/roadmaps/${roadmapId}/assign`, { userIds, dueDate });
+  async createEdge(roadmapId: string, sourceId: string, targetId: string) {
+    const { data } = await api.post('/companies/my-company/roadmaps/' + roadmapId + '/edges', { sourceId, targetId });
+    return data as RoadmapEdge;
   },
 
-  async getRoadmapAssignments(roadmapId: string): Promise<RoadmapAssignment[]> {
-    const { data } = await api.get(`/roadmaps/${roadmapId}/assignments`);
-    return data;
+  async deleteEdge(roadmapId: string, edgeId: string) {
+    await api.delete('/companies/my-company/roadmaps/' + roadmapId + '/edges/' + edgeId);
   },
 
-  async updateAssignmentProgress(assignmentId: string, progress: number): Promise<RoadmapAssignment> {
-    const { data } = await api.patch(`/roadmaps/assignments/${assignmentId}/progress`, { progress });
-    return data;
+  async createResource(roadmapId: string, nodeId: string, dto: { title: string; url: string; type: string }) {
+    const { data } = await api.post('/companies/my-company/roadmaps/' + roadmapId + '/nodes/' + nodeId + '/resources', dto);
+    return data as RoadmapResource;
   },
 
-  async getAvailableChallenges(): Promise<Challenge[]> {
-    const { data } = await api.get('/challenges?status=published');
-    return data;
+  async deleteResource(roadmapId: string, nodeId: string, resourceId: string) {
+    await api.delete('/companies/my-company/roadmaps/' + roadmapId + '/nodes/' + nodeId + '/resources/' + resourceId);
   },
 };

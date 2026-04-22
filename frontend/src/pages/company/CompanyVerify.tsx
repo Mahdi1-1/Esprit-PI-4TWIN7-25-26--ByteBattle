@@ -140,5 +140,6 @@ export function CompanyVerifyPage() {
         </div>
       </div>
     </div>
-  );
+  </>
+);
 }

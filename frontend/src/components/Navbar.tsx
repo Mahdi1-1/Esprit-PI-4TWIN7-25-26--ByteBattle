@@ -39,6 +39,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { Bell } from 'lucide-react';
 import { companiesService, CompanyMembership } from '../services/companiesService';
 import { JoinCompanyModal } from './company/JoinCompanyModal';
+import { CompanyNavbar } from './CompanyNavbar';
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -693,6 +694,16 @@ export function Navbar({ isLoggedIn, userAvatar, username }: NavbarProps) {
           </div>
         </div>
       </nav>
+
+      {/* ═══ Company Navbar — shown when user has a companyRole ═══ */}
+      {loggedIn && isUser && user?.companyRole && (
+        <CompanyNavbar
+          companyName={activeCompanyMembership?.company?.name}
+          companyId={activeCompanyMembership?.company?.id}
+          userName={displayUsername}
+          userRole={user.companyRole as 'owner' | 'recruiter' | 'member'}
+        />
+      )}
 
       {/* ═══ Mobile Menu Overlay ═══ */}
       {mobileMenuOpen && loggedIn && (

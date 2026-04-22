@@ -63,6 +63,14 @@ export class ChallengesController {
   }
 
   // ----- Company Routes -----
+  @Get('company/:companyId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List challenges for a company (active members only)' })
+  findByCompany(@Param('companyId') companyId: string, @CurrentUser('id') userId: string) {
+    return this.challengesService.findByCompany(companyId, userId);
+  }
+
   @Post('company')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

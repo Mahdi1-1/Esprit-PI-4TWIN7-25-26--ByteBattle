@@ -26,6 +26,19 @@ export interface Company {
   updatedAt: string;
 }
 
+export interface CompanyTeam {
+  id: string;
+  companyId: string;
+  name: string;
+  description?: string;
+  stats?: {
+    memberCount: number;
+    avgElo: number;
+    totalSolved: number;
+  };
+  createdAt: string;
+}
+
 export interface CompanyMember {
   id: string;
   companyId: string;
@@ -40,6 +53,8 @@ export interface CompanyMember {
   };
   role: CompanyRole;
   status: CompanyMembershipStatus;
+  teamId?: string;
+  team?: CompanyTeam;
   joinedAt: string;
 }
 
@@ -262,12 +277,32 @@ export const companyService = {
     return data;
   },
 
+  async getCompanyTeams(companyId: string): Promise<CompanyTeam[]> {
+    const { data } = await api.get(`/companies/${companyId}/teams`);
+    return data;
+  },
+
+  async createCompanyTeam(companyId: string, dto: { name: string; description?: string }): Promise<CompanyTeam> {
+    const { data } = await api.post(`/companies/${companyId}/teams`, dto);
+    return data;
+  },
+
+  async assignMemberToTeam(companyId: string, userId: string, teamId: string | null): Promise<CompanyMember> {
+    const { data } = await api.patch(`/companies/${companyId}/members/${userId}/team`, { teamId });
+    return data;
+  },
+
   async removeMember(companyId: string, userId: string): Promise<void> {
     await api.delete(`/companies/${companyId}/members/${userId}`);
   },
 
   async inviteMember(companyId: string, email: string): Promise<CompanyMembership> {
     const { data } = await api.post(`/companies/${companyId}/invite`, { email });
+    return data;
+  },
+
+  async regenerateJoinCode(companyId: string): Promise<{ joinCode: string; expiresAt: string }> {
+    const { data } = await api.post(`/companies/${companyId}/join-code/regenerate`);
     return data;
   },
 
@@ -401,6 +436,11 @@ export const companyService = {
 
   async getUnreadNotificationsCount(companyId: string): Promise<{ count: number }> {
     const { data } = await api.get(`/companies/${companyId}/notifications/unread-count`);
+    return data;
+  },
+
+  async getCompanyChallenges(companyId: string): Promise<any[]> {
+    const { data } = await api.get(`/challenges/company/${companyId}`);
     return data;
   },
 };

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { Shield, CheckCircle, Clock, Users, Briefcase, FileText, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Button } from '../components/Button';
-import { api } from '../services/api';
+import api from '../api/axios';
 
 interface VerificationInfo {
   name: string;

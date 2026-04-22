@@ -74,6 +74,33 @@ export class ChallengesService {
     }
   }
 
+  async findByCompany(companyId: string, userId: string) {
+    const membership = await this.prisma.companyMembership.findFirst({
+      where: { userId, companyId, status: 'active' },
+    });
+    if (!membership) {
+      throw new BadRequestException('You must be an active member of this company to view its challenges');
+    }
+
+    return this.prisma.challenge.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        kind: true,
+        difficulty: true,
+        tags: true,
+        status: true,
+        category: true,
+        visibility: true,
+        descriptionMd: true,
+        createdAt: true,
+        _count: { select: { submissions: true } },
+      },
+    });
+  }
+
   async findAll(query: {
     page?: number;
     limit?: number;

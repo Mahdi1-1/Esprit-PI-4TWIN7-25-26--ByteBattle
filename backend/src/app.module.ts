@@ -19,6 +19,7 @@ import { DuelsModule } from './duels/duels.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CacheModule } from './cache/cache.module';
 import { CompaniesModule } from './companies/companies.module';
+import { RoadmapsModule } from './roadmaps/roadmaps.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { CompaniesModule } from './companies/companies.module';
     DuelsModule,
     NotificationsModule,
     CompaniesModule,
+    RoadmapsModule,
   ],
 })
 export class AppModule {}

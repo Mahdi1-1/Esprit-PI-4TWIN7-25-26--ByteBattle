@@ -40,8 +40,11 @@ export class CompanyMemberResponseDto {
   userId: string;
   role: 'member' | 'recruiter' | 'owner';
   status: 'pending' | 'active' | 'rejected';
+  teamId?: string;
+  team?: any;
   joinedAt: Date;
   company?: CompanyResponseDto;
+  user?: any;
 
   static fromPrisma(member: any): CompanyMemberResponseDto {
     return {
@@ -50,8 +53,11 @@ export class CompanyMemberResponseDto {
       userId: member.userId,
       role: member.role,
       status: member.status,
+      teamId: member.teamId || undefined,
+      team: member.team || undefined,
       joinedAt: member.joinedAt,
       company: member.company ? CompanyResponseDto.fromPrisma(member.company) : undefined,
+      user: member.user,
     };
   }
 }
