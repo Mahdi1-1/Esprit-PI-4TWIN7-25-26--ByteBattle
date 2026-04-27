@@ -91,3 +91,11 @@ dist/
 *.mp3
 *.wav
 *.tmp
+
+# ─── Python virtualenv and caches ───
+ml-service/venv/
+**/__pycache__/
+*.pyc
+
+# ─── Local git backup artifacts ───
+mobile/.git.bak_*/
