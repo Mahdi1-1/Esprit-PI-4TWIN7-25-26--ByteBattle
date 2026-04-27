@@ -1,0 +1,143 @@
+version: '3.8'
+
+services:
+  # ── MongoDB ──────────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: bytebattle-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - bytebattle-net
+    restart: unless-stopped
+
+  # ── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: bytebattle-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bytebattle-net
+    restart: unless-stopped
+
+  # ── SonarQube ────────────────────────────────────────────
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: bytebattle-sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    networks:
+      - bytebattle-net
+    restart: unless-stopped
+
+  # ── Backend ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bytebattle-backend
+    ports:
+      - "4001:4001"
+    environment:
+      - DATABASE_URL=mongodb://mongodb:27017/bytebattle?directConnection=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=4001
+      - NODE_ENV=production
+      - JWT_SECRET=changeme-super-secret-key-bytebattle-2026
+      - JWT_EXPIRES_IN=7d
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - bytebattle-net
+    restart: unless-stopped
+
+  # ── Judge Worker ─────────────────────────────────────────
+  judge-worker:
+    build:
+      context: ./judge-worker
+      dockerfile: Dockerfile
+    container_name: bytebattle-judge
+    environment:
+      - DATABASE_URL=mongodb://mongodb:27017/bytebattle?directConnection=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=production
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - bytebattle-net
+    restart: unless-stopped
+
+  # ── Frontend ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bytebattle-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - bytebattle-net
+    restart: unless-stopped
+
+  # ── Prometheus ───────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bytebattle-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./k8s/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - bytebattle-net
+    restart: unless-stopped
+
+  # ── Grafana ──────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bytebattle-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./k8s/monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    depends_on:
+      - prometheus
+    networks:
+      - bytebattle-net
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  redis_data:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  bytebattle-net:
+    driver: bridge

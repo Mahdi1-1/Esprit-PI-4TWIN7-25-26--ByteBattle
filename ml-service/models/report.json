@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "model": "LogisticRegression",
+      "accuracy": 0.7852,
+      "macro_f1": 0.7149,
+      "quadratic_kappa": 0.8363,
+      "mae": 0.2363,
+      "champion_score": 0.7993
+    },
+    {
+      "model": "RandomForest",
+      "accuracy": 0.998,
+      "macro_f1": 0.9858,
+      "quadratic_kappa": 0.9989,
+      "mae": 0.002,
+      "champion_score": 0.9942
+    },
+    {
+      "model": "XGBoost",
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "quadratic_kappa": 1.0,
+      "mae": 0.0,
+      "champion_score": 1.0
+    }
+  ],
+  "champion": {
+    "model": "XGBoost",
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "quadratic_kappa": 1.0,
+    "mae": 0.0,
+    "champion_score": 1.0
+  },
+  "test_set_size": 512,
+  "train_set_size": 2900,
+  "feature_count": 41
+}

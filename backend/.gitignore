@@ -1,0 +1,39 @@
+google-credentials.json
+
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# tests
+coverage/
+.nyc_output/
+
+# local uploads/temp
+uploads/
+tmp/
+temp/
+
+# prisma local sqlite (if used)
+prisma/*.db
+prisma/*.db-journal
+
+# editor/os
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

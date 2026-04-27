@@ -1,0 +1,60 @@
+import { IsString, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateReportDto {
+  @ApiProperty()
+  @IsString()
+  type: string;
+
+  @ApiProperty()
+  @IsString()
+  targetType: string;
+
+  @ApiProperty()
+  @IsString()
+  targetId: string;
+
+  @ApiProperty()
+  @IsString()
+  reason: string;
+}
+
+export class UpdateReportStatusDto {
+  @ApiProperty({ enum: ['open', 'reviewed', 'resolved', 'dismissed'] })
+  @IsString()
+  status: string;
+}
+
+export class UpdateCompanyVerificationDto {
+  @ApiPropertyOptional({ description: 'Mark the company as verified.' })
+  @IsOptional()
+  verified?: boolean;
+
+  @ApiPropertyOptional({ description: 'Administrative company status.' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({ description: 'Message sent to the company owner.' })
+  @IsOptional()
+  @IsString()
+  message?: string;
+}
+
+export class CreateAuditLogDto {
+  @ApiProperty()
+  @IsString()
+  action: string;
+
+  @ApiProperty()
+  @IsString()
+  entityType: string;
+
+  @ApiProperty()
+  @IsString()
+  entityId: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  details?: any;
+}

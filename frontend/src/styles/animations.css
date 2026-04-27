@@ -1,0 +1,70 @@
+/* Grille Cyber animée */
+.cyber-grid {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+}
+.cyber-grid-red {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(239, 68, 68, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(239, 68, 68, 0.05) 1px, transparent 1px);
+}
+
+/* Scanlines CRT */
+.crt-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.1) 2px,
+    rgba(0,0,0,0.1) 4px
+  );
+}
+
+/* Chromatic aberration */
+.chromatic-aberration {
+  text-shadow: -2px 0 red, 2px 0 cyan;
+}
+
+/* Ink drip effect */
+.ink-drip {
+  animation: drip 2s ease-in forwards;
+}
+
+/* Cercle enso SVG */
+.enso-circle {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: ensoDraw 3s ease-in-out forwards;
+}
+
+/* LED scoreboard effect */
+.led-effect {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0,0,0,0.3) 2px,
+    rgba(0,0,0,0.3) 4px
+  ),
+  repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0,0,0,0.3) 2px,
+    rgba(0,0,0,0.3) 4px
+  );
+}
+
+/* Crack lines (pseudo-elements) */
+.crack-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M50,50 L40,30 L60,10 L30,0" stroke="%23ff0000" stroke-width="0.5" fill="none"/></svg>');
+  background-size: cover;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}

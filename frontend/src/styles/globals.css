@@ -1,0 +1,287 @@
+@import "tailwindcss";
+
+/* ===================================================================
+   BYTEBATTLE DESIGN SYSTEM - OPTIMIZED v2
+   Thèmes: Cyber Arena, Space Ops, Samurai Dojo, Pixel Arcade, Mythic RPG, Sports Arena
+   =================================================================== */
+
+/* ==================== GOOGLE FONTS ==================== */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Chakra+Petch:wght@400;600;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=Press+Start+2P&family=Cinzel:wght@400;700&family=Lora:wght@400;600&family=Teko:wght@400;700&family=Barlow:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&display=swap');
+
+@theme {
+  /* Intégration des variables système dans Tailwind v4 */
+  --font-ui: var(--font-ui);
+  --font-title: var(--font-title);
+  --font-code: var(--font-code);
+
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-bg-primary: var(--bg-primary);
+  --color-surface-1: var(--surface-1);
+
+  --radius-theme-btn: var(--btn-radius);
+  --radius-theme-card: var(--card-radius);
+}
+
+/* ==================== BASE CONFIGURATION ==================== */
+@layer base {
+  :root {
+    /* Core Scale (8pt Grid) */
+    --space-1: 0.25rem;
+    --space-4: 1rem;
+    --space-8: 2rem;
+
+    /* Typography Scale */
+    --text-h1: clamp(2rem, 5vw, 3rem);
+    --text-body: 0.9375rem;
+
+    /* Default Fallbacks */
+    --font-ui: 'Inter', system-ui, sans-serif;
+    --font-arabic: 'Noto Sans Arabic', sans-serif;
+
+    /* Logic Properties Default */
+    --inline-start: 1rem;
+  }
+
+  html {
+    font-family: var(--font-ui);
+    font-size: 16px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    scroll-behavior: smooth;
+  }
+
+  /* Support Automatique RTL via Propriétés Logiques */
+  [dir="rtl"] {
+    font-family: var(--font-arabic), var(--font-ui);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-title);
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  code {
+    font-family: var(--font-code);
+  }
+}
+
+/* ==================== THEMES DEFINITIONS ==================== */
+
+/* --- CYBER ARENA (Neon/Futuristic) --- */
+[data-theme^="cyber"] {
+  --font-title: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  --btn-radius: 4px;
+  --card-radius: 8px;
+  --border-width: 2px;
+}
+
+[data-theme="cyber_dark"] {
+  --bg-primary: #0B1020;
+  --surface-1: #151b2e;
+  --text-primary: #E5E7EB;
+  --text-secondary: #818CF8;
+  --brand-primary: #00E5FF;
+  --brand-primary-rgb: 0, 229, 255;
+  --brand-secondary: #8B5CF6;
+  --fx-glow: 0 0 20px rgba(0, 229, 255, 0.4);
+  --border-default: #373f6b;
+}
+
+/* --- SPACE OPS (Technical/NASA) --- */
+[data-theme^="space"] {
+  --font-title: 'Chakra Petch', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --btn-radius: 0px;
+  --card-radius: 12px;
+  --border-width: 1px;
+}
+
+[data-theme="space_dark"] {
+  --bg-primary: #070A1A;
+  --surface-1: #0f172a;
+  --text-primary: #FFFFFF;
+  --text-secondary: #22D3EE;
+  --brand-primary: #22D3EE;
+  --brand-secondary: #E879F9;
+  --fx-glow: 0 0 15px rgba(34, 211, 238, 0.3);
+  --border-default: #253348;
+}
+
+/* --- SAMURAI DOJO (Minimalism/Elegance) --- */
+[data-theme^="samurai"] {
+  --font-title: 'Noto Serif JP', serif;
+  --font-ui: 'Noto Sans JP', sans-serif;
+  --btn-radius: 0px;
+  --card-radius: 0px;
+  --border-width: 2px;
+}
+
+[data-theme="samurai_dark"] {
+  --bg-primary: #0B0B0D;
+  --surface-1: #1a1a1a;
+  --text-primary: #F5F1E8;
+  --brand-primary: #DC2626;
+  --brand-secondary: #D4AF37;
+  --border-default: #262626;
+}
+
+/* --- PIXEL ARCADE (Retro 8-bit) --- */
+[data-theme^="pixel"] {
+  --font-title: 'Press Start 2P', cursive;
+  --font-ui: 'Press Start 2P', cursive;
+  --btn-radius: 0px;
+  --border-width: 4px;
+  --transition-speed: 0s;
+  --transition-ease: steps(1);
+}
+
+[data-theme="pixel_dark"] {
+  --bg-primary: #1A1A2E;
+  --surface-1: #252542;
+  --text-primary: #FFFFFF;
+  --brand-primary: #06FFA5;
+  --brand-secondary: #FF006E;
+  --border-default: #3d3d6b;
+  --fx-glow: 4px 4px 0px #000;
+}
+
+/* --- MYTHIC RPG (Epic/Fantasy) --- */
+[data-theme^="mythic"] {
+  --font-title: 'Cinzel', serif;
+  --font-ui: 'Lora', serif;
+  --btn-radius: 0px;
+  --card-radius: 16px;
+  --border-width: 2px;
+}
+
+[data-theme="mythic_dark"] {
+  --bg-primary: #0F172A;
+  --surface-1: #1a1228;
+  --text-primary: #FEF3C7;
+  --brand-primary: #7C3AED;
+  --brand-secondary: #F59E0B;
+  --border-default: #3d2f54;
+}
+
+/* --- SPORTS ARENA (Aggressive/Dynamic) --- */
+[data-theme^="sports"] {
+  --font-title: 'Teko', sans-serif;
+  --font-ui: 'Barlow', sans-serif;
+  --btn-radius: 0px;
+  --border-width: 3px;
+}
+
+[data-theme="sports_dark"] {
+  --bg-primary: #111827;
+  --surface-1: #1f2d35;
+  --text-primary: #FFFFFF;
+  --brand-primary: #2563EB;
+  --brand-secondary: #FBBF24;
+  --border-default: #2a3942;
+}
+
+/* ==================== COMPONENTS & UTILITIES ==================== */
+@layer utilities {
+
+  /* Boutons thématiques avec Clipping */
+  .theme-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: var(--border-width) solid var(--brand-primary);
+    background: transparent;
+    color: var(--brand-primary);
+    /* Only transition GPU-composited properties to avoid non-composited animation warnings */
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .theme-btn:hover {
+    background: var(--brand-primary);
+    color: var(--bg-primary);
+    box-shadow: var(--fx-glow);
+  }
+
+  /* Clip-paths dynamiques par thème */
+  [data-theme^="sports"] .theme-btn,
+  [data-theme^="mythic"] .theme-btn {
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+
+  [data-theme^="pixel"] .theme-btn {
+    clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+  }
+
+  /* Scanline Effect (Optimisé avec will-change) */
+  .scanline-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(to bottom,
+        transparent 50%,
+        rgba(0, 0, 0, 0.1) 51%);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.1;
+  }
+
+  /* Propriétés Logiques (Remplace vos utilitaires RTL manuels) */
+  .p-start {
+    padding-inline-start: var(--space-4);
+  }
+
+  .m-end {
+    margin-inline-end: var(--space-4);
+  }
+
+  .border-s {
+    border-inline-start: 1px solid var(--border-default);
+  }
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes cyber-pulse {
+  0% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 2px var(--brand-primary));
+  }
+
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 10px var(--brand-primary));
+  }
+
+  100% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 2px var(--brand-primary));
+  }
+}
+
+.animate-cyber {
+  animation: cyber-pulse 2s infinite ease-in-out;
+}
+
+/* Suppression du flou sur Pixel Art */
+[data-theme^="pixel"] img {
+  image-rendering: pixelated;
+}
+
+/* Support Accessibilité : Réduction de mouvement */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
