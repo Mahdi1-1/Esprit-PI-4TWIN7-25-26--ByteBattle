@@ -94,8 +94,24 @@ dist/
 
 # ─── Python virtualenv and caches ───
 ml-service/venv/
+venv/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
 **/__pycache__/
 *.pyc
 
 # ─── Local git backup artifacts ───
+.git.bak
+.git.bak*/
 mobile/.git.bak_*/
+
+# ─── Large artifacts ───
+*.zip
+*.pkl
+*.parquet
+*.onnx
+*.pt
