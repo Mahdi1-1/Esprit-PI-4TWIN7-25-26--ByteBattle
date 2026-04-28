@@ -25,7 +25,10 @@ import { HintsModule } from './hints/hints.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: path.resolve(__dirname, '../.env'),
+      envFilePath: [
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(__dirname, '../.env'),
+      ],
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
