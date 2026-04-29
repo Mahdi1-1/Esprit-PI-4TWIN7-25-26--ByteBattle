@@ -16,6 +16,7 @@ import {
   NotificationPriority,
   NotificationType,
 } from '../notifications/notification.constants';
+import { InterviewsService } from '../interviews/interviews.service';
 
 @Injectable()
 export class CompaniesService {
@@ -25,6 +26,7 @@ export class CompaniesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationEmitter: NotificationEmitterService,
+    private readonly interviewsService: InterviewsService,
   ) {}
 
   private slugify(text: string) {
@@ -1018,11 +1020,74 @@ export class CompaniesService {
     };
   }
 
-  async getPublicJobs() {
+  async sendAIInterview(companyId: string, userId: string, dto: any) {
+    await this.requireCompanyAdmin(companyId, userId);
+
+    const difficulty: 'easy' | 'medium' | 'hard' =
+      dto?.difficulty && ['easy', 'medium', 'hard'].includes(dto.difficulty)
+        ? dto.difficulty
+        : 'medium';
+    const domain = dto?.domain || 'SOFTWARE_ENGINEERING';
+    const language = dto?.language || 'FR';
+
+    // Create a real interview session for the candidate, so they can open it by ID.
+    const session = await this.interviewsService.start(dto.candidateId, {
+      difficulty,
+      domain,
+      language,
+    });
+
+    await this.emitAppNotification(
+      dto.candidateId,
+      'AI Interview Assigned',
+      'You have been assigned an AI interview. Good luck!',
+      `/interview?sessionId=${encodeURIComponent(session.id)}`,
+      companyId,
+      'ai_interview',
+    );
+
+    return {
+      interviewId: session.id,
+    };
+  }
+
+  async scheduleHumanInterview(companyId: string, userId: string, dto: any) {
+    await this.requireCompanyAdmin(companyId, userId);
+
+    const mockInterviewId = 'human_interview_' + Date.now();
+    const scheduledAt = dto.scheduledAt ? String(dto.scheduledAt) : new Date().toISOString();
+
+    await this.emitAppNotification(
+      dto.candidateId,
+      'Interview Scheduled',
+      `You have been scheduled for an interview with the company. Date: ${new Date(scheduledAt).toLocaleString()}.`,
+      `/dashboard?viewHumanInterview=${mockInterviewId}&scheduledAt=${encodeURIComponent(scheduledAt)}`,
+      companyId,
+      'interview',
+    );
+
+    // Mock response for now.
+    return {
+      id: mockInterviewId,
+      ...dto,
+      status: 'scheduled',
+    };
+  }
+
+  async getPublicJobs(userId: string) {
+    const memberships = await this.prisma.companyMembership.findMany({
+      where: { userId, status: 'active' },
+      select: { companyId: true },
+    });
+    const memberCompanyIds = memberships.map((membership) => membership.companyId);
+
     return this.prisma.companyJobPosting.findMany({
-      where: { status: 'active' },
-      orderBy: { createdAt: 'desc' },
+      where: {
+        status: 'active',
+        companyId: { notIn: memberCompanyIds },
+      },
       include: { company: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

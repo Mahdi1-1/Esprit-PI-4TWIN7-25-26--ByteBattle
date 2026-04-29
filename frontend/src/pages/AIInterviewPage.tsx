@@ -8,6 +8,7 @@ import {
   Sparkles, Target, Lightbulb, Award, BookOpen, ArrowLeft, Globe,
   CheckCircle2, XCircle, AlertTriangle, ThumbsUp, ThumbsDown, Minus,
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import {
   interviewDomains,
   difficultyLevels,
@@ -33,6 +34,7 @@ type SetupStep = 'domain' | 'difficulty' | 'language';
 
 export function AIInterviewPage() {
   const { t, language } = useLanguage();
+  const location = useLocation();
   const [viewMode, setViewMode] = useState<ViewMode>('setup');
   const [setupStep, setSetupStep] = useState<SetupStep>('domain');
   const [selectedDomain, setSelectedDomain] = useState<InterviewDomain | null>(null);
@@ -54,6 +56,52 @@ export function AIInterviewPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [session?.messages]);
+
+  // If the user was notified with a sessionId, load that interview session.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const sessionId = params.get('sessionId');
+    if (!sessionId) return;
+
+    const fetchSession = async () => {
+      try {
+        const res = await interviewsService.getSession(sessionId);
+        const mappedSession: InterviewSession = {
+          ...res,
+          // Ensure fields required by the UI exist.
+          duration: res.duration ?? 30,
+          messages: (res.messages || []).map((m: any, idx: number) => ({
+            id: m.id || `${res.id}-${idx}`,
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp
+              ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            code: m.code,
+            language: m.language,
+            codeBlock: m.codeBlock,
+            feedback: m.feedback,
+            audioUrl: m.audioUrl,
+            isVoice: m.isVoice,
+            confidence: m.confidence,
+          })),
+        };
+
+        setSession(mappedSession);
+        setSelectedDomain(mappedSession.domain);
+        setSelectedDifficulty(mappedSession.difficulty);
+        setSelectedLanguage(mappedSession.language);
+
+        setViewMode(mappedSession.status === 'completed' && mappedSession.feedback ? 'review' : 'interview');
+      } catch (err) {
+        console.error('Failed to load AI interview session:', err);
+        alert('Unable to load this interview session.');
+        setViewMode('setup');
+      }
+    };
+
+    fetchSession();
+  }, [location.search]);
 
   useEffect(() => {
     const fetchPastSessions = async () => {

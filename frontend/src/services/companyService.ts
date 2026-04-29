@@ -393,6 +393,11 @@ export const companyService = {
     return data;
   },
 
+  async createCompanyJob(companyId: string, dto: { title: string; description: string; requirements?: string[]; salaryRange?: string; location?: string; type: JobType }): Promise<CompanyJob> {
+    const { data } = await api.post(`/companies/${companyId}/jobs`, dto);
+    return data;
+  },
+
   async updateJob(companyId: string, jobId: string, dto: { title?: string; description?: string; requirements?: string[]; salaryRange?: string; location?: string; type?: JobType; status?: JobStatus }): Promise<CompanyJob> {
     const { data } = await api.patch(`/companies/${companyId}/jobs/${jobId}`, dto);
     return data;
@@ -416,8 +421,8 @@ export const companyService = {
     return data;
   },
 
-  async getPublicJobs(): Promise<CompanyJob[]> {
-    const { data } = await api.get('/companies/jobs');
+  async getPublicJobs(): Promise<(CompanyJob & { company: { id: string; name: string } })[]> {
+    const { data } = await api.get('/companies/public/jobs');
     return data;
   },
 

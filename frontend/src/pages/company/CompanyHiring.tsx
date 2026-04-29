@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCurrentCompanyId } from '../../hooks/useCurrentCompanyId';
 import { companyService, Company, CompanyRole, JoinRequest } from '../../services/companyService';
 import { hiringService, Candidate, HiringDashboard, SendAIInterviewDto } from '../../services/hiringService';
-import { AlertCircle, ArrowLeft, Users, Search, Brain, Calendar, User, Mail, Briefcase, ChevronRight, Star, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Users, Search, Brain, Calendar, User, Mail, Briefcase, ChevronRight, Star, X, PlusCircle, MapPin, DollarSign } from 'lucide-react';
 
 export function CompanyHiring() {
   const { companyId: routeCompanyId } = useParams<{ companyId: string }>();
@@ -26,6 +26,20 @@ export function CompanyHiring() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSendingInterview, setIsSendingInterview] = useState(false);
   const [interviewModalOpen, setInterviewModalOpen] = useState(false);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [scheduleNotes, setScheduleNotes] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [jobModalOpen, setJobModalOpen] = useState(false);
+  const [isPostingJob, setIsPostingJob] = useState(false);
+  const [jobForm, setJobForm] = useState({
+    title: '',
+    description: '',
+    location: '',
+    salaryRange: '',
+    type: 'full_time',
+  });
 
   const currentUserRole = user?.companyRole as CompanyRole || null;
   const canManage = currentUserRole === 'owner' || currentUserRole === 'recruiter';
@@ -86,6 +100,66 @@ export function CompanyHiring() {
     setPendingRequests((current) => current.filter((request) => request.id !== requestId));
   };
 
+  const handleScheduleInterview = async () => {
+    if (!companyId || !selectedCandidate) return;
+    if (!scheduleDate || !scheduleTime) {
+      alert('Please select both a date and a time.');
+      return;
+    }
+
+    setIsScheduling(true);
+    try {
+      const combinedDateTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+
+      await hiringService.scheduleHumanInterview(companyId, {
+        candidateId: selectedCandidate.id,
+        scheduledAt: combinedDateTime,
+        duration: 30,
+        notes: scheduleNotes,
+      });
+
+      alert('Interview scheduled! The candidate has been notified.');
+      setScheduleModalOpen(false);
+      setScheduleDate('');
+      setScheduleTime('');
+      setScheduleNotes('');
+    } catch (err) {
+      console.error('Failed to schedule interview:', err);
+      alert('Failed to schedule interview');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const handlePostJob = async () => {
+    if (!companyId) return;
+    setIsPostingJob(true);
+    try {
+      await companyService.createCompanyJob(companyId, {
+        title: jobForm.title,
+        description: jobForm.description,
+        location: jobForm.location || undefined,
+        salaryRange: jobForm.salaryRange || undefined,
+        type: jobForm.type as 'full_time' | 'part_time' | 'contract' | 'internship',
+        requirements: [],
+      });
+      alert('Job posted successfully!');
+      setJobModalOpen(false);
+      setJobForm({
+        title: '',
+        description: '',
+        location: '',
+        salaryRange: '',
+        type: 'full_time',
+      });
+    } catch (err) {
+      console.error('Failed to post job:', err);
+      alert('Failed to post job');
+    } finally {
+      setIsPostingJob(false);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -131,6 +205,12 @@ export function CompanyHiring() {
               <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Hiring Console</h1>
               <p className="text-sm text-[var(--text-secondary)]">Manage candidates and interviews for {company.name}</p>
             </div>
+            {canManage && (
+              <Button variant="primary" onClick={() => setJobModalOpen(true)}>
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Post a Job
+              </Button>
+            )}
           </div>
           
           <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
@@ -326,7 +406,10 @@ export function CompanyHiring() {
 
                 {canManage && (
                   <div className="flex gap-4 pt-4 border-t border-[var(--border-default)]">
-                    <Button variant="secondary">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setScheduleModalOpen(true)}
+                    >
                       <Calendar className="w-4 h-4 mr-2" />
                       Schedule Interview
                     </Button>
@@ -381,6 +464,171 @@ export function CompanyHiring() {
                     {isSendingInterview ? 'Sending...' : 'Send Interview'}
                   </Button>
                   <Button variant="ghost" onClick={() => setInterviewModalOpen(false)}>Cancel</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Human Interview Schedule Modal */}
+        {scheduleModalOpen && selectedCandidate && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-[var(--text-primary)]">
+                  Schedule Interview
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setScheduleModalOpen(false);
+                    setScheduleDate('');
+                    setScheduleTime('');
+                    setScheduleNotes('');
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[0.875rem] font-medium text-[var(--text-primary)]">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      className="h-10 px-3 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[0.875rem] font-medium text-[var(--text-primary)]">
+                      Time
+                    </label>
+                    <input
+                      type="time"
+                      className="h-10 px-3 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[0.875rem] font-medium text-[var(--text-primary)]">
+                    Notes
+                  </label>
+                  <textarea
+                    className="min-h-28 px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-all duration-150"
+                    placeholder="Add optional notes for the candidate..."
+                    value={scheduleNotes}
+                    onChange={(e) => setScheduleNotes(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <Button
+                    variant="primary"
+                    className="flex-1"
+                    onClick={handleScheduleInterview}
+                    disabled={isScheduling || !scheduleDate || !scheduleTime}
+                  >
+                    {isScheduling ? 'Scheduling...' : 'Schedule & Notify Candidate'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setScheduleModalOpen(false);
+                      setScheduleDate('');
+                      setScheduleTime('');
+                      setScheduleNotes('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Job Posting Modal */}
+        {jobModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6 max-w-2xl w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-[var(--text-primary)]">Post a New Job</h3>
+                <Button variant="ghost" size="sm" onClick={() => setJobModalOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <Input
+                  label="Title"
+                  placeholder="Senior Frontend Engineer"
+                  value={jobForm.title}
+                  onChange={(e) => setJobForm((current) => ({ ...current, title: e.target.value }))}
+                />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[0.875rem] font-medium text-[var(--text-primary)]">Description</label>
+                  <textarea
+                    className="min-h-28 px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-all duration-150"
+                    placeholder="Describe responsibilities and expectations..."
+                    value={jobForm.description}
+                    onChange={(e) => setJobForm((current) => ({ ...current, description: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-[2.35rem] w-4 h-4 text-[var(--text-muted)]" />
+                    <Input
+                      label="Location"
+                      placeholder="Tunis / Remote"
+                      className="pl-10"
+                      value={jobForm.location}
+                      onChange={(e) => setJobForm((current) => ({ ...current, location: e.target.value }))}
+                    />
+                  </div>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-[2.35rem] w-4 h-4 text-[var(--text-muted)]" />
+                    <Input
+                      label="Salary Range"
+                      placeholder="$2k - $3k / month"
+                      className="pl-10"
+                      value={jobForm.salaryRange}
+                      onChange={(e) => setJobForm((current) => ({ ...current, salaryRange: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[0.875rem] font-medium text-[var(--text-primary)]">Type</label>
+                  <select
+                    className="h-10 px-3 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent transition-all duration-150"
+                    value={jobForm.type}
+                    onChange={(e) => setJobForm((current) => ({ ...current, type: e.target.value }))}
+                  >
+                    <option value="full_time">Full Time</option>
+                    <option value="part_time">Part Time</option>
+                    <option value="contract">Contract</option>
+                    <option value="internship">Internship</option>
+                  </select>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button variant="ghost" onClick={() => setJobModalOpen(false)} disabled={isPostingJob}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handlePostJob}
+                    disabled={isPostingJob || !jobForm.title.trim() || !jobForm.description.trim()}
+                  >
+                    {isPostingJob ? 'Posting...' : 'Submit'}
+                  </Button>
                 </div>
               </div>
             </div>

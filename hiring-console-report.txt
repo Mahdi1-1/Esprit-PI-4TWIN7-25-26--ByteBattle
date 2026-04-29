@@ -1,0 +1,1061 @@
+Hiring Console Report (Filtered)
+===============================
+
+Files included:
+1) frontend/src/pages/company/CompanyHiring.tsx
+2) frontend/src/services/hiringService.ts
+3) frontend/src/router.tsx
+4) backend/src/companies/companies.controller.ts
+5) backend/src/companies/companies.service.ts
+6) backend/prisma/schema.prisma
+7) backend/prisma/schema_utf8.prisma
+
+-------------------------------------------------------------------------------
+FILE: frontend/src/pages/company/CompanyHiring.tsx
+-------------------------------------------------------------------------------
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, Link } from 'react-router';
+import { Layout } from '../../components/Layout';
+import { Button } from '../../components/Button';
+import { Badge } from '../../components/Badge';
+import { Input } from '../../components/Input';
+import { VerificationBanner } from '../../components/company/VerificationBanner';
+import { JoinRequestRow } from '../../components/company/JoinRequestRow';
+import { useAuth } from '../../context/AuthContext';
+import { useCurrentCompanyId } from '../../hooks/useCurrentCompanyId';
+import { companyService, Company, CompanyRole, JoinRequest } from '../../services/companyService';
+import { hiringService, Candidate, HiringDashboard, SendAIInterviewDto } from '../../services/hiringService';
+import { AlertCircle, ArrowLeft, Users, Search, Brain, Calendar, User, Mail, Briefcase, ChevronRight, Star, X } from 'lucide-react';
+
+export function CompanyHiring() {
+  const { companyId: routeCompanyId } = useParams<{ companyId: string }>();
+  const companyId = useCurrentCompanyId(routeCompanyId);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [dashboard, setDashboard] = useState<HiringDashboard | null>(null);
+  const [pendingRequests, setPendingRequests] = useState<JoinRequest[]>([]);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSendingInterview, setIsSendingInterview] = useState(false);
+  const [interviewModalOpen, setInterviewModalOpen] = useState(false);
+
+  const currentUserRole = user?.companyRole as CompanyRole || null;
+  const canManage = currentUserRole === 'owner' || currentUserRole === 'recruiter';
+
+  const fetchData = useCallback(async () => {
+    if (companyId === undefined) return;
+    if (!companyId) {
+      setError('You are not a member of any company');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const [companyData, dashboardData, candidatesData, pendingRequestsData] = await Promise.all([
+        companyService.getCompany(companyId),
+        canManage ? hiringService.getHiringDashboard(companyId) : Promise.resolve(null),
+        hiringService.getCandidates(companyId),
+        canManage ? companyService.getPendingJoinRequests(companyId) : Promise.resolve([]),
+      ]);
+      setCompany(companyData);
+      setDashboard(dashboardData);
+      setCandidates(candidatesData);
+      setPendingRequests(pendingRequestsData);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to load hiring data');
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId, canManage]);
+
+  useEffect(() => {
+    if (companyId === undefined) return;
+    fetchData();
+  }, [companyId, fetchData]);
+
+  const handleSendAIInterview = async (candidateId: string, jobId?: string) => {
+    if (!companyId) return;
+    setIsSendingInterview(true);
+    try {
+      await hiringService.sendAIInterview(companyId, { candidateId, jobId });
+      alert('AI Interview sent successfully!');
+      setInterviewModalOpen(false);
+    } catch (err) {
+      console.error('Failed to send AI interview:', err);
+      alert('Failed to send AI interview');
+    } finally {
+      setIsSendingInterview(false);
+    }
+  };
+
+  const filteredCandidates = candidates.filter(c =>
+    c.user.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleJoinRequestAction = (requestId: string) => {
+    setPendingRequests((current) => current.filter((request) => request.id !== requestId));
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-[var(--surface-2)] rounded w-1/4"></div>
+            <div className="h-64 bg-[var(--surface-2)] rounded-lg"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error || !company) {
+    return (
+      <Layout>
+        <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
+          <div className="max-w-md mx-auto text-center">
+            <AlertCircle className="w-12 h-12 text-[var(--state-error)] mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Failed to load hiring data</h2>
+            <p className="text-[var(--text-secondary)] mb-4">{error || 'Unknown error'}</p>
+            <Button onClick={fetchData}>Retry</Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to={`/companies/${companyId}/dashboard`}>
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Hiring Console</h1>
+              <p className="text-sm text-[var(--text-secondary)]">Manage candidates and interviews for {company.name}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+            <User className="w-4 h-4" />
+            <span>{user?.username}</span>
+            <span className="px-2 py-1 rounded-full bg-[var(--surface-2)] text-xs">
+              {currentUserRole}
+            </span>
+          </div>
+        </div>
+
+        <VerificationBanner companyName={company.name} verified={company.verified} />
+
+        {dashboard && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-4">
+              <div className="text-2xl font-semibold text-[var(--text-primary)]">{dashboard.totalApplications}</div>
+              <div className="text-sm text-[var(--text-secondary)]">Applications</div>
+            </div>
+            <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-4">
+              <div className="text-2xl font-semibold text-[var(--text-primary)]">{dashboard.aiInterviewsCompleted}</div>
+              <div className="text-sm text-[var(--text-secondary)]">AI Interviews</div>
+            </div>
+            <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-4">
+              <div className="text-2xl font-semibold text-[var(--text-primary)]">{dashboard.humanInterviewsScheduled}</div>
+              <div className="text-sm text-[var(--text-secondary)]">Human Interviews</div>
+            </div>
+            <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-4">
+              <div className="text-2xl font-semibold text-[var(--text-primary)]">{dashboard.shortlistedCandidates}</div>
+              <div className="text-sm text-[var(--text-secondary)]">Shortlisted</div>
+            </div>
+            <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-4">
+              <div className="text-2xl font-semibold text-[var(--text-primary)]">{dashboard.hiredCandidates}</div>
+              <div className="text-sm text-[var(--text-secondary)]">Hired</div>
+            </div>
+            <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-4">
+              <div className="text-2xl font-semibold text-[var(--state-warning)]">{dashboard.aiInterviewsPending}</div>
+              <div className="text-sm text-[var(--text-secondary)]">Pending</div>
+            </div>
+          </div>
+        )}
+
+        {canManage && pendingRequests.length > 0 && (
+          <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Pending Join Requests</h2>
+              <Badge variant="medium">{pendingRequests.length} pending</Badge>
+            </div>
+            <div className="space-y-3">
+              {pendingRequests.slice(0, 5).map((request) => (
+                <JoinRequestRow
+                  key={request.id}
+                  request={request}
+                  companyId={companyId!}
+                  onAction={(requestId) => handleJoinRequestAction(requestId)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+              <Input
+                placeholder="Search candidates..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              {filteredCandidates.map((candidate) => (
+                <div
+                  key={candidate.id}
+                  onClick={() => setSelectedCandidate(candidate)}
+                  className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                    selectedCandidate?.id === candidate.id
+                      ? 'bg-[var(--brand-primary)]/10 border-[var(--brand-primary)]/30'
+                      : 'bg-[var(--surface-2)] border-[var(--border-default)] hover:border-[var(--brand-primary)]/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[var(--brand-primary)]/20 flex items-center justify-center">
+                      {candidate.user.profileImage ? (
+                        <img src={candidate.user.profileImage} alt={candidate.user.username} className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <User className="w-5 h-5 text-[var(--brand-primary)]" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-[var(--text-primary)]">{candidate.user.username}</div>
+                      <div className="text-sm text-[var(--text-secondary)]">
+                        Level {candidate.user.level} • ELO {candidate.user.elo}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+                  </div>
+                  <div className="mt-2 flex items-center gap-4 text-xs text-[var(--text-muted)]">
+                    <span>{candidate.stats.totalSolved} solved</span>
+                    <span>{candidate.stats.acceptanceRate}% acceptance</span>
+                  </div>
+                </div>
+              ))}
+              {filteredCandidates.length === 0 && (
+                <div className="text-center py-8 text-[var(--text-muted)]">
+                  No candidates found
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            {selectedCandidate ? (
+              <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-6 space-y-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-[var(--brand-primary)]/20 flex items-center justify-center">
+                      {selectedCandidate.user.profileImage ? (
+                        <img src={selectedCandidate.user.profileImage} alt={selectedCandidate.user.username} className="w-16 h-16 rounded-full object-cover" />
+                      ) : (
+                        <User className="w-8 h-8 text-[var(--brand-primary)]" />
+                      )}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-[var(--text-primary)]">{selectedCandidate.user.username}</h2>
+                      <div className="flex items-center gap-4 text-[var(--text-secondary)]">
+                        <span>Level {selectedCandidate.user.level}</span>
+                        <span>ELO {selectedCandidate.user.elo}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {canManage && (
+                    <Button variant="primary" onClick={() => setInterviewModalOpen(true)}>
+                      <Brain className="w-4 h-4 mr-2" />
+                      Send AI Interview
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-[var(--surface-2)] rounded-lg text-center">
+                    <div className="text-2xl font-semibold text-[var(--text-primary)]">{selectedCandidate.stats.totalSolved}</div>
+                    <div className="text-sm text-[var(--text-secondary)]">Total Solved</div>
+                  </div>
+                  <div className="p-4 bg-[var(--surface-2)] rounded-lg text-center">
+                    <div className="text-2xl font-semibold text-[var(--state-success)]">{selectedCandidate.stats.easy}</div>
+                    <div className="text-sm text-[var(--text-secondary)]">Easy</div>
+                  </div>
+                  <div className="p-4 bg-[var(--surface-2)] rounded-lg text-center">
+                    <div className="text-2xl font-semibold text-[var(--state-warning)]">{selectedCandidate.stats.medium}</div>
+                    <div className="text-sm text-[var(--text-secondary)]">Medium</div>
+                  </div>
+                  <div className="p-4 bg-[var(--surface-2)] rounded-lg text-center">
+                    <div className="text-2xl font-semibold text-[var(--state-error)]">{selectedCandidate.stats.hard}</div>
+                    <div className="text-sm text-[var(--text-secondary)]">Hard</div>
+                  </div>
+                </div>
+
+                {selectedCandidate.user.badges && selectedCandidate.user.badges.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-[var(--text-primary)] mb-3">Badges</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCandidate.user.badges.map((badge) => (
+                        <Badge key={badge.id} variant="default" className="flex items-center gap-1">
+                          <Star className="w-3 h-3" />
+                          {badge.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedCandidate.recentSubmissions && selectedCandidate.recentSubmissions.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-[var(--text-primary)] mb-3">Recent Submissions</h3>
+                    <div className="space-y-2">
+                      {selectedCandidate.recentSubmissions.map((sub) => (
+                        <div key={sub.id} className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded-lg">
+                          <span className="text-[var(--text-primary)]">{sub.challengeTitle}</span>
+                          <Badge variant={sub.verdict === 'ACCEPTED' ? 'ACCEPTED' : 'default'}>{sub.verdict}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {canManage && (
+                  <div className="flex gap-4 pt-4 border-t border-[var(--border-default)]">
+                    <Button variant="secondary">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Schedule Interview
+                    </Button>
+                    <Button variant="secondary">
+                      <Briefcase className="w-4 h-4 mr-2" />
+                      Add to Jobs
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-1)] p-6 text-center py-12">
+                <Users className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+                <p className="text-[var(--text-secondary)]">Select a candidate to view profile</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {interviewModalOpen && selectedCandidate && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-[var(--text-primary)]">Send AI Interview</h3>
+                <Button variant="ghost" size="sm" onClick={() => setInterviewModalOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-[var(--text-secondary)] mb-4">
+                Send an AI-powered interview to <strong>{selectedCandidate.user.username}</strong>.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Domain (optional)</label>
+                  <select className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-md text-[var(--text-primary)]">
+                    <option value="">General</option>
+                    <option value="FRONTEND_ENGINEERING">Frontend Engineering</option>
+                    <option value="BACKEND_ENGINEERING">Backend Engineering</option>
+                    <option value="FULL_STACK">Full Stack</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Language</label>
+                  <select className="w-full px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-md text-[var(--text-primary)]">
+                    <option value="FR">French</option>
+                    <option value="EN">English</option>
+                  </select>
+                </div>
+                <div className="flex gap-4">
+                  <Button variant="primary" className="flex-1" onClick={() => handleSendAIInterview(selectedCandidate.id)} disabled={isSendingInterview}>
+                    {isSendingInterview ? 'Sending...' : 'Send Interview'}
+                  </Button>
+                  <Button variant="ghost" onClick={() => setInterviewModalOpen(false)}>Cancel</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}
+
+-------------------------------------------------------------------------------
+FILE: frontend/src/services/hiringService.ts
+-------------------------------------------------------------------------------
+import api from '../api/axios';
+
+export interface Candidate {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    username: string;
+    profileImage?: string;
+    level: number;
+    elo: number;
+    solvedCount?: number;
+    badges?: {
+      id: string;
+      name: string;
+      iconUrl: string;
+    }[];
+  };
+  stats: {
+    totalSolved: number;
+    easy: number;
+    medium: number;
+    hard: number;
+    totalSubmissions: number;
+    acceptanceRate: number;
+  };
+  recentSubmissions?: {
+    id: string;
+    challengeTitle: string;
+    verdict: string;
+    createdAt: string;
+  }[];
+  appliedJobs?: {
+    jobId: string;
+    jobTitle: string;
+    appliedAt: string;
+    status: string;
+  }[];
+}
+
+export interface AIInterviewResult {
+  id: string;
+  interviewId: string;
+  verdict: 'HIRE' | 'MAYBE' | 'NO_HIRE';
+  confidence: number;
+  feedbackSummary: string;
+  transcript?: {
+    role: 'ai' | 'candidate';
+    content: string;
+    timestamp: string;
+  }[];
+  createdAt: string;
+}
+
+export interface HumanInterview {
+  id: string;
+  candidateId: string;
+  jobId?: string;
+  scheduledAt: string;
+  duration: number;
+  calendlyLink?: string;
+  notes?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+}
+
+export interface HiringDashboard {
+  totalApplications: number;
+  aiInterviewsCompleted: number;
+  aiInterviewsPending: number;
+  humanInterviewsScheduled: number;
+  shortlistedCandidates: number;
+  hiredCandidates: number;
+}
+
+export interface SendAIInterviewDto {
+  candidateId: string;
+  jobId?: string;
+  customQuestions?: string[];
+  domain?: string;
+  language?: string;
+}
+
+export interface ScheduleHumanInterviewDto {
+  candidateId: string;
+  jobId?: string;
+  scheduledAt: string;
+  duration: number;
+  calendlyLink?: string;
+  notes?: string;
+}
+
+export const hiringService = {
+  async getCandidates(companyId: string, filters?: {
+    search?: string;
+    skills?: string[];
+    eloMin?: number;
+    eloMax?: number;
+  }): Promise<Candidate[]> {
+    const params = new URLSearchParams();
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.skills?.length) params.append('skills', filters.skills.join(','));
+    if (filters?.eloMin) params.append('eloMin', filters.eloMin.toString());
+    if (filters?.eloMax) params.append('eloMax', filters.eloMax.toString());
+    const { data } = await api.get(`/companies/${companyId}/hiring/candidates?${params.toString()}`);
+    return data;
+  },
+
+  async getCandidateProfile(candidateId: string): Promise<Candidate> {
+    const { data } = await api.get(`/hiring/candidates/${candidateId}`);
+    return data;
+  },
+
+  async sendAIInterview(companyId: string, dto: SendAIInterviewDto): Promise<{ interviewId: string }> {
+    const { data } = await api.post(`/companies/${companyId}/hiring/interviews/ai`, dto);
+    return data;
+  },
+
+  async getAIInterviewResult(interviewId: string): Promise<AIInterviewResult> {
+    const { data } = await api.get(`/hiring/interviews/ai/${interviewId}/result`);
+    return data;
+  },
+
+  async scheduleHumanInterview(companyId: string, dto: ScheduleHumanInterviewDto): Promise<HumanInterview> {
+    const { data } = await api.post(`/companies/${companyId}/hiring/interviews/human`, dto);
+    return data;
+  },
+
+  async getHumanInterviews(companyId: string): Promise<HumanInterview[]> {
+    const { data } = await api.get(`/companies/${companyId}/hiring/interviews/human`);
+    return data;
+  },
+
+  async getHiringDashboard(companyId: string): Promise<HiringDashboard> {
+    const { data } = await api.get(`/companies/${companyId}/hiring/dashboard`);
+    return data;
+  },
+
+  async shortlistCandidate(candidateId: string, jobId: string): Promise<void> {
+    await api.post(`/hiring/candidates/${candidateId}/shortlist`, { jobId });
+  },
+
+  async rejectCandidate(candidateId: string, jobId: string, reason?: string): Promise<void> {
+    await api.post(`/hiring/candidates/${candidateId}/reject`, { jobId, reason });
+  },
+
+  async hireCandidate(candidateId: string, jobId: string): Promise<void> {
+    await api.post(`/hiring/candidates/${candidateId}/hire`, { jobId });
+  },
+};
+
+-------------------------------------------------------------------------------
+FILE: frontend/src/router.tsx
+-------------------------------------------------------------------------------
+{
+  path: 'company/candidates',
+  element: (
+    <S>
+      <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+        <CompanyHiring />
+      </CompanyRoleGuard>
+    </S>
+  ),
+},
+{
+  path: 'companies/:companyId/hiring',
+  element: (
+    <S>
+      <CompanyRoleGuard allowedRoles={['owner', 'recruiter']}>
+        <CompanyHiring />
+      </CompanyRoleGuard>
+    </S>
+  ),
+},
+
+-------------------------------------------------------------------------------
+FILE: backend/src/companies/companies.controller.ts
+-------------------------------------------------------------------------------
+  @Get(':id/jobs')
+  async getCompanyJobs(@Param('id') companyId: string) {
+    return this.companiesService.getCompanyJobs(companyId);
+  }
+
+  @Get(':id/hiring/candidates')
+  @UseGuards(JwtAuthGuard)
+  async getHiringCandidates(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+    @Query('search') search?: string,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getHiringCandidates(companyId, user.id, search);
+  }
+
+  @Get(':id/hiring/dashboard')
+  @UseGuards(JwtAuthGuard)
+  async getHiringDashboard(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getHiringDashboard(companyId, user.id);
+  }
+
+  @Post(':id/jobs')
+  @UseGuards(JwtAuthGuard)
+  async createCompanyJob(
+    @Param('id') companyId: string,
+    @Body() dto: CreateCompanyJobDto,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.createCompanyJob(companyId, user.id, dto);
+  }
+
+  @Patch(':id/jobs/:jobId')
+  @UseGuards(JwtAuthGuard)
+  async updateCompanyJob(
+    @Param('id') companyId: string,
+    @Param('jobId') jobId: string,
+    @Body() dto: UpdateCompanyJobDto,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.updateCompanyJob(companyId, jobId, user.id, dto);
+  }
+
+  @Post(':id/jobs/:jobId/apply')
+  @UseGuards(JwtAuthGuard)
+  async applyToJob(
+    @Param('id') companyId: string,
+    @Param('jobId') jobId: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.applyToJob(companyId, jobId, user.id);
+  }
+
+-------------------------------------------------------------------------------
+FILE: backend/src/companies/companies.service.ts
+-------------------------------------------------------------------------------
+  private async requireCompanyAdmin(companyId: string, userId: string) {
+    const company = await this.getCompanyOrThrow(companyId);
+    if (company.ownerId === userId) return company;
+
+    const membership = await this.getCompanyMembership(companyId, userId);
+    if (!membership || membership.status !== 'active') {
+      throw new ForbiddenException('Access denied to company administration');
+    }
+
+    if (membership.role !== 'owner' && membership.role !== 'recruiter') {
+      throw new ForbiddenException('Only company owner or recruiter can perform this action');
+    }
+
+    return company;
+  }
+
+  private async requireActiveMember(companyId: string, userId: string) {
+    const membership = await this.getCompanyMembership(companyId, userId);
+    if (!membership || membership.status !== 'active') {
+      throw new ForbiddenException('Access denied to company resources');
+    }
+    return membership;
+  }
+
+  private async createCompanyNotification(
+    companyId: string,
+    type: string,
+    userId?: string,
+  ) {
+    return this.prisma.companyNotification.create({
+      data: {
+        companyId,
+        type: type as any,
+        userId,
+      },
+    });
+  }
+
+  private async emitAppNotification(
+    userId: string,
+    title: string,
+    message: string,
+    actionUrl?: string,
+    entityId?: string,
+    entityType?: string,
+  ) {
+    await this.notificationEmitter.emit({
+      userId,
+      type: NotificationType.SYSTEM_ANNOUNCEMENT,
+      category: NotificationCategory.SYSTEM,
+      priority: NotificationPriority.HIGH,
+      title,
+      message,
+      actionUrl,
+      entityId,
+      entityType,
+    });
+  }
+
+  async getCompanyJobs(companyId: string) {
+    return this.prisma.companyJobPosting.findMany({
+      where: { companyId, status: 'active' },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getHiringCandidates(companyId: string, userId: string, search?: string) {
+    await this.requireActiveMember(companyId, userId);
+
+    const jobs = await this.prisma.companyJobPosting.findMany({
+      where: { companyId },
+      select: {
+        id: true,
+        title: true,
+        applicants: true,
+      },
+    });
+
+    const candidateIds = Array.from(
+      new Set(
+        jobs.flatMap((job) => job.applicants ?? []).filter((id) => Boolean(id)),
+      ),
+    );
+
+    if (candidateIds.length === 0) {
+      return [];
+    }
+
+    const normalizedSearch = search?.trim();
+    const users = await this.prisma.user.findMany({
+      where: {
+        id: { in: candidateIds },
+        ...(normalizedSearch
+          ? {
+              OR: [
+                { username: { contains: normalizedSearch, mode: 'insensitive' } },
+                { email: { contains: normalizedSearch, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        profileImage: true,
+        level: true,
+        elo: true,
+        earnedBadges: {
+          take: 5,
+          orderBy: { earnedAt: 'desc' },
+          select: {
+            badge: {
+              select: {
+                id: true,
+                name: true,
+                iconUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const userIds = users.map((user) => user.id);
+    const submissions = await this.prisma.submission.findMany({
+      where: { userId: { in: userIds } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        userId: true,
+        verdict: true,
+        createdAt: true,
+        challenge: {
+          select: {
+            title: true,
+            difficulty: true,
+          },
+        },
+      },
+    });
+
+    const submissionsByUser = new Map<string, any[]>();
+    for (const submission of submissions) {
+      const list = submissionsByUser.get(submission.userId);
+      if (list) {
+        list.push(submission);
+      } else {
+        submissionsByUser.set(submission.userId, [submission]);
+      }
+    }
+
+    return users.map((candidateUser) => {
+      const userSubmissions = submissionsByUser.get(candidateUser.id) ?? [];
+      const accepted = userSubmissions.filter((submission) =>
+        submission.verdict.toUpperCase() === 'ACCEPTED',
+      );
+
+      const easy = accepted.filter(
+        (submission) => submission.challenge?.difficulty === 'easy',
+      ).length;
+      const medium = accepted.filter(
+        (submission) => submission.challenge?.difficulty === 'medium',
+      ).length;
+      const hard = accepted.filter(
+        (submission) => submission.challenge?.difficulty === 'hard',
+      ).length;
+
+      const totalSubmissions = userSubmissions.length;
+      const acceptanceRate =
+        totalSubmissions > 0
+          ? Math.round((accepted.length / totalSubmissions) * 100)
+          : 0;
+
+      const appliedJobs = jobs
+        .filter((job) => job.applicants?.includes(candidateUser.id))
+        .map((job) => ({
+          jobId: job.id,
+          jobTitle: job.title,
+          appliedAt: null,
+          status: 'pending',
+        }));
+
+      const recentSubmissions = userSubmissions.slice(0, 5).map((submission) => ({
+        id: submission.id,
+        challengeTitle: submission.challenge?.title ?? 'Challenge',
+        verdict: submission.verdict,
+        createdAt: submission.createdAt,
+      }));
+
+      return {
+        id: candidateUser.id,
+        userId: candidateUser.id,
+        user: {
+          id: candidateUser.id,
+          username: candidateUser.username,
+          email: candidateUser.email,
+          profileImage: candidateUser.profileImage,
+          level: candidateUser.level,
+          elo: candidateUser.elo,
+          solvedCount: accepted.length,
+          badges: candidateUser.earnedBadges.map((userBadge) => userBadge.badge),
+        },
+        stats: {
+          totalSolved: accepted.length,
+          easy,
+          medium,
+          hard,
+          totalSubmissions,
+          acceptanceRate,
+        },
+        recentSubmissions,
+        appliedJobs,
+      };
+    });
+  }
+
+  async getHiringDashboard(companyId: string, userId: string) {
+    const candidates = await this.getHiringCandidates(companyId, userId);
+
+    const totalApplications = candidates.reduce(
+      (sum, candidate) => sum + (candidate.appliedJobs?.length ?? 0),
+      0,
+    );
+
+    const shortlistedCandidates = candidates.filter(
+      (candidate) => candidate.stats.acceptanceRate >= 60,
+    ).length;
+    const hiredCandidates = candidates.filter(
+      (candidate) => candidate.stats.acceptanceRate >= 80,
+    ).length;
+
+    return {
+      totalApplications,
+      aiInterviewsCompleted: 0,
+      aiInterviewsPending: 0,
+      humanInterviewsScheduled: 0,
+      shortlistedCandidates,
+      hiredCandidates,
+    };
+  }
+
+  async createCompanyJob(companyId: string, userId: string, dto: any) {
+    await this.requireCompanyAdmin(companyId, userId);
+    return this.prisma.companyJobPosting.create({
+      data: {
+        companyId,
+        title: dto.title,
+        description: dto.description,
+        requirements: dto.requirements || [],
+        salaryRange: dto.salaryRange,
+        location: dto.location,
+        type: dto.type || 'full_time',
+        status: 'active',
+      },
+    });
+  }
+
+  async updateCompanyJob(companyId: string, jobId: string, userId: string, dto: any) {
+    await this.requireCompanyAdmin(companyId, userId);
+    const job = await this.prisma.companyJobPosting.findUnique({ where: { id: jobId } });
+    if (!job || job.companyId !== companyId) {
+      throw new NotFoundException('Job posting not found');
+    }
+
+    return this.prisma.companyJobPosting.update({
+      where: { id: jobId },
+      data: {
+        title: dto.title ?? job.title,
+        description: dto.description ?? job.description,
+        requirements: dto.requirements ?? job.requirements,
+        salaryRange: dto.salaryRange ?? job.salaryRange,
+        location: dto.location ?? job.location,
+        type: dto.type ?? job.type,
+        status: dto.status ?? job.status,
+      },
+    });
+  }
+
+  async applyToJob(companyId: string, jobId: string, userId: string) {
+    const job = await this.prisma.companyJobPosting.findUnique({ where: { id: jobId } });
+    if (!job || job.companyId !== companyId) {
+      throw new NotFoundException('Job posting not found');
+    }
+    if (job.applicants.includes(userId)) {
+      throw new BadRequestException('Already applied to this job');
+    }
+
+    const updated = await this.prisma.companyJobPosting.update({
+      where: { id: jobId },
+      data: {
+        applicants: { push: userId },
+      },
+    });
+
+    const admins = await this.prisma.companyMembership.findMany({
+      where: { companyId, role: { in: ['owner', 'recruiter'] }, status: 'active' },
+    });
+    const recipientId = admins[0]?.userId || job.companyId;
+    if (recipientId) {
+      await this.createCompanyNotification(companyId, 'application_received', recipientId);
+      await this.emitAppNotification(
+        recipientId,
+        'New job application',
+        `A candidate applied to ${job.title}.`,
+        `/company/${companyId}/jobs`,
+        jobId,
+        'job',
+      );
+    }
+
+    return updated;
+  }
+
+-------------------------------------------------------------------------------
+FILE: backend/prisma/schema.prisma
+-------------------------------------------------------------------------------
+enum JobType {
+  full_time
+  part_time
+  contract
+  internship
+}
+
+enum JobStatus {
+  active
+  closed
+}
+
+enum InterviewDomain {
+  CLOUD_COMPUTING
+  SOFTWARE_ENGINEERING
+  CYBERSECURITY
+  DATA_SCIENCE_AI
+  FRONTEND_ENGINEERING
+  BACKEND_ENGINEERING
+  DEVOPS_SRE
+  MOBILE_DEVELOPMENT
+}
+
+enum InterviewLanguage {
+  FR
+  EN
+}
+
+model CompanyJobPosting {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String    @db.ObjectId
+  company      Company   @relation(fields: [companyId], references: [id])
+  title        String
+  description  String
+  requirements Json
+  salaryRange  String?
+  location     String?
+  type         JobType
+  status       JobStatus @default(active)
+  applicants   String[]  @default([])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+-------------------------------------------------------------------------------
+FILE: backend/prisma/schema_utf8.prisma
+-------------------------------------------------------------------------------
+enum JobType {
+  full_time
+  part_time
+  contract
+  internship
+}
+
+enum JobStatus {
+  active
+  closed
+}
+
+enum InterviewDomain {
+  CLOUD_COMPUTING
+  SOFTWARE_ENGINEERING
+  CYBERSECURITY
+  DATA_SCIENCE_AI
+  FRONTEND_ENGINEERING
+  BACKEND_ENGINEERING
+  DEVOPS_SRE
+  MOBILE_DEVELOPMENT
+}
+
+enum InterviewLanguage {
+  FR
+  EN
+}
+
+model CompanyJobPosting {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String    @db.ObjectId
+  company      Company   @relation(fields: [companyId], references: [id])
+  title        String
+  description  String
+  requirements Json
+  salaryRange  String?
+  location     String?
+  type         JobType
+  status       JobStatus @default(active)
+  applicants   String[]  @default([])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
