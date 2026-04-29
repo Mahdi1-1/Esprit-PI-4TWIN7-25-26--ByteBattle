@@ -41,11 +41,6 @@ export class CompaniesController {
     return this.companiesService.getPublicCompanies();
   }
 
-  @Get('jobs')
-  async getPublicJobs() {
-    return this.companiesService.getPublicJobs();
-  }
-
   @Post()
   @UseGuards(JwtAuthGuard)
   async createCompany(
@@ -139,6 +134,15 @@ export class CompaniesController {
       throw new BadRequestException('User not authenticated');
     }
     return this.companiesService.getMyAnnouncements(user.id);
+  }
+
+  @Get('public/jobs')
+  @UseGuards(JwtAuthGuard)
+  async getFilteredPublicJobs(@CurrentUser() user: any) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getPublicJobs(user.id);
   }
 
   @Get(':id')
@@ -442,6 +446,32 @@ export class CompaniesController {
       throw new BadRequestException('User not authenticated');
     }
     return this.companiesService.getHiringDashboard(companyId, user.id);
+  }
+
+  @Post(':id/hiring/interviews/ai')
+  @UseGuards(JwtAuthGuard)
+  async sendAIInterview(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+    @Body() dto: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.sendAIInterview(companyId, user.id, dto);
+  }
+
+  @Post(':id/hiring/interviews/human')
+  @UseGuards(JwtAuthGuard)
+  async scheduleHumanInterview(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+    @Body() dto: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.scheduleHumanInterview(companyId, user.id, dto);
   }
 
   @Post(':id/jobs')

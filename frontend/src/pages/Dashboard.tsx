@@ -7,14 +7,38 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Swords, Play, Users, TrendingUp, Loader } from 'lucide-react';
 import { Layout } from '../components/Layout';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../api/axios';
 import { profileService } from '../services/profileService';
 import { BadgeGrid, BadgeData } from '../components/BadgeCard';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function Dashboard() {
   const { user } = useAuth();
   const { t } = useLanguage();
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const interviewModal = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const viewHumanInterview = params.get('viewHumanInterview');
+    const scheduledAt = params.get('scheduledAt');
+
+    if (viewHumanInterview) {
+      return {
+        type: 'human' as const,
+        id: viewHumanInterview,
+        scheduledAt: scheduledAt || null,
+      };
+    }
+
+    return null;
+  }, [location.search]);
+
+  const closeInterviewModal = () => {
+    navigate(location.pathname, { replace: true });
+  };
 
   const [recommendedProblems, setRecommendedProblems] = useState<any[]>([]);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
@@ -63,7 +87,49 @@ export function Dashboard() {
 
   return (
     <Layout>
+      {interviewModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+          <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h3 className="text-xl font-semibold text-[var(--text-primary)]">
+                  {interviewModal.type === 'ai' ? 'AI Interview Details' : 'Interview Details'}
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                  {interviewModal.type === 'ai'
+                    ? 'You have been assigned an AI interview. Good luck!'
+                    : 'Your interview has been scheduled. Check the details below.'}
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={closeInterviewModal}>
+                Close
+              </Button>
+            </div>
 
+            <div className="space-y-3">
+              <div className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] p-4">
+                <div className="text-xs text-[var(--text-muted)] mb-1">Interview ID</div>
+                <div className="text-[var(--text-primary)] font-medium break-all">
+                  {interviewModal.id}
+                </div>
+              </div>
+
+              {interviewModal.type === 'human' && interviewModal.scheduledAt && (
+                <div className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] p-4">
+                  <div className="text-xs text-[var(--text-muted)] mb-1">Scheduled At</div>
+                  <div className="text-[var(--text-primary)] font-medium">
+                    {new Date(interviewModal.scheduledAt).toLocaleString()}
+                  </div>
+                </div>
+              )}
+
+              <div className="text-sm text-[var(--text-secondary)]">
+                Use the in-app interviews area to view or start the interview (mock UI).
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -5,9 +5,11 @@ import { useLanguage } from '../context/LanguageContext';
 import {
   MessageSquare, CheckCircle2, Flame, Plus, TrendingUp,
   Users, ArrowUpCircle, Eye, Zap, Hash, ChevronRight,
+  Briefcase,
 } from 'lucide-react';
 import { discussionCategories } from '../data/discussionData';
 import { discussionsService } from '../services/discussionsService';
+import { ForumJobBoard } from '../components/forum/ForumJobBoard';
 
 export function ForumPage() {
   const { t } = useLanguage();
@@ -41,12 +43,11 @@ export function ForumPage() {
   return (
     <Layout>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in duration-500">
-        
+
         {/* ── HERO BANNER ── */}
         <div className="relative rounded-2xl mb-12 p-10 sm:p-14 overflow-hidden border border-[var(--border-default)] bg-[var(--surface-1)] shadow-sm">
-          {/* Subtle noise/gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface-2)]/30 to-transparent pointer-events-none" />
-          
+
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-10">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--surface-2)] border border-[var(--border-default)] text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-widest mb-6">
@@ -92,42 +93,14 @@ export function ForumPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* ══ COMMUNITIES ══ */}
-          <div className="xl:col-span-2 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Hash className="w-5 h-5 text-[var(--brand-primary)]" /> Communities
-              </h2>
-              <Link to="/discussion" className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors flex items-center gap-1">
-                View all <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
+        {/* ── THREE-COLUMN LAYOUT ── */}
+        <div
+          className="grid gap-6 items-start"
+          style={{ gridTemplateColumns: '220px 1fr 280px' }}
+        >
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {displayCategories.map((cat, idx) => (
-                <button
-                  key={cat.id}
-                  onClick={() => navigate(`/discussion?category=${cat.id}`)}
-                  className="flex items-center p-4 rounded-xl bg-[var(--surface-1)] border border-[var(--border-default)] hover:bg-[var(--surface-2)] transition-all text-left group"
-                >
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 mr-4 bg-[var(--surface-3)] border border-[var(--border-default)] group-hover:scale-105 transition-transform">
-                    {cat.icon}
-                  </div>
-                  <div className="flex-1 min-w-0 pr-2">
-                    <p className="font-semibold text-[var(--text-primary)] transition-colors line-clamp-1">
-                      {cat.label}
-                    </p>
-                    <p className="text-xs text-[var(--text-muted)] mt-1 truncate">/{cat.id}</p>
-                  </div>
-                  <ArrowUpCircle className="w-5 h-5 text-[var(--text-muted)] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[var(--text-primary)] transition-all" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ══ RIGHT SIDEBAR ══ */}
-          <aside className="space-y-6">
+          {/* ══ LEFT: FILTER SIDEBAR ══ */}
+          <aside className="space-y-6 lg:sticky lg:top-6">
             {/* Trending Tags */}
             <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-1)] p-5">
               <div className="flex items-center gap-2 mb-4 pb-4 border-b border-[var(--border-default)]">
@@ -181,7 +154,50 @@ export function ForumPage() {
               </ul>
             </div>
           </aside>
+
+          {/* ══ CENTER: COMMUNITIES ══ */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <Hash className="w-5 h-5 text-[var(--brand-primary)]" /> Communities
+              </h2>
+              <Link to="/discussion" className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors flex items-center gap-1">
+                View all <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {displayCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => navigate(`/discussion?category=${cat.id}`)}
+                  className="flex items-center p-4 rounded-xl bg-[var(--surface-1)] border border-[var(--border-default)] hover:bg-[var(--surface-2)] transition-all text-left group"
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 mr-4 bg-[var(--surface-3)] border border-[var(--border-default)] group-hover:scale-105 transition-transform">
+                    {cat.icon}
+                  </div>
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="font-semibold text-[var(--text-primary)] transition-colors line-clamp-1">
+                      {cat.label}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1 truncate">/{cat.id}</p>
+                  </div>
+                  <ArrowUpCircle className="w-5 h-5 text-[var(--text-muted)] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[var(--text-primary)] transition-all" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ══ RIGHT: JOB OPPORTUNITIES ══ */}
+          <section className="space-y-4 lg:sticky lg:top-6">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-[var(--brand-primary)]" />
+              Job Opportunities
+            </h2>
+            <ForumJobBoard />
+          </section>
         </div>
+
       </div>
     </Layout>
   );
