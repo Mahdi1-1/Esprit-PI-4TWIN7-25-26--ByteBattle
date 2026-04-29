@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { toast } from 'react-hot-toast';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { Breadcrumb } from '../../components/admin/AdminComponents';
 import { challengesService } from '../../services/challengesService';
@@ -27,6 +28,11 @@ export function AdminProblem() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiDraft, setAiDraft] = useState<any>(null);
 
   useEffect(() => {
     if (id && id !== 'new') {
@@ -123,6 +129,39 @@ export function AdminProblem() {
     setFormData({ ...formData, allowedLanguages: newLangs });
   };
 
+  const handleGenerateDraft = async () => {
+    if (!aiPrompt.trim()) {
+      setAiError('Please enter a prompt to generate a draft.');
+      return;
+    }
+
+    setAiError(null);
+    setAiLoading(true);
+
+    try {
+      const result = await challengesService.generateDraftAdmin({ prompt: aiPrompt, kind: 'CODE' });
+
+      setFormData(prev => ({
+        ...prev,
+        title: result.title || prev.title,
+        statementMd: result.statementMd || prev.statementMd,
+        difficulty: result.difficulty || prev.difficulty,
+        tags: result.tags?.length ? result.tags : prev.tags,
+        allowedLanguages: result.allowedLanguages?.length ? result.allowedLanguages : prev.allowedLanguages,
+        testCases: result.tests?.length ? result.tests : prev.testCases,
+        hints: result.hints?.length ? result.hints : prev.hints,
+      }));
+      setAiDraft(result);
+      toast.success('Brouillon AI généré avec succès');
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Erreur lors de la génération du brouillon AI';
+      setAiError(message);
+      toast.error(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -187,6 +226,14 @@ export function AdminProblem() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAiPanel(prev => !prev)}
+              className="px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-default)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--surface-2)] transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Générer avec AI
+            </button>
             {!isNew && (
               <button type="button" className="px-4 py-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2">
                 <Trash2 className="w-4 h-4" />
@@ -207,6 +254,64 @@ export function AdminProblem() {
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-lg">
             {error}
+          </div>
+        )}
+
+        {showAiPanel && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-900 p-4 rounded-xl mb-6">
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-base font-semibold">Génération de brouillon AI</h2>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Entrez une description du challenge souhaité, puis générez un brouillon que vous pourrez modifier.
+                </p>
+              </div>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">
+                {aiLoading ? 'Génération en cours...' : 'Prêt à générer'}
+              </span>
+            </div>
+            <textarea
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              rows={4}
+              className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-[var(--text-primary)] outline-none focus:border-blue-400"
+              placeholder="Décris le type de défi à générer, ex: challenge d'algorithme facile sur les tableaux et les boucles"
+            />
+            {aiError && (
+              <div className="mt-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg">
+                {aiError}
+              </div>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleGenerateDraft}
+                disabled={aiLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                Générer le brouillon
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAiPanel(false);
+                  setAiError(null);
+                }}
+                className="px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+            {aiDraft && (
+              <div className="mt-5 bg-blue-100 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold mb-2">Résultat AI</h3>
+                <p className="text-sm"><strong>Titre :</strong> {aiDraft.title}</p>
+                <p className="text-sm"><strong>Difficulté :</strong> {aiDraft.difficulty}</p>
+                <p className="text-sm"><strong>Catégorie :</strong> {aiDraft.category}</p>
+                <p className="text-sm"><strong>Tests générés :</strong> {aiDraft.tests?.length ?? 0}</p>
+                <p className="text-sm"><strong>Tags :</strong> {(aiDraft.tags || []).join(', ')}</p>
+              </div>
+            )}
           </div>
         )}
 

@@ -5,6 +5,7 @@ import { PageLoader } from './App';
 import { ThemeEffects } from './components/ThemeEffects';
 import { NotificationToastContainer } from './components/NotificationToastContainer';
 import { Toaster } from 'react-hot-toast';
+import { CompanyRole } from './services/companyService';
 
 // Lazy-load Navbar — 130 kB, not needed before first paint
 const Navbar = lazy(() => import('./components/Navbar').then(m => ({ default: m.Navbar })));
@@ -61,4 +62,25 @@ export function PublicGuard() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <PageLoader />;
   return !isAuthenticated ? <Outlet /> : <Navigate to="/dashboard" replace />;
+}
+
+export function CompanyRoleGuard({
+  allowedRoles,
+  children,
+  fallbackPath = '/company/overview',
+}: {
+  allowedRoles: CompanyRole[];
+  children: React.ReactNode;
+  fallbackPath?: string;
+}) {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading) return <PageLoader />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  const companyRole = user?.companyRole;
+  if (!companyRole || !allowedRoles.includes(companyRole)) {
+    return <Navigate to={fallbackPath} replace />;
+  }
+
+  return <>{children}</>;
 }

@@ -1,5 +1,5 @@
 // src/ai/ai.service.ts
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 
@@ -15,11 +15,33 @@ export interface CodeReviewResult {
     summary: string;
 }
 
+export interface ChallengeDraft {
+    title: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+    tags?: string[];
+    statementMd?: string;
+    tests?: Array<{
+        input: string;
+        expectedOutput: string;
+        isHidden?: boolean;
+    }>;
+    allowedLanguages?: string[];
+    hints?: string[];
+    category: string;
+    briefMd?: string;
+    deliverables?: string;
+    rubric?: any;
+    assets?: string[];
+    excalidrawElements?: any[];
+}
+
 @Injectable()
 export class AiService {
     private readonly logger = new Logger(AiService.name);
     private genAI: GoogleGenerativeAI;
     private model;
+    private currentModelIndex = 0;
+    private readonly modelNames = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite'];
 
     constructor(private configService: ConfigService) {
         const apiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -29,16 +51,7 @@ export class AiService {
         }
 
         this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
-            generationConfig: {
-                temperature: 0.7,
-                topP: 0.95,
-                topK: 40,
-                maxOutputTokens: 2048,
-                responseMimeType: "application/json",
-            },
-        });
+        this.model = this.createModel(0);
 
         this.logger.log('✅ Gemini AI initialized successfully');
     }
@@ -50,7 +63,7 @@ export class AiService {
         challengeDescription: string;
     }): Promise<CodeReviewResult> {
         if (!this.model) {
-            throw new Error('Gemini AI not configured');
+            throw new ServiceUnavailableException('Gemini AI is not configured. Please set GEMINI_API_KEY to enable AI draft generation.');
         }
 
         this.logger.log(`🤖 Reviewing ${params.language} code for: ${params.challengeTitle}`);
@@ -59,9 +72,7 @@ export class AiService {
         const startTime = Date.now();
 
         try {
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
+            const text = await this.generateWithRetry(prompt);
 
             const review = this.parseReviewResponse(text);
             const latency = Date.now() - startTime;
@@ -71,9 +82,98 @@ export class AiService {
 
         } catch (error) {
             this.logger.error('❌ AI review failed:', error);
+            if (error instanceof HttpException) {
+                throw error;
+            }
             const msg = error instanceof Error ? error.message : String(error);
-            throw new Error(`Failed to generate code review: ${msg}`);
+            throw new ServiceUnavailableException(`Failed to generate code review: ${msg}`);
         }
+    }
+
+    private createModel(index: number) {
+        const modelName = this.modelNames[index] || this.modelNames[0];
+        this.logger.log(`🔁 Initializing Gemini model: ${modelName}`);
+        return this.genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+                temperature: 0.7,
+                topP: 0.95,
+                topK: 40,
+                maxOutputTokens: 8192,
+                responseMimeType: 'application/json',
+            },
+        });
+    }
+
+    private isRetryableError(error: any): boolean {
+        const message = error?.message || '';
+        const status = error?.status || error?.statusCode || error?.response?.status;
+        return (
+            status === 503 ||
+            status === 429 ||
+            message.includes('503') ||
+            message.includes('429') ||
+            message.toLowerCase().includes('service unavailable') ||
+            message.toLowerCase().includes('high demand') ||
+            message.toLowerCase().includes('quota') ||
+            message.toLowerCase().includes('too many requests') ||
+            message.toLowerCase().includes('rate limit')
+        );
+    }
+
+    private async delay(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    private async generateWithRetry(request: string, maxRetries = 3): Promise<string> {
+        if (!this.genAI) {
+            throw new ServiceUnavailableException(
+                'Gemini AI is not configured. Please set GEMINI_API_KEY.'
+            );
+        }
+
+        for (let modelIndex = 0; modelIndex < this.modelNames.length; modelIndex++) {
+            const modelName = this.modelNames[modelIndex];
+            this.model = this.createModel(modelIndex);
+
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const result = await this.model.generateContent(request);
+                    const response = await result.response;
+                    return response.text();
+                } catch (error) {
+                    const isRetryable = this.isRetryableError(error);
+
+                    if (isRetryable && attempt < maxRetries) {
+                        const delayMs = Math.pow(2, attempt) * 1000;
+                        this.logger.warn(
+                            `⏳ Model ${modelName} attempt ${attempt}/${maxRetries} failed. Retrying in ${delayMs / 1000}s...`
+                        );
+                        await this.delay(delayMs);
+                        continue;
+                    }
+
+                    // If retryable but exhausted retries, break to try next model
+                    if (isRetryable) {
+                        this.logger.warn(
+                            `⚠️ Model ${modelName} failed after ${attempt} attempts. ${
+                                modelIndex < this.modelNames.length - 1
+                                    ? `Falling back to ${this.modelNames[modelIndex + 1]}`
+                                    : 'No more fallback models.'
+                            }`
+                        );
+                        break;
+                    }
+
+                    // Non-retryable error — throw immediately
+                    throw error;
+                }
+            }
+        }
+
+        throw new ServiceUnavailableException(
+            'All AI models are currently unavailable. Please try again in a few minutes.'
+        );
     }
 
     private buildReviewPrompt(params: {
@@ -180,9 +280,140 @@ JSON:`;
         }
     }
 
+    async generateChallengeDraft(prompt: string, kind: 'CODE' | 'CANVAS' = 'CODE'): Promise<ChallengeDraft> {
+        if (!this.model) {
+            throw new ServiceUnavailableException('Gemini AI is not configured. Please set GEMINI_API_KEY to enable AI draft generation.');
+        }
+
+        const request = kind === 'CANVAS' ? this.buildCanvasChallengeDraftPrompt(prompt) : this.buildChallengeDraftPrompt(prompt);
+        this.logger.log(`🤖 Generating AI ${kind.toLowerCase()} challenge draft...`);
+
+        try {
+            const text = await this.generateWithRetry(request);
+
+            const draft = kind === 'CANVAS' ? this.parseCanvasChallengeDraftResponse(text) : this.parseChallengeDraftResponse(text);
+            this.logger.log(`✅ AI draft generated: ${draft.title}`);
+            return draft;
+        } catch (error) {
+            this.logger.error('❌ AI challenge draft generation failed:', error);
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            const msg = error instanceof Error ? error.message : String(error);
+            throw new ServiceUnavailableException(`Failed to generate challenge draft: ${msg}`);
+        }
+    }
+
+    private buildChallengeDraftPrompt(prompt: string): string {
+        return `Tu es un expert en conception de challenges de programmation. Crée un brouillon de challenge de code clair, original et réalisable en 1 à 2 heures, en respectant cette demande :\n\n${prompt}\n\nRetourne uniquement du JSON valide sans explication supplémentaire. Le JSON doit contenir les champs suivants :\n{\n  "title": "...",\n  "difficulty": "easy|medium|hard",\n  "tags": ["tag1", "tag2"],\n  "category": "algorithms|data structures|math|strings|graphs|dynamic programming|other",\n  "statementMd": "Description du problème en markdown",\n  "allowedLanguages": ["javascript", "python", "java"],\n  "tests": [{"input": "...", "expectedOutput": "...", "isHidden": false}],\n  "hints": ["Hint 1", "Hint 2"]\n}\n\nFais en sorte que le challenge soit directement utilisable en tant que brouillon d'administration.`;
+    }
+
+    private buildCanvasChallengeDraftPrompt(prompt: string): string {
+        return `Tu es un expert en conception de challenges Canvas/UX. Crée un brouillon de challenge Canvas clair, original et réalisable en 1 à 2 heures, en respectant cette demande :\n\n${prompt}\n\nRetourne uniquement du JSON valide sans explication supplémentaire. Le JSON doit contenir les champs suivants :\n{\n  "title": "...",\n  "difficulty": "easy|medium|hard",\n  "category": "frontend|ux|dataflow|integration|security|product|general",\n  "briefMd": "Description du challenge en markdown",\n  "deliverables": "Liste des livrables attendus",\n  "rubric": {"criteria": "...", "points": "..."},\n  "assets": ["asset1.png", "asset2.svg"],\n  "hints": ["Hint 1", "Hint 2"],\n  "excalidrawElements": [\n    {\n      "id": "element-1",\n      "type": "rectangle",\n      "x": 0,\n      "y": 0,\n      "width": 100,\n      "height": 50,\n      "angle": 0,\n      "seed": 123456,\n      "version": 1,\n      "versionNonce": 654321,\n      "updated": 0,\n      "isDeleted": false,\n      "groupIds": [],\n      "boundElements": null,\n      "locked": false,\n      "text": "Label text"\n    }\n  ]\n}\n\nLe champ \"excalidrawElements\" doit contenir un tableau d'éléments Excalidraw que l'application peut rendre directement, avec des positions, tailles et textes simples. Si tu génères des éléments, ne retourne aucun autre contenu que le JSON valide demandé.`;
+    }
+
+    private parseChallengeDraftResponse(text: string): ChallengeDraft {
+        try {
+            let cleanText = text.trim();
+            cleanText = cleanText.replace(/```json\n?/gi, '');
+            cleanText = cleanText.replace(/```\n?/g, '');
+
+            const start = cleanText.indexOf('{');
+            const end = cleanText.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+                cleanText = cleanText.substring(start, end + 1);
+            }
+
+            const parsed = JSON.parse(cleanText);
+
+            const draft: ChallengeDraft = {
+                title: String(parsed.title || 'New AI Challenge'),
+                difficulty: ['easy', 'medium', 'hard'].includes(parsed.difficulty) ? parsed.difficulty : 'medium',
+                tags: Array.isArray(parsed.tags) ? parsed.tags.filter((tag: any) => typeof tag === 'string') : [],
+                category: typeof parsed.category === 'string' ? parsed.category : 'general',
+                statementMd: String(parsed.statementMd || parsed.description || parsed.brief || ''),
+                allowedLanguages: Array.isArray(parsed.allowedLanguages)
+                    ? parsed.allowedLanguages.filter((lang: any) => typeof lang === 'string')
+                    : ['javascript', 'python', 'java'],
+                tests: Array.isArray(parsed.tests)
+                    ? parsed.tests.map((test: any) => ({
+                          input: String(test.input || ''),
+                          expectedOutput: String(test.expectedOutput || ''),
+                          isHidden: Boolean(test.isHidden),
+                      }))
+                    : [],
+                hints: Array.isArray(parsed.hints)
+                    ? parsed.hints.filter((hint: any) => typeof hint === 'string')
+                    : [],
+            };
+
+            if (!draft.title.trim()) {
+                throw new Error('Invalid AI draft response: missing title');
+            }
+
+            return draft;
+        } catch (error) {
+            this.logger.error('Failed to parse AI challenge draft response:', error);
+            this.logger.debug('Raw AI challenge response:', text);
+
+            throw new ServiceUnavailableException('AI draft generation failed due to an invalid response from Gemini. Please retry.');
+        }
+    }
+
+    private parseCanvasChallengeDraftResponse(text: string): ChallengeDraft {
+        try {
+            let cleanText = text.trim();
+            cleanText = cleanText.replace(/```json\n?/gi, '');
+            cleanText = cleanText.replace(/```\n?/g, '');
+
+            const start = cleanText.indexOf('{');
+            const end = cleanText.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+                cleanText = cleanText.substring(start, end + 1);
+            }
+
+            const parsed = JSON.parse(cleanText);
+
+            const draft: ChallengeDraft = {
+                title: String(parsed.title || 'New AI Canvas Challenge'),
+                difficulty: ['easy', 'medium', 'hard'].includes(parsed.difficulty) ? parsed.difficulty : 'medium',
+                category: typeof parsed.category === 'string' ? parsed.category : 'general',
+                briefMd: String(parsed.briefMd || parsed.description || parsed.brief || ''),
+                deliverables: typeof parsed.deliverables === 'string' ? parsed.deliverables : '',
+                rubric: typeof parsed.rubric === 'object' && parsed.rubric !== null ? parsed.rubric : {},
+                assets: Array.isArray(parsed.assets) ? parsed.assets.filter((asset: any) => typeof asset === 'string') : [],
+                hints: Array.isArray(parsed.hints) ? parsed.hints.filter((hint: any) => typeof hint === 'string') : [],
+                excalidrawElements: Array.isArray(parsed.excalidrawElements)
+                    ? parsed.excalidrawElements.map((el: any, index: number) => ({
+                          ...el,
+                          id: el.id || `el_${index}_${Date.now()}`,
+                          version: el.version || 1,
+                          versionNonce: el.versionNonce || Math.floor(Math.random() * 999999),
+                          updated: Date.now(),
+                          isDeleted: false,
+                          groupIds: el.groupIds || [],
+                          boundElements: el.boundElements || null,
+                          locked: el.locked || false,
+                      }))
+                    : [],
+            };
+
+            if (!draft.title.trim()) {
+                throw new Error('Invalid AI canvas draft response: missing title');
+            }
+
+            return draft;
+        } catch (error) {
+            this.logger.error('Failed to parse AI canvas draft response:', error);
+            this.logger.debug('Raw AI canvas response:', text);
+
+            throw new ServiceUnavailableException('AI canvas draft generation failed due to an invalid response from Gemini. Please retry.');
+        }
+    }
+
     async suggestImprovements(code: string, language: string): Promise<string> {
         if (!this.model) {
-            throw new Error('Gemini AI not configured');
+            throw new ServiceUnavailableException('Gemini AI is not configured. Please set GEMINI_API_KEY to enable code review.');
         }
 
         const prompt = `En tant qu'expert ${language}, analyse ce code et propose une version améliorée:
@@ -199,12 +430,13 @@ Fournis:
 Format markdown avec sections claires.`;
 
         try {
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            return response.text();
+            return await this.generateWithRetry(prompt);
         } catch (error) {
             this.logger.error('Failed to generate improvements:', error);
-            throw new Error('Failed to generate improvement suggestions');
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            throw new ServiceUnavailableException('Failed to generate improvement suggestions');
         }
     }
 

@@ -35,6 +35,29 @@ export class CreateSubmissionDto {
   snapshotUrl?: string;
 }
 
+export class SaveDraftDto {
+  @ApiProperty()
+  @IsString()
+  challengeId: string;
+
+  @ApiProperty({ enum: ['CANVAS'] })
+  @IsEnum(['CANVAS'] as const)
+  kind: 'CANVAS';
+
+  @ApiProperty()
+  canvasJson: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  context?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  snapshotUrl?: string;
+}
+
 export class CreateCanvasSubmissionDto {
   @ApiProperty()
   @IsString()

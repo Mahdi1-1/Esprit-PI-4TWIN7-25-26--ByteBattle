@@ -56,6 +56,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
           status: 'lobby',
           startTime: { lte: thirtyMinFromNow },
         },
+        select: { id: true },
       });
       for (const h of lobbyToCheckin) {
         try {
@@ -73,6 +74,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
           status: 'checkin',
           startTime: { lte: now },
         },
+        select: { id: true },
       });
       for (const h of checkinToActive) {
         try {
@@ -109,6 +111,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
           status: 'frozen',
           endTime: { lte: now },
         },
+        select: { id: true },
       });
       for (const h of frozenToEnded) {
         try {
@@ -127,6 +130,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
           endTime: { lte: now },
           freezeAt: null,
         },
+        select: { id: true },
       });
       for (const h of activeToEnded) {
         try {

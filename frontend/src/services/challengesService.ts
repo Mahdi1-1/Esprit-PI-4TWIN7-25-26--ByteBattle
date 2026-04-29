@@ -41,6 +41,16 @@ export const challengesService = {
     return data;
   },
 
+  async generateDraft(payload: { prompt: string; kind?: string }) {
+    const { data } = await api.post('/challenges/generate', payload);
+    return data;
+  },
+
+  async generateDraftAdmin(payload: { prompt: string; kind?: string }) {
+    const { data } = await api.post('/challenges/admin/generate', payload);
+    return data;
+  },
+
   // Admin
   async create(challenge: Partial<Challenge>) {
     const { data } = await api.post('/challenges', challenge);

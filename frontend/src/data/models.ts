@@ -60,6 +60,8 @@ export interface Account {
     thumbnailUrl?: string | null;
     localImageUrl?: string | null;
   } | null;
+  companyId?: string | null;
+  companyRole?: 'owner' | 'recruiter' | 'member' | null;
 }
 
 // Alias so AuthContext can import `User` directly

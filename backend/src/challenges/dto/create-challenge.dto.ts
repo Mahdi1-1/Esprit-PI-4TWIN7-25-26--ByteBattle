@@ -113,3 +113,14 @@ export class CreateCanvasChallengeDto {
   @IsEnum(['draft', 'published', 'archived'] as const)
   status?: 'draft' | 'published' | 'archived';
 }
+
+export class GenerateChallengeDraftDto {
+  @ApiProperty({ example: 'Create a beginner-friendly coding challenge about arrays and loops' })
+  @IsString()
+  prompt: string;
+
+  @ApiPropertyOptional({ enum: ['CODE', 'CANVAS'] })
+  @IsOptional()
+  @IsEnum(['CODE', 'CANVAS'] as const)
+  kind?: 'CODE' | 'CANVAS';
+}

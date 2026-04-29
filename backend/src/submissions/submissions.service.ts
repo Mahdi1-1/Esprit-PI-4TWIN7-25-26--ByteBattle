@@ -121,6 +121,76 @@ export class SubmissionsService {
     return result;
   }
 
+  async saveDraft(userId: string, dto: any) {
+    const challengeId = dto.challengeId;
+    if (!challengeId) throw new NotFoundException('Challenge ID not provided');
+
+    const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
+    if (!challenge) throw new NotFoundException('Challenge not found');
+
+    const existingDraft = await this.prisma.submission.findFirst({
+      where: {
+        userId,
+        challengeId,
+        kind: 'CANVAS',
+        verdict: 'draft',
+      },
+    });
+
+    const payload: any = {
+      userId,
+      challengeId,
+      kind: 'CANVAS',
+      context: dto.context || 'solo',
+      language: dto.language || 'canvas',
+      verdict: 'draft',
+      score: dto.score ?? 0,
+      canvasJson: dto.canvasJson,
+      snapshotUrl: dto.snapshotUrl,
+    };
+
+    if (existingDraft) {
+      return this.prisma.submission.update({
+        where: { id: existingDraft.id },
+        data: payload,
+      });
+    }
+
+    return this.prisma.submission.create({
+      data: payload,
+    });
+  }
+
+  async findDraft(userId: string, challengeId: string) {
+    return this.prisma.submission.findFirst({
+      where: {
+        userId,
+        challengeId,
+        kind: 'CANVAS',
+        verdict: 'draft',
+      },
+      include: {
+        challenge: true,
+      },
+    });
+  }
+
+  async deleteDraft(userId: string, challengeId: string) {
+    const draft = await this.prisma.submission.findFirst({
+      where: {
+        userId,
+        challengeId,
+        kind: 'CANVAS',
+        verdict: 'draft',
+      },
+    });
+    if (!draft) {
+      return { deleted: 0 };
+    }
+    await this.prisma.submission.delete({ where: { id: draft.id } });
+    return { deleted: 1 };
+  }
+
   async findAll(query: {
     page?: number;
     limit?: number;

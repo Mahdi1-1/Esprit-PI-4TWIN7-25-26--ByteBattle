@@ -12,6 +12,21 @@ jest.mock('fs/promises', () => ({
   rmdir: jest.fn().mockResolvedValue(undefined),
 }));
 
+const createDockerExecMock = (
+  mainStdout: string,
+  mainStderr = '',
+  mainError: Error | null = null,
+) => {
+  return (cmd: string, args: string[], options: any, callback: Function) => {
+    if (args[0] === 'stats') {
+      callback(null, '0.00%|10.00MiB / 128MiB\n', '');
+    } else {
+      callback(mainError, mainStdout, mainStderr);
+    }
+    return { stdin: { write: jest.fn(), end: jest.fn() } };
+  };
+};
+
 describe('SandboxService', () => {
   let service: SandboxService;
 
@@ -42,11 +57,7 @@ describe('SandboxService', () => {
     it('should return AC when all test cases match expected output', async () => {
       // Mock execFile to simulate successful execution
       (child_process.execFile as unknown as jest.Mock).mockImplementation(
-        (cmd, args, options, callback) => {
-          // Expected stdout matches the test defined below
-          callback(null, 'hello world\n', '');
-          return { stdin: { write: jest.fn(), end: jest.fn() } };
-        }
+        createDockerExecMock('hello world\n')
       );
 
       const result = await service.evaluateAgainstTests('javascript', 'console.log("hello world");', [
@@ -56,6 +67,8 @@ describe('SandboxService', () => {
       expect(result.verdict).toBe('AC');
       expect(result.passed).toBe(1);
       expect(result.total).toBe(1);
+      expect(result.maxMemMb).toBeCloseTo(10.49, 2);
+      expect((child_process.execFile as unknown as jest.Mock).mock.calls.length).toBeGreaterThan(1);
       expect(child_process.execFile).toHaveBeenCalledWith('docker', expect.any(Array), expect.any(Object), expect.any(Function));
       expect(fs.writeFile).toHaveBeenCalled();
       expect(fs.unlink).toHaveBeenCalled();
@@ -64,10 +77,7 @@ describe('SandboxService', () => {
     it('should return WA when test cases fail', async () => {
       // Mock execFile to simulate wrong answer
       (child_process.execFile as unknown as jest.Mock).mockImplementation(
-        (cmd, args, options, callback) => {
-          callback(null, 'wrong output\n', '');
-          return { stdin: { write: jest.fn(), end: jest.fn() } };
-        }
+        createDockerExecMock('wrong output\n')
       );
 
       const result = await service.evaluateAgainstTests('python', 'print("wrong output")', [
@@ -82,9 +92,13 @@ describe('SandboxService', () => {
       // Mock execFile to simulate timeout
       (child_process.execFile as unknown as jest.Mock).mockImplementation(
         (cmd, args, options, callback) => {
-          const timeoutErr = new Error('Command failed') as any;
-          timeoutErr.killed = true;
-          callback(timeoutErr, '', '');
+          if (args[0] === 'stats') {
+            callback(null, '0.00%|10.00MiB / 128MiB\n', '');
+          } else {
+            const timeoutErr = new Error('Command failed') as any;
+            timeoutErr.killed = true;
+            callback(timeoutErr, '', '');
+          }
           return { stdin: { write: jest.fn(), end: jest.fn() } };
         }
       );
@@ -100,9 +114,13 @@ describe('SandboxService', () => {
       // Mock execFile to simulate runtime error
       (child_process.execFile as unknown as jest.Mock).mockImplementation(
         (cmd, args, options, callback) => {
-          const err = new Error('Command failed') as any;
-          err.code = 1;
-          callback(err, '', 'Segmentation fault');
+          if (args[0] === 'stats') {
+            callback(null, '0.00%|10.00MiB / 128MiB\n', '');
+          } else {
+            const err = new Error('Command failed') as any;
+            err.code = 1;
+            callback(err, '', 'Segmentation fault');
+          }
           return { stdin: { write: jest.fn(), end: jest.fn() } };
         }
       );

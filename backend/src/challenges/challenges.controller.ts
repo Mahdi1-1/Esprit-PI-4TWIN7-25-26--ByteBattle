@@ -1,14 +1,15 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Param, Query, Body,
+  Param, Query, Body, UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ChallengesService } from './challenges.service';
-import { CreateCodeChallengeDto, CreateCanvasChallengeDto } from './dto/create-challenge.dto';
+import { CreateCodeChallengeDto, CreateCanvasChallengeDto, GenerateChallengeDraftDto } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Challenges')
 @Controller('challenges')
@@ -46,6 +47,14 @@ export class ChallengesController {
     return this.challengesService.getRecommended(userId);
   }
 
+  @Post('generate')
+  @Roles('user')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate a challenge draft using AI (authenticated users, consumes 5 tokens)' })
+  generateUserDraft(@CurrentUser('id') userId: string, @Body() dto: GenerateChallengeDraftDto) {
+    return this.challengesService.generateDraftForUser(userId, dto.prompt, dto.kind || 'CODE');
+  }
+
   @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get challenge details' })
@@ -53,7 +62,32 @@ export class ChallengesController {
     return this.challengesService.findOne(id);
   }
 
+  // ----- Company Routes -----
+  @Get('company/:companyId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List challenges for a company (active members only)' })
+  findByCompany(@Param('companyId') companyId: string, @CurrentUser('id') userId: string) {
+    return this.challengesService.findByCompany(companyId, userId);
+  }
+
+  @Post('company')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a challenge for company (owner/recruiter)' })
+  createCompanyChallenge(@CurrentUser('id') userId: string, @Body() dto: any) {
+    return this.challengesService.createCompanyChallenge(userId, dto);
+  }
+
   // ----- Admin Routes -----
+
+  @Post('admin/generate')
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate a challenge draft using AI' })
+  generateDraft(@Body() dto: GenerateChallengeDraftDto) {
+    return this.challengesService.generateDraft(dto.prompt, dto.kind || 'CODE');
+  }
 
   @Get('admin/all')
   @Roles('admin')

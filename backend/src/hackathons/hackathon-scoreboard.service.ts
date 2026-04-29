@@ -34,16 +34,22 @@ export interface Scoreboard {
 export class HackathonScoreboardService {
   private readonly logger = new Logger(HackathonScoreboardService.name);
   private redis: Redis;
+  private readonly redisEnabled: boolean;
 
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {
-    this.redis = new Redis({
-      host: this.configService.get('REDIS_HOST', 'localhost'),
-      port: this.configService.get<number>('REDIS_PORT', 6379),
-      password: this.configService.get('REDIS_PASSWORD'),
-    });
+    this.redisEnabled = this.configService.get<string>('REDIS_ENABLED', 'true') !== 'false';
+    if (this.redisEnabled) {
+      this.redis = new Redis({
+        host: this.configService.get('REDIS_HOST', 'localhost'),
+        port: this.configService.get<number>('REDIS_PORT', 6379),
+        password: this.configService.get('REDIS_PASSWORD'),
+      });
+    } else {
+      this.logger.warn('Redis is disabled. Frozen scoreboard caching is unavailable.');
+    }
   }
 
   // ────────────────────────────────────────────────────────
@@ -152,6 +158,10 @@ export class HackathonScoreboardService {
   // ────────────────────────────────────────────────────────
 
   async freezeScoreboard(hackathonId: string): Promise<void> {
+    if (!this.redisEnabled || !this.redis) {
+      this.logger.warn(`Skipping frozen scoreboard cache for hackathon ${hackathonId} because Redis is disabled.`);
+      return;
+    }
     const scoreboard = await this.computeScoreboard(hackathonId);
     const key = `hackathon:scoreboard:frozen:${hackathonId}`;
     await this.redis.setex(key, 86400, JSON.stringify(scoreboard)); // 24h TTL
@@ -159,6 +169,7 @@ export class HackathonScoreboardService {
   }
 
   async getFrozenScoreboard(hackathonId: string): Promise<Scoreboard | null> {
+    if (!this.redisEnabled || !this.redis) return null;
     const key = `hackathon:scoreboard:frozen:${hackathonId}`;
     const cached = await this.redis.get(key);
     if (cached) return JSON.parse(cached);

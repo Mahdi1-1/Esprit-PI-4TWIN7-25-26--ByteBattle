@@ -10,6 +10,31 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
 
 export type { Notification };
 
+export type CompanyNotificationType = 'join_request' | 'roadmap_assigned' | 'course_enrolled' | 'application_received' | 'badge_earned';
+
+export interface CompanyNotification {
+  id: string;
+  companyId: string;
+  type: CompanyNotificationType;
+  userId?: string;
+  user?: {
+    id: string;
+    username: string;
+    profileImage?: string;
+  };
+  read: boolean;
+  createdAt: string;
+  targetUrl?: string;
+  message: string;
+}
+
+export interface NotificationsFilters {
+  type?: CompanyNotificationType;
+  read?: boolean;
+  startDate?: string;
+  endDate?: string;
+}
+
 let socket: Socket | null = null;
 const listeners: Set<() => void> = new Set();
 
@@ -119,6 +144,66 @@ export const notificationsService = {
 
     const unsubscribe = () => {
       socket?.off('notification:new', handler);
+      listeners.delete(unsubscribe);
+    };
+    listeners.add(unsubscribe);
+    return unsubscribe;
+  },
+
+  // ─── Company Notifications ──────────────────────────────────
+
+  async getCompanyNotifications(
+    companyId: string,
+    page = 1,
+    limit = 20,
+    filters?: NotificationsFilters
+  ): Promise<{ notifications: CompanyNotification[]; total: number }> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (filters?.type) params.append('type', filters.type);
+    if (filters?.read !== undefined) params.append('read', filters.read.toString());
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const { data } = await api.get(`/companies/${companyId}/notifications?${params.toString()}`);
+    return data;
+  },
+
+  async markCompanyNotificationRead(companyId: string, notificationId: string): Promise<void> {
+    await api.post(`/companies/${companyId}/notifications/${notificationId}/read`);
+  },
+
+  async markAllCompanyNotificationsRead(companyId: string): Promise<void> {
+    await api.post(`/companies/${companyId}/notifications/read-all`);
+  },
+
+  async getCompanyUnreadCount(companyId: string): Promise<{ count: number }> {
+    const { data } = await api.get(`/companies/${companyId}/notifications/unread-count`);
+    return data;
+  },
+
+  onCompanyNotification(callback: (notification: CompanyNotification) => void): () => void {
+    const handler = (data: CompanyNotification) => callback(data);
+
+    const companyEventHandlers = [
+      'company:join_request',
+      'company:roadmap_assigned',
+      'company:course_enrolled',
+      'company:application_received',
+      'company:badge_earned'
+    ];
+
+    if (socket?.connected) {
+      companyEventHandlers.forEach(event => {
+        socket?.on(event, handler);
+      });
+    }
+
+    const unsubscribe = () => {
+      companyEventHandlers.forEach(event => {
+        socket?.off(event, handler);
+      });
       listeners.delete(unsubscribe);
     };
     listeners.add(unsubscribe);

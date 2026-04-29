@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import * as path from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -18,10 +19,14 @@ import { DuelsModule } from './duels/duels.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CacheModule } from './cache/cache.module';
 import { CompaniesModule } from './companies/companies.module';
+import { RoadmapsModule } from './roadmaps/roadmaps.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: path.resolve(__dirname, '../.env'),
+    }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -50,6 +55,7 @@ import { CompaniesModule } from './companies/companies.module';
     DuelsModule,
     NotificationsModule,
     CompaniesModule,
+    RoadmapsModule,
   ],
 })
 export class AppModule {}

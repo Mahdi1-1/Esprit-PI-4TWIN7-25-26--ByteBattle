@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
   Excalidraw,
   exportToBlob,
@@ -19,6 +19,15 @@ import { ToolbarButton } from "./ToolbarButton";
 import { Sidebar } from "./Sidebar";
 import type { Theme, SavedScene, ExcalidrawEditorProps } from "./types";
 
+function normalizeAppState(appState: Record<string, any> | undefined, theme: Theme) {
+  return {
+    viewBackgroundColor: theme === "dark" ? "#1e1e1e" : "#ffffff",
+    currentItemFontFamily: 1,
+    ...appState,
+    collaborators: Array.isArray(appState?.collaborators) ? appState?.collaborators : [],
+  };
+}
+
 export function ExcalidrawEditor({
   initialTheme,
   langCode = "fr-FR",
@@ -35,6 +44,15 @@ export function ExcalidrawEditor({
 }: ExcalidrawEditorProps) {
   const { colorScheme, toggleColorScheme } = useTheme();
   const excalidrawTheme: Theme = initialTheme || (colorScheme === "dark" ? "dark" : "light");
+
+  const memoizedInitialData = useMemo(
+    () => ({
+      appState: normalizeAppState(initialData?.appState, excalidrawTheme),
+      elements: initialData?.elements || [],
+      files: initialData?.files,
+    }),
+    [initialData?.appState, initialData?.elements, initialData?.files, excalidrawTheme]
+  );
 
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
@@ -411,16 +429,7 @@ export function ExcalidrawEditor({
                 export: false,
               },
             }}
-            initialData={{
-              appState: {
-                viewBackgroundColor:
-                  excalidrawTheme === "dark" ? "#1e1e1e" : "#ffffff",
-                currentItemFontFamily: 1,
-                ...initialData?.appState,
-              },
-              elements: initialData?.elements || [],
-              files: initialData?.files,
-            }}
+            initialData={memoizedInitialData}
           />
         </div>
       </div>

@@ -1,9 +1,9 @@
 import {
-  Controller, Get, Post, Param, Query, Body,
+  Controller, Get, Post, Param, Query, Body, Delete,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { SubmissionsService } from './submissions.service';
-import { CreateSubmissionDto, RunCodeDto } from './dto/create-submission.dto';
+import { CreateSubmissionDto, SaveDraftDto, RunCodeDto } from './dto/create-submission.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 
@@ -46,6 +46,54 @@ export class SubmissionsController {
       limit: limit ? +limit : undefined,
       kind, verdict,
     });
+  }
+
+  @Get('history')
+  @Roles('user')
+  @ApiOperation({ summary: 'Alias for current user submission history' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'kind', required: false })
+  @ApiQuery({ name: 'verdict', required: false })
+  getHistory(
+    @CurrentUser('id') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('kind') kind?: string,
+    @Query('verdict') verdict?: string,
+  ) {
+    return this.submissionsService.getUserHistory(userId, {
+      page: page ? +page : undefined,
+      limit: limit ? +limit : undefined,
+      kind, verdict,
+    });
+  }
+
+  @Post('draft')
+  @Roles('user')
+  @ApiOperation({ summary: 'Save or update a canvas draft' })
+  saveDraft(@CurrentUser('id') userId: string, @Body() dto: SaveDraftDto) {
+    return this.submissionsService.saveDraft(userId, dto as any);
+  }
+
+  @Get('draft/:challengeId')
+  @Roles('user')
+  @ApiOperation({ summary: 'Get the current user canvas draft for a challenge' })
+  getDraft(
+    @CurrentUser('id') userId: string,
+    @Param('challengeId') challengeId: string,
+  ) {
+    return this.submissionsService.findDraft(userId, challengeId);
+  }
+
+  @Delete('draft/:challengeId')
+  @Roles('user')
+  @ApiOperation({ summary: 'Delete the current user canvas draft for a challenge' })
+  deleteDraft(
+    @CurrentUser('id') userId: string,
+    @Param('challengeId') challengeId: string,
+  ) {
+    return this.submissionsService.deleteDraft(userId, challengeId);
   }
 
   @Get(':id')

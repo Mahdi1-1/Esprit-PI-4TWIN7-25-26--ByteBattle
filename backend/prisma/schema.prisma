@@ -24,6 +24,77 @@ type Avatar {
   updatedAt      DateTime
 }
 
+enum CompanyRole {
+  owner
+  recruiter
+  member
+}
+
+enum CompanySize {
+  SIZE_1_10  @map("1-10")
+  SIZE_11_50 @map("11-50")
+  SIZE_51_200 @map("51-200")
+  SIZE_201_1000 @map("201-1000")
+  SIZE_1000_PLUS @map("1000+")
+}
+
+enum CompanyMembershipStatus {
+  pending
+  active
+  rejected
+}
+
+enum CompanyRoadmapType {
+  platform
+  custom
+}
+
+enum CompanyRoadmapVisibility {
+  public
+  employees_only
+}
+
+enum CourseVisibility {
+  public
+  employees_only
+}
+
+enum JobType {
+  full_time
+  part_time
+  contract
+  internship
+}
+
+enum JobStatus {
+  active
+  closed
+}
+
+enum ForumVisibility {
+  public
+  company_only
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum UserStatus {
+  active
+  suspended
+  disabled
+}
+
+enum CompanyNotificationType {
+  join_request
+  roadmap_assigned
+  course_enrolled
+  application_received
+  badge_earned
+}
+
 model User {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   email         String     @unique
@@ -55,12 +126,27 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
+  companyId     String?    @db.ObjectId
+  company       Company?   @relation(fields: [companyId], references: [id])
+  ownedCompanies Company[] @relation("CompanyOwner")
+  companyRole   CompanyRole?
+  companyJoinedAt DateTime?
+
+  companyForumPosts      CompanyForumPost[]
+  companyBadgeAssignments CompanyBadgeAssignment[]
+  companyNotifications   CompanyNotification[]
+  roadmapAssignments     RoadmapAssignment[]
+  roadmapsAssigned       RoadmapAssignment[] @relation("RoadmapAssignedBy")
+  roadmapsCreated        Roadmap[]
+  roadmapProgressEntries RoadmapProgress[]
+  courseEnrollments      CourseEnrollment[]
+
   submissions   Submission[]
   discussions   Discussion[]
   comments      Comment[]
   interviews    InterviewSession[]
   auditLogs     AuditLog[]
-  companyRoles  CompanyMember[]
+  companyMemberships CompanyMembership[]
 
   // Profile settings
   bio               String?
@@ -79,45 +165,263 @@ model User {
   earnedBadges           UserBadge[]
 }
 
-enum UserRole {
-  user
-  moderator
-  admin
-}
-
-enum UserStatus {
-  inactive
-  active
-  suspended
-  banned
-}
-
 model Company {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  slug       String   @unique
-  logoUrl    String?
-  website    String?
-  domain     String?
-  status     String
-  joinPolicy String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                String                   @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  slug              String                   @unique
+  logo              String?
+  description       String?
+  website           String?
+  industry          String?
+  size              CompanySize?
+  joinCode          String?                  @unique
+  verified          Boolean                  @default(false)
+  verificationToken String?
+  ownerId           String?                  @db.ObjectId
+  owner             User?                    @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customBadges      Json?
+  status            String                   @default("active")
+  joinPolicy        String                   @default("approval")
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  deletedAt         DateTime?
 
-  members CompanyMember[]
+  employees        User[]
+  members          CompanyMembership[]
+  roadmaps         CompanyRoadmap[]
+  roadmapsV2       Roadmap[]
+  courses          CompanyCourse[]
+  jobs             CompanyJobPosting[]
+  forumGroups      CompanyForumGroup[]
+  forumPosts       CompanyForumPost[]
+  badgeAssignments CompanyBadgeAssignment[]
+  notifications    CompanyNotification[]
+  teams            CompanyTeam[]
 }
 
-model CompanyMember {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  companyId String   @db.ObjectId
-  company   Company  @relation(fields: [companyId], references: [id])
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
-  role      String
-  status    String
-  joinedAt  DateTime @default(now())
+model CompanyTeam {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String              @db.ObjectId
+  company     Company             @relation(fields: [companyId], references: [id])
+  name        String
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  members     CompanyMembership[]
+}
+
+model CompanyMembership {
+  id          String                     @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String                     @db.ObjectId
+  company     Company                    @relation(fields: [companyId], references: [id])
+  userId      String                     @db.ObjectId
+  user        User                       @relation(fields: [userId], references: [id])
+  role        CompanyRole                @default(member)
+  status      CompanyMembershipStatus    @default(pending)
+  teamId      String?                    @db.ObjectId
+  team        CompanyTeam?               @relation(fields: [teamId], references: [id])
+  joinedAt    DateTime                   @default(now())
+  requestedAt DateTime                   @default(now())
 
   @@unique([companyId, userId])
+}
+
+model CompanyRoadmap {
+  id           String                   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String                   @db.ObjectId
+  company      Company                  @relation(fields: [companyId], references: [id])
+  title        String
+  description  String?
+  type         CompanyRoadmapType
+  challengeIds String[]
+  order        Int                      @default(0)
+  visibility   CompanyRoadmapVisibility @default(public)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  assignments RoadmapAssignment[]
+}
+
+model Roadmap {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String            @db.ObjectId
+  title       String
+  description String?
+  isPublished Boolean           @default(false)
+  createdById String            @db.ObjectId
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  company     Company           @relation(fields: [companyId], references: [id])
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  nodes       RoadmapNode[]
+  edges       RoadmapEdge[]
+  progress    RoadmapProgress[]
+}
+
+model RoadmapNode {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  roadmapId   String            @db.ObjectId
+  title       String
+  description String?
+  type        String            @default("topic")
+  style       String            @default("required")
+  positionX   Float             @default(0)
+  positionY   Float             @default(0)
+  createdAt   DateTime          @default(now())
+
+  roadmap     Roadmap           @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  resources   RoadmapResource[]
+  progress    RoadmapProgress[]
+  sourceEdges RoadmapEdge[]     @relation("EdgeSource")
+  targetEdges RoadmapEdge[]     @relation("EdgeTarget")
+}
+
+model RoadmapEdge {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  roadmapId  String        @db.ObjectId
+  sourceId   String        @db.ObjectId
+  targetId   String        @db.ObjectId
+
+  roadmap    Roadmap       @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  source     RoadmapNode   @relation("EdgeSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  target     RoadmapNode   @relation("EdgeTarget", fields: [targetId], references: [id], onDelete: Cascade)
+}
+
+model RoadmapResource {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  nodeId    String      @db.ObjectId
+  title     String
+  url       String
+  type      String      @default("article")
+
+  node      RoadmapNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+}
+
+model RoadmapProgress {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String      @db.ObjectId
+  roadmapId String      @db.ObjectId
+  nodeId    String      @db.ObjectId
+  status    String
+  updatedAt DateTime    @updatedAt @default(now())
+
+  user      User        @relation(fields: [userId], references: [id])
+  roadmap   Roadmap     @relation(fields: [roadmapId], references: [id])
+  node      RoadmapNode @relation(fields: [nodeId], references: [id])
+
+  @@unique([userId, nodeId])
+}
+
+model RoadmapAssignment {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  roadmapId   String       @db.ObjectId
+  roadmap     CompanyRoadmap @relation(fields: [roadmapId], references: [id])
+  userId      String       @db.ObjectId
+  user        User         @relation(fields: [userId], references: [id])
+  assignedBy  String       @db.ObjectId
+  assignedByUser User      @relation("RoadmapAssignedBy", fields: [assignedBy], references: [id])
+  assignedAt  DateTime     @default(now())
+  completedAt DateTime?
+  progress    Int          @default(0)
+
+  @@unique([roadmapId, userId])
+}
+
+model CompanyCourse {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String          @db.ObjectId
+  company     Company         @relation(fields: [companyId], references: [id])
+  title       String
+  description String?
+  content     Json
+  visibility  CourseVisibility @default(public)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  enrollments CourseEnrollment[]
+}
+
+model CourseEnrollment {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  courseId    String       @db.ObjectId
+  course      CompanyCourse @relation(fields: [courseId], references: [id])
+  userId      String       @db.ObjectId
+  user        User         @relation(fields: [userId], references: [id])
+  enrolledAt  DateTime     @default(now())
+  completedAt DateTime?
+  progress    Int          @default(0)
+
+  @@unique([courseId, userId])
+}
+
+model CompanyJobPosting {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String    @db.ObjectId
+  company      Company   @relation(fields: [companyId], references: [id])
+  title        String
+  description  String
+  requirements Json
+  salaryRange  String?
+  location     String?
+  type         JobType
+  status       JobStatus @default(active)
+  applicants   String[]  @default([])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model CompanyForumGroup {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String         @db.ObjectId
+  company     Company        @relation(fields: [companyId], references: [id])
+  name        String
+  description String?
+  visibility  ForumVisibility @default(public)
+  members     String[]       @default([])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  posts       CompanyForumPost[]
+}
+
+model CompanyBadgeAssignment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId  String   @db.ObjectId
+  company    Company  @relation(fields: [companyId], references: [id])
+  badgeId    String   @db.ObjectId
+  badge      Badge    @relation(fields: [badgeId], references: [id])
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id])
+  assignedAt DateTime @default(now())
+}
+
+model CompanyNotification {
+  id         String                  @id @default(auto()) @map("_id") @db.ObjectId
+  companyId  String                  @db.ObjectId
+  company    Company                 @relation(fields: [companyId], references: [id])
+  type       CompanyNotificationType
+  userId     String?                 @db.ObjectId
+  user       User?                   @relation(fields: [userId], references: [id])
+  read       Boolean                 @default(false)
+  createdAt  DateTime                @default(now())
+}
+
+model CompanyForumPost {
+  id                 String         @id @default(auto()) @map("_id") @db.ObjectId
+  title              String
+  content            String
+  authorId           String         @db.ObjectId
+  author             User           @relation(fields: [authorId], references: [id])
+  companyId          String?        @db.ObjectId
+  company            Company?       @relation(fields: [companyId], references: [id])
+  groupId            String?        @db.ObjectId
+  group              CompanyForumGroup? @relation(fields: [groupId], references: [id])
+  visibility         ForumVisibility @default(public)
+  isCompanyAnnouncement Boolean      @default(false)
+  tags               String[]       @default([])
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 }
 
 // ---------------------------------------------------------
@@ -141,6 +445,10 @@ model Challenge {
   deliverables     String?
   rubric           Json?
   assets           String[]
+  
+  // Company challenge fields
+  companyId    String?  @db.ObjectId
+  visibility   String  @default("public") // "public" or "employees_only"
   
   // Paramètres pour les duels
   isDuelEnabled    Boolean         @default(true)
@@ -286,6 +594,8 @@ model Hackathon {
   rulesMd         String?
   scope           String          // "public" | "enterprise" | "invite-only"
   companyId       String?         @db.ObjectId
+  isCompanyHackathon Boolean      @default(false)
+  companyVisibility String?       // "PUBLIC" | "EMPLOYEES_ONLY"
   joinCode        String?
   teamPolicy      Json?           // { minSize, maxSize, autoAssign }
   bannerUrl       String?
@@ -645,13 +955,14 @@ type AIMessage {
 // ---------------------------------------------------------
 
 model Badge {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  name     String @unique
-  key      String @unique   // e.g. "first_blood", "speed_demon"
-  rarity   String           // common | rare | epic | legendary
-  ruleText String
-  iconUrl  String
-  earnedBy UserBadge[]
+  id                    String @id @default(auto()) @map("_id") @db.ObjectId
+  name                  String @unique
+  key                   String @unique   // e.g. "first_blood", "speed_demon"
+  rarity                String           // common | rare | epic | legendary
+  ruleText              String
+  iconUrl               String
+  earnedBy              UserBadge[]
+  companyBadgeAssignments CompanyBadgeAssignment[]
 }
 
 model UserBadge {

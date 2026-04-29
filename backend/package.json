@@ -5,9 +5,10 @@
   "private": true,
   "scripts": {
     "prestart": "node scripts/free-port.js 4001",
-    "prestart:dev": "node scripts/free-port.js 4001",
-    "prestart:debug": "node scripts/free-port.js 4001",
+    "prestart:dev": "node scripts/free-port.js 4001 && node scripts/clean-build.js",
+    "prestart:debug": "node scripts/free-port.js 4001 && node scripts/clean-build.js",
     "prestart:prod": "node scripts/free-port.js 4001",
+    "clean": "node scripts/clean-build.js",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { execFile } from 'child_process';
+import { randomBytes } from 'crypto';
 import { writeFile, unlink, mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -13,6 +14,7 @@ export interface ExecutionResult {
     exitCode: number;
     timeMs: number;
     memMb: number;
+    cpuPercent?: number;
     timedOut: boolean;
 }
 
@@ -22,6 +24,9 @@ export interface TestResult {
     actualOutput: string;
     passed: boolean;
     timeMs: number;
+    stderr?: string;
+    exitCode?: number;
+    timedOut?: boolean;
 }
 
 export interface EvaluationResult {
@@ -221,6 +226,9 @@ export class SandboxService {
                     actualOutput,
                     passed,
                     timeMs: exec.timeMs,
+                    stderr: (exec.stderr || '').trim(),
+                    exitCode: exec.exitCode,
+                    timedOut: exec.timedOut,
                 });
 
                 totalTime += exec.timeMs;
@@ -254,6 +262,63 @@ export class SandboxService {
             }
         }
         return null;
+    }
+
+    private async getDockerStats(containerName: string): Promise<{ cpu: number; memoryMb: number } | null> {
+        return new Promise((resolve) => {
+            execFile(
+                'docker',
+                ['stats', '--no-stream', '--format', '{{.CPUPerc}}|{{.MemUsage}}', containerName],
+                { timeout: 2000, encoding: 'utf-8' },
+                (error, stdout, stderr) => {
+                    if (error || !stdout) {
+                        if (error) {
+                            this.logger.debug(`Docker stats failed for ${containerName}: ${error.message} ${stderr || ''}`);
+                        }
+                        return resolve(null);
+                    }
+
+                    const line = stdout.trim();
+                    const [cpuRaw, memRaw] = line.split('|');
+                    if (!cpuRaw || !memRaw) {
+                        return resolve(null);
+                    }
+
+                    const cpu = parseFloat(cpuRaw.replace('%', '').replace('<', '').trim());
+                    const memoryStr = memRaw.split('/')[0].trim();
+                    const memoryMb = this.parseMemoryString(memoryStr);
+
+                    if (Number.isNaN(cpu) || Number.isNaN(memoryMb)) {
+                        return resolve(null);
+                    }
+
+                    resolve({ cpu, memoryMb });
+                },
+            );
+        });
+    }
+
+    private parseMemoryString(value: string): number {
+        const match = value.match(/^([\d,.]+)\s*([KMGTP]i?B)$/i);
+        if (!match) {
+            return NaN;
+        }
+
+        const amount = parseFloat(match[1].replace(',', '.'));
+        const unit = match[2].toUpperCase();
+        const multiplier: Record<string, number> = {
+            B: 1 / 1024 / 1024,
+            KB: 1 / 1024,
+            KIB: 1 / 1024,
+            MB: 1,
+            MIB: 1.048576,
+            GB: 1024,
+            GIB: 1024 * 1.048576,
+            TB: 1024 * 1024,
+            TIB: 1024 * 1024 * 1.048576,
+        };
+
+        return amount * (multiplier[unit] ?? NaN);
     }
 
     /** Resolve a language string to its Docker configuration. */
@@ -333,6 +398,7 @@ export class SandboxService {
         const containerCodePath = `/sandbox/${fileName}`;
         const cmd = langCfg.buildCmd(containerCodePath);
 
+        const containerName = `bb-sandbox-${Date.now()}-${randomBytes(4).toString('hex')}`;
         const args = [
             'run', '--rm',
             '--network', 'none',
@@ -341,6 +407,7 @@ export class SandboxService {
             '--cpus', this.cpuLimit,
             '--pids-limit', '64',
             '--tmpfs', '/tmp:rw,nosuid,size=32m',
+            '--name', containerName,
             '-v', `${hostDir}/${fileName}:${containerCodePath}:ro`,
             '-i',
             langCfg.image,
@@ -353,30 +420,38 @@ export class SandboxService {
         this.logger.debug(`Stdin: ${stdin ? JSON.stringify(stdin.substring(0, 200)) : '(empty)'}`);
 
         return new Promise<ExecutionResult>((resolve) => {
+            let maxMemMb = 0;
+            let maxCpu = 0;
+            const statsPromise = this.getDockerStats(containerName).then((stats) => {
+                if (!stats) return;
+                maxMemMb = Math.max(maxMemMb, stats.memoryMb);
+                maxCpu = Math.max(maxCpu, stats.cpu);
+            }).catch(() => {
+                // Ignore stats collection failures and continue.
+            });
+
             const child = execFile('docker', args, {
                 timeout: this.timeoutMs,
                 maxBuffer: 1024 * 1024, // 1 MB output cap
                 encoding: 'utf-8',
-            }, (error, stdout, stderr) => {
+            }, async (error, stdout, stderr) => {
                 const timeMs = Date.now() - startTime;
                 const timedOut = error?.killed === true;
                 const exitCode = timedOut ? 124 : (error as any)?.code ?? 0;
 
-                // Rough memory estimate from time (real mem tracking requires cgroups parsing)
-                const memMb = parseFloat((Math.random() * 20 + 5).toFixed(2));
-
-                // Log result for debugging
                 this.logger.debug(`Docker result: exitCode=${exitCode}, timedOut=${timedOut}, timeMs=${timeMs}`);
                 this.logger.debug(`Docker stdout: ${(stdout || '').substring(0, 300) || '(empty)'}`);
                 if (stderr) this.logger.debug(`Docker stderr: ${(stderr || '').substring(0, 300)}`);
                 if (error) this.logger.warn(`Docker error object: ${error.message}`);
 
+                await statsPromise;
                 resolve({
                     stdout: stdout || '',
                     stderr: timedOut ? 'Time limit exceeded' : (stderr || ''),
                     exitCode: typeof exitCode === 'number' ? exitCode : 1,
                     timeMs,
-                    memMb,
+                    memMb: parseFloat(maxMemMb.toFixed(2)),
+                    cpuPercent: parseFloat(maxCpu.toFixed(2)),
                     timedOut,
                 });
             });

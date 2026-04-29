@@ -13,3 +13,5 @@ interface ImportMetaEnv {
 interface ImportMeta {
     readonly env: ImportMetaEnv;
 }
+
+declare module '@xyflow/react/dist/style.css';

@@ -59,12 +59,28 @@ export const canvasService = {
     elements: any[];
     mode: string;
   }) {
-    const { data } = await api.post(`/submissions/submit`, {
+    const { data } = await api.post(`/submissions/code`, {
       challengeId: id,
-      code: JSON.stringify(submission),
+      kind: 'CANVAS',
       language: 'canvas',
+      canvasJson: submission,
+      context: submission.mode,
     });
     return data;
+  },
+
+  async saveDraft(challengeId: string, canvasJson: any) {
+    const { data } = await api.post('/submissions/draft', {
+      challengeId,
+      kind: 'CANVAS',
+      canvasJson,
+    });
+    return data;
+  },
+
+  async getDraft(challengeId: string) {
+    const { data } = await api.get(`/submissions/draft/${challengeId}`);
+    return data?.data ?? null;
   },
 
   async getSubmissions(challengeId: string) {

@@ -179,8 +179,17 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException();
 
+    const membership = await this.prisma.companyMembership.findFirst({
+      where: { userId, status: 'active' },
+      include: { company: { select: { id: true, name: true, slug: true, verified: true } } },
+    });
+
     const { passwordHash, ...profile } = user;
-    return profile;
+    return {
+      ...profile,
+      companyId: membership?.companyId || null,
+      companyRole: membership?.role || null,
+    };
   }
 
   async verifyEmail(dto: VerifyEmailDto) {

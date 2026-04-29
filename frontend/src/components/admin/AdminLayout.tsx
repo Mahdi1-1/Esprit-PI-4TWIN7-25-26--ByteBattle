@@ -27,7 +27,8 @@ import {
   Sun,
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  Building2
 } from 'lucide-react';
 import { BBLogo } from '../BBLogo';
 import { useTheme } from '../../context/ThemeContext';
@@ -57,7 +58,8 @@ const navItems: NavItem[] = [
   { id: 'hackathons', label: 'Hackathons', icon: Trophy, href: '/admin/hackathons' },
   { id: 'leaderboard', label: 'Leaderboards', icon: Award, href: '/admin/leaderboards', divider: true },
   { id: 'reports', label: 'Reports', icon: Flag, href: '/admin/reports', badge: 3 },
-  { id: 'anticheat', label: 'Anti-cheat', icon: Shield, href: '/admin/anticheat', divider: true },
+  { id: 'companies', label: 'Companies', icon: Building2, href: '/admin/companies', divider: true },
+  { id: 'anticheat', label: 'Anti-cheat', icon: Shield, href: '/admin/anticheat' },
   { id: 'monitoring', label: 'Monitoring', icon: Activity, href: '/admin/monitoring' },
   { id: 'ai', label: 'AI Settings', icon: Brain, href: '/admin/ai-settings' },
   { id: 'features', label: 'Feature Flags', icon: ToggleLeft, href: '/admin/feature-flags' },

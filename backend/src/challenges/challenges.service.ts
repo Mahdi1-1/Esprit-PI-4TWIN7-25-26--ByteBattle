@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AiService, ChallengeDraft } from '../ai/ai.service';
 // import { any } from './dto/create-challenge.dto';
 import { UpdateChallengeDto } from './dto/update-challenge.dto';
 
@@ -7,7 +8,7 @@ import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class ChallengesService {
-  constructor(private prisma: PrismaService, private cache: CacheService) { }
+  constructor(private prisma: PrismaService, private cache: CacheService, private aiService: AiService) { }
 
   async create(dto: any) {
     return this.prisma.challenge.create({
@@ -31,6 +32,71 @@ export class ChallengesService {
         deliverables: dto.deliverables,
         rubric: dto.rubric,
         assets: dto.assets || [],
+      },
+    });
+  }
+
+  async createCompanyChallenge(userId: string, dto: any & { companyId: string; visibility: 'public' | 'employees_only' }) {
+    const membership = await this.prisma.companyMembership.findFirst({
+      where: {
+        userId,
+        companyId: dto.companyId,
+        status: 'active',
+        role: { in: ['owner', 'recruiter'] }
+      }
+    });
+
+    if (!membership) {
+      throw new BadRequestException('Only company owners and recruiters can create challenges');
+    }
+
+    try {
+      return await this.prisma.challenge.create({
+        data: {
+          title: dto.title,
+          kind: dto.kind as any || 'CODE',
+          difficulty: dto.difficulty as any || 'medium',
+          tags: dto.tags || [],
+          descriptionMd: dto.description || '',
+          status: dto.visibility === 'public' ? 'published' : 'draft',
+          allowedLanguages: dto.allowedLanguages || [],
+          constraints: dto.constraints || {},
+          hints: dto.hints || [],
+          tests: [],
+          examples: dto.examples || [],
+          category: 'company',
+          companyId: dto.companyId,
+        },
+      });
+    } catch (err) {
+      console.error('Error creating company challenge:', err);
+      throw err;
+    }
+  }
+
+  async findByCompany(companyId: string, userId: string) {
+    const membership = await this.prisma.companyMembership.findFirst({
+      where: { userId, companyId, status: 'active' },
+    });
+    if (!membership) {
+      throw new BadRequestException('You must be an active member of this company to view its challenges');
+    }
+
+    return this.prisma.challenge.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        kind: true,
+        difficulty: true,
+        tags: true,
+        status: true,
+        category: true,
+        visibility: true,
+        descriptionMd: true,
+        createdAt: true,
+        _count: { select: { submissions: true } },
       },
     });
   }
@@ -172,6 +238,30 @@ export class ChallengesService {
     await this.cache.del(`challenge:admin:${id}`);
     
     return this.prisma.challenge.delete({ where: { id } });
+  }
+
+  async generateDraft(prompt: string, kind: 'CODE' | 'CANVAS' = 'CODE'): Promise<ChallengeDraft> {
+    return this.aiService.generateChallengeDraft(prompt, kind);
+  }
+
+  async generateDraftForUser(userId: string, prompt: string, kind: 'CODE' | 'CANVAS' = 'CODE'): Promise<ChallengeDraft> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (!user.isPremium && user.tokensLeft < 5) {
+      throw new BadRequestException('Not enough tokens remaining. Generating a canvas draft consumes 5 tokens. Upgrade to premium for unlimited AI generation.');
+    }
+
+    const draft = await this.aiService.generateChallengeDraft(prompt, kind);
+
+    if (!user.isPremium) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { tokensLeft: { decrement: 5 } },
+      });
+    }
+
+    return draft;
   }
 
   async getRecommended(userId: string) {

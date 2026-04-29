@@ -441,6 +441,9 @@ export function Problem() {
       } else if (data.status === 'completed') {
         setIsRunning(false);
         const result = data.result || {};
+        const firstFailedTest = Array.isArray(result.results)
+          ? result.results.find((t: any) => !t.passed)
+          : null;
         setSubmissionResult({
           id: data.submissionId,
           verdict: result.verdict || 'OK',
@@ -448,12 +451,19 @@ export function Problem() {
           testsTotal: result.total || 0,
           timeMs: result.totalTimeMs || result.timeMs || 0,
           memMb: result.maxMemMb || result.memMb || 0,
-          stdout: result.results?.[0]?.actualOutput || result.stdout || ''
+          stdout: result.results?.[0]?.actualOutput || result.stdout || '',
+          stderr: result.stderr || firstFailedTest?.stderr || '',
+          firstFailedTest,
         });
         setShowResults(true);
         toast.success('Exécution terminée !', { id: 'submission-toast' });
       } else if (data.status === 'error') {
         setIsRunning(false);
+        setSubmissionResult({
+          verdict: 'RE',
+          stderr: data.error || 'Unknown execution error',
+        });
+        setShowResults(true);
         toast.error('Erreur: ' + data.error, { id: 'submission-toast' });
       } else if (data.status === 'queued') {
         toast.loading('Dans la file d\'attente...', { id: 'submission-toast' });
@@ -511,6 +521,9 @@ export function Problem() {
         language: language,
         code: code
       });
+      const firstFailedTest = Array.isArray(result.results)
+        ? result.results.find((t: any) => !t.passed)
+        : null;
 
       setSubmissionResult({
         verdict: result.verdict || 'OK',
@@ -518,7 +531,9 @@ export function Problem() {
         testsTotal: result.total || problem.tests?.length || 0,
         timeMs: result.totalTimeMs || result.timeMs || 0,
         memMb: result.maxMemMb || result.memMb || 0,
-        stdout: result.stdout || result.results?.[0]?.actualOutput || ''
+        stdout: result.stdout || result.results?.[0]?.actualOutput || '',
+        stderr: result.stderr || firstFailedTest?.stderr || '',
+        firstFailedTest,
       });
       setShowResults(true);
       toast.success('Exécution terminée');
@@ -896,10 +911,47 @@ export function Problem() {
 
                 {submissionResult.stdout && (
                   <div className="mb-4">
-                    <span className="text-[var(--text-muted)] text-sm mb-1 block">Output / Console:</span>
+                    <span className="text-[var(--text-muted)] text-sm mb-1 block">Console stdout:</span>
                     <pre className="p-3 bg-[var(--surface-2)] rounded font-code text-sm text-[var(--text-primary)] whitespace-pre-wrap">
                       {submissionResult.stdout}
                     </pre>
+                  </div>
+                )}
+
+                {submissionResult.stderr && (
+                  <div className="mb-4">
+                    <span className="text-[var(--text-muted)] text-sm mb-1 block">Console stderr / Debug:</span>
+                    <pre className="p-3 bg-[var(--state-error)]/10 border border-[var(--state-error)]/30 rounded font-code text-sm text-[var(--state-error)] whitespace-pre-wrap">
+                      {submissionResult.stderr}
+                    </pre>
+                  </div>
+                )}
+
+                {submissionResult.firstFailedTest && (
+                  <div className="mb-4 p-3 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-md)]">
+                    <div className="text-sm font-medium text-[var(--text-primary)] mb-2">
+                      First failing test (debug)
+                    </div>
+                    <div className="font-code text-xs space-y-1">
+                      <div>
+                        <span className="text-[var(--text-muted)]">Input:</span>
+                        <span className="ml-2 text-[var(--text-primary)] whitespace-pre-wrap">
+                          {submissionResult.firstFailedTest.input}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-muted)]">Expected:</span>
+                        <span className="ml-2 text-[var(--text-primary)] whitespace-pre-wrap">
+                          {submissionResult.firstFailedTest.expectedOutput}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--text-muted)]">Actual:</span>
+                        <span className="ml-2 text-[var(--text-primary)] whitespace-pre-wrap">
+                          {submissionResult.firstFailedTest.actualOutput}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
 

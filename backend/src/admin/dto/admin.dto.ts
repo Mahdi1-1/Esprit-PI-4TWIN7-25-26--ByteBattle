@@ -25,6 +25,22 @@ export class UpdateReportStatusDto {
   status: string;
 }
 
+export class UpdateCompanyVerificationDto {
+  @ApiPropertyOptional({ description: 'Mark the company as verified.' })
+  @IsOptional()
+  verified?: boolean;
+
+  @ApiPropertyOptional({ description: 'Administrative company status.' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({ description: 'Message sent to the company owner.' })
+  @IsOptional()
+  @IsString()
+  message?: string;
+}
+
 export class CreateAuditLogDto {
   @ApiProperty()
   @IsString()
