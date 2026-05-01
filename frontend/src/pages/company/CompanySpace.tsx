@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Layout } from '../../components/Layout';
+import { CompanyLayout } from '../../components/company/CompanyLayout';
 import { Link } from 'react-router';
 import { Building2, CalendarDays, Clock3, FileCode2, Trophy, Users } from 'lucide-react';
 import { companiesService, CompanyMembership, CompanyAnnouncement } from '../../services/companiesService';
@@ -7,7 +8,6 @@ import { challengesService } from '../../services/challengesService';
 import { submissionsService } from '../../services/submissionsService';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
-import { CompanyNavbar } from '../../components/CompanyNavbar';
 
 type MemberChallenge = {
   id: string;
@@ -109,15 +109,15 @@ export function CompanySpace() {
 
   if (loading) {
     return (
-      <Layout>
+      <CompanyLayout>
         <div className="w-full px-4 sm:px-6 lg:px-10 py-8 text-[var(--text-secondary)]">Loading company space...</div>
-      </Layout>
+      </CompanyLayout>
     );
   }
 
   if (!activeMembership) {
     return (
-      <Layout>
+      <CompanyLayout>
         <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
           <div className="max-w-3xl mx-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-8">
             <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Company Space</h1>
@@ -132,17 +132,12 @@ export function CompanySpace() {
             </Link>
           </div>
         </div>
-      </Layout>
+      </CompanyLayout>
     );
   }
 
   return (
-    <Layout>
-      <CompanyNavbar
-        companyName={activeMembership.company?.name}
-        userName="You"
-        userRole={activeMembership.role || 'member'}
-      />
+    <CompanyLayout>
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
         <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -236,6 +231,6 @@ export function CompanySpace() {
           )}
         </div>
       </div>
-    </Layout>
+    </CompanyLayout>
   );
 }

@@ -59,7 +59,8 @@ export class DiscussionsService {
 
     const where: any = { isHidden: false };
 
-    if (query.category) {
+    // Treat explicit 'all' category as no filter (return everything)
+    if (query.category && query.category !== 'all') {
       where.category = query.category;
     }
 

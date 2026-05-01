@@ -1,0 +1,56 @@
+# Liste des User Stories (titres + priorité)
+
+## specs/009-hackathon-system/spec.md
+- A1 — Admin Creates Hackathon (Priority: P0)
+- A2 — Admin Manages Lifecycle (Priority: P0)
+- A3 — Admin Monitors Live Dashboard (Priority: P1)
+- A4 — Admin Makes Announcements (Priority: P1)
+- A5 — Admin Handles Clarifications (Priority: P1)
+- A6 — Admin Triggers Rejudge (Priority: P2)
+- A7 — Admin Manages Teams (Priority: P2)
+- A8 — Admin Views Audit Log (Priority: P3)
+- A9 — Admin Runs Anti-Plagiarism Analysis (Priority: P3)
+- A10 — Admin Configures Freeze & Unfreeze (Priority: P1)
+- A11 — Admin Exports Results (Priority: P3)
+- P1 — Participant Browses & Joins Hackathons (Priority: P0)
+- P2 — Captain Manages Team (Priority: P1)
+- P3 — Participant Solves Problems (Priority: P0)
+- P4 — Team Collaborates in Real-Time (Priority: P1)
+- P5 — Team Uses Chat (Priority: P1)
+- P6 — Participant Views Real-Time Scoreboard (Priority: P0)
+- P7 — Participant Requests Clarification (Priority: P1)
+- P8 — Participant Sees Announcements (Priority: P1)
+- P9 — Participant Views Team Dashboard (Priority: P2)
+- P10 — Participant Views Post-Hackathon Results (Priority: P2)
+
+## specs/010-hackathon-workspace-features/spec.md
+- WS1 — Problem Statement Display (Priority: P0)
+- WS2 — Sequential Problem Unlock (Priority: P0)
+- WS3 — Difficulty-Based Problem Timer (Priority: P1)
+- WS4 — Anti-Cheat System (Priority: P0)
+- WS5 — Working Team Chat (Priority: P0)
+
+## specs/011-notification-system/spec.md
+- US1 — Core Notification Engine (Priority: P1)
+- US2 — Bell Icon & Dropdown in Navbar (Priority: P1)
+- US3 — Full Notifications Page (Priority: P1)
+- US4 — Hackathon Notifications Integration (Priority: P1)
+- US5 — Duel Notifications Integration (Priority: P2)
+- US6 — Discussion Notifications Integration (Priority: P2)
+- US7 — Toast Notifications (Priority: P2)
+- US8 — User Notification Preferences (Priority: P3)
+
+## specs/003-interview-ai-domains/spec.md
+- US1 — Domain & Difficulty Selection Screen (Priority: P1)
+- US2 — Realistic AI Interviewer Behavior (Priority: P1)
+- US3 — Interview Scoring & Report (Priority: P2)
+- US4 — Domain-Specific Question Bank (Priority: P2)
+- US5 — Behavioral/STAR Questions at Higher Levels (Priority: P3)
+
+## specs/008-keyboard-shortcuts/spec.md
+- US1 — Global Navigation Shortcuts (Priority: P1)
+- US2 — Command Palette (Priority: P1)
+- US3 — Code Editor Shortcuts (Priority: P2)
+- US4 — Forum Shortcuts (Priority: P2)
+- US5 — System Shortcuts (Priority: P2)
+- US6 — Leaderboard & Interview Shortcuts (Priority: P3)

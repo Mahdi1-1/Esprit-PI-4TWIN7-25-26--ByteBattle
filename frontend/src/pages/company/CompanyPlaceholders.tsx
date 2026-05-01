@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
-import { CompanyNavbar } from '../../components/CompanyNavbar';
 import { Layout } from '../../components/Layout';
+import { CompanyLayout } from '../../components/company/CompanyLayout';
 
 interface CompanyPlaceholderProps {
   title: string;
@@ -9,8 +9,8 @@ interface CompanyPlaceholderProps {
 
 function CompanyPlaceholder({ title, description }: CompanyPlaceholderProps) {
   return (
-    <Layout>
-      <CompanyNavbar companyName="TechCorp Inc." userName="John Doe" userRole="owner" />
+    <CompanyLayout>
+      
       <div className="w-full px-4 sm:px-6 lg:px-10 py-10">
         <div className="max-w-3xl mx-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-1)] p-8">
           <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-3">{title}</h1>
@@ -31,7 +31,7 @@ function CompanyPlaceholder({ title, description }: CompanyPlaceholderProps) {
           </div>
         </div>
       </div>
-    </Layout>
+    </CompanyLayout>
   );
 }
 

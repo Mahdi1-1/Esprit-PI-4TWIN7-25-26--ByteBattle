@@ -97,8 +97,7 @@ ml-service/venv/
 **/__pycache__/
 *.pyc
 
-# ─── Local git backup artifacts ───
-mobile/.git.bak_*/
+
 
 # ML artifacts
 ml-service/data/*.parquet

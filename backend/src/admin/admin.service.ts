@@ -1,13 +1,22 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReportDto, UpdateReportStatusDto } from './dto/admin.dto';
+import { NotificationEmitterService } from '../notifications/notification-emitter.service';
+import {
+  NotificationCategory,
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/notification.constants';
 
 const ALLOWED_ROLES = ['user', 'moderator', 'admin'] as const;
 type AllowedRole = typeof ALLOWED_ROLES[number];
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly notificationEmitter: NotificationEmitterService,
+  ) {}
 
   // ─── User Role Management ─────────────────────────────────────
   async changeUserRole(actorId: string, targetId: string, role: AllowedRole) {
@@ -311,6 +320,135 @@ export class AdminService {
       where: { id },
       data: { status: dto.status },
     });
+  }
+
+  async getCompanies(query: { page?: number; limit?: number; status?: string; verified?: string }) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.status) where.status = query.status;
+    if (query.verified !== undefined) {
+      where.verified = query.verified === 'true' || query.verified === 'true';
+    }
+
+    const [companies, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: { owner: { select: { id: true, username: true, email: true } } },
+      }),
+      this.prisma.company.count({ where }),
+    ]);
+
+    return { data: companies, total, page, limit };
+  }
+
+  async updateCompany(companyId: string, dto: any, actorId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      include: { owner: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const updated = await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        ...(dto.verified !== undefined ? { verified: dto.verified } : {}),
+        ...(dto.status ? { status: dto.status } : {}),
+      },
+    });
+
+    await this.createAuditLog(actorId, 'COMPANY_UPDATED', 'Company', companyId, {
+      verified: dto.verified,
+      status: dto.status,
+      message: dto.message,
+    });
+
+    if (company.ownerId) {
+      await this.notificationEmitter.emit({
+        userId: company.ownerId,
+        type: NotificationType.SYSTEM_ANNOUNCEMENT,
+        category: NotificationCategory.SYSTEM,
+        priority: NotificationPriority.HIGH,
+        title: dto.verified ? 'Company verified' : 'Company status updated',
+        message:
+          dto.message ||
+          (dto.verified
+            ? `Your company ${company.name} is now verified.`
+            : `Your company status was updated to ${dto.status || 'updated'} by an administrator.`),
+        actionUrl: `/companies/${companyId}`,
+        entityId: companyId,
+        entityType: 'company',
+      });
+    }
+
+    return updated;
+  }
+
+  async getPendingCompanies(query: { page?: number; limit?: number }) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const [companies, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where: { verified: false },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: { owner: { select: { id: true, username: true, email: true } } },
+      }),
+      this.prisma.company.count({ where: { verified: false } }),
+    ]);
+
+    return { companies, totalPages: Math.ceil(total / limit) };
+  }
+
+  async verifyCompany(companyId: string, action: 'APPROVE' | 'REJECT', reason?: string, actorId?: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      include: { owner: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const isApproved = action === 'APPROVE';
+    const updated = await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        verified: isApproved,
+        status: isApproved ? 'active' : 'rejected',
+        verificationToken: null,
+      },
+    });
+
+    if (actorId) {
+      await this.createAuditLog(actorId, 'COMPANY_VERIFICATION', 'Company', companyId, {
+        action,
+        reason,
+      });
+    }
+
+    if (company.ownerId) {
+      await this.notificationEmitter.emit({
+        userId: company.ownerId,
+        type: NotificationType.SYSTEM_ANNOUNCEMENT,
+        category: NotificationCategory.SYSTEM,
+        priority: NotificationPriority.HIGH,
+        title: isApproved ? 'Company verified' : 'Company verification rejected',
+        message: isApproved
+          ? `Your company ${company.name} has been verified.`
+          : `Your company verification was rejected.${reason ? ` Reason: ${reason}` : ''}`,
+        actionUrl: `/companies/${companyId}`,
+        entityId: companyId,
+        entityType: 'company',
+      });
+    }
+
+    return updated;
   }
 
   // ─── Audit Logs ──────────────────────────────────

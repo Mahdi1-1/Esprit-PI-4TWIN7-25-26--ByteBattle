@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router';
 import { Layout } from '../../components/Layout';
-import { CompanyNavbar } from '../../components/CompanyNavbar';
+import { CompanyLayout } from '../../components/company/CompanyLayout';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Input } from '../../components/Input';
@@ -84,20 +84,20 @@ export function CompanyCourses() {
 
   if (loading) {
     return (
-      <Layout>
+      <CompanyLayout>
         <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-[var(--surface-2)] rounded w-1/4"></div>
             <div className="h-64 bg-[var(--surface-2)] rounded-[var(--radius-lg)]"></div>
           </div>
         </div>
-      </Layout>
+      </CompanyLayout>
     );
   }
 
   if (error || !company) {
     return (
-      <Layout>
+      <CompanyLayout>
         <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
           <div className="max-w-md mx-auto text-center">
             <AlertCircle className="w-12 h-12 text-[var(--state-error)] mx-auto mb-4" />
@@ -106,13 +106,13 @@ export function CompanyCourses() {
             <Button onClick={fetchData}>Retry</Button>
           </div>
         </div>
-      </Layout>
+      </CompanyLayout>
     );
   }
 
   return (
-    <Layout>
-      <CompanyNavbar companyName={company.name} userName={user?.username || 'User'} userRole={currentUserRole || 'member'} />
+    <CompanyLayout>
+      
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
         <div className="flex items-center gap-4">
           <Link to={`/companies/${companyId}/dashboard`}>
@@ -301,6 +301,6 @@ export function CompanyCourses() {
           </div>
         </div>
       </div>
-    </Layout>
+    </CompanyLayout>
   );
 }

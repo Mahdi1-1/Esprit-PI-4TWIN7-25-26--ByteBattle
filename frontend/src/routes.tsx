@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
 import React, { Suspense, lazy } from 'react';
 import { useAuth } from './context/AuthContext';
+import { CompanyRole } from './services/companyService';
 import { PageLoader } from './App';
 import { ThemeEffects } from './components/ThemeEffects';
 import { NotificationToastContainer } from './components/NotificationToastContainer';
@@ -66,4 +67,25 @@ export function PublicGuard() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <PageLoader />;
   return !isAuthenticated ? <Outlet /> : <Navigate to="/dashboard" replace />;
+}
+
+export function CompanyRoleGuard({
+  allowedRoles,
+  children,
+  fallbackPath = '/company/overview',
+}: {
+  allowedRoles: CompanyRole[];
+  children: React.ReactNode;
+  fallbackPath?: string;
+}) {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading) return <PageLoader />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  const companyRole = user?.companyRole as CompanyRole | undefined;
+  if (!companyRole || !allowedRoles.includes(companyRole)) {
+    return <Navigate to={fallbackPath} replace />;
+  }
+
+  return <>{children}</>;
 }

@@ -105,8 +105,7 @@ export class CompaniesController {
     if (!user?.id) {
       throw new BadRequestException('User not authenticated');
     }
-    const newCode = await this.companiesService.regenerateJoinCode(companyId, user.id);
-    return { joinCode: newCode };
+    return this.companiesService.regenerateJoinCode(companyId, user.id);
   }
 
   @Patch(':id')
@@ -196,6 +195,46 @@ export class CompaniesController {
       throw new BadRequestException('User not authenticated');
     }
     return this.companiesService.updateMemberRole(companyId, targetUserId, role, user.id);
+  }
+
+  @Get(':id/teams')
+  @UseGuards(JwtAuthGuard)
+  async getCompanyTeams(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getCompanyTeams(companyId, user.id);
+  }
+
+  @Post(':id/teams')
+  @UseGuards(JwtAuthGuard)
+  async createCompanyTeam(
+    @Param('id') companyId: string,
+    @Body('name') name: string,
+    @Body('description') description: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.createCompanyTeam(companyId, user.id, name, description);
+  }
+
+  @Patch(':id/members/:userId/team')
+  @UseGuards(JwtAuthGuard)
+  async assignMemberToTeam(
+    @Param('id') companyId: string,
+    @Param('userId') targetUserId: string,
+    @Body('teamId') teamId: string | null,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.assignMemberToTeam(companyId, targetUserId, teamId, user.id);
   }
 
   @Delete(':id/members/:userId')
@@ -378,6 +417,31 @@ export class CompaniesController {
   @Get(':id/jobs')
   async getCompanyJobs(@Param('id') companyId: string) {
     return this.companiesService.getCompanyJobs(companyId);
+  }
+
+  @Get(':id/hiring/candidates')
+  @UseGuards(JwtAuthGuard)
+  async getHiringCandidates(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+    @Query('search') search?: string,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getHiringCandidates(companyId, user.id, search);
+  }
+
+  @Get(':id/hiring/dashboard')
+  @UseGuards(JwtAuthGuard)
+  async getHiringDashboard(
+    @Param('id') companyId: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
+    return this.companiesService.getHiringDashboard(companyId, user.id);
   }
 
   @Post(':id/jobs')

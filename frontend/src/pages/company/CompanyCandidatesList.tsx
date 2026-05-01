@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Layout } from '../../components/Layout';
-import { CompanyNavbar } from '../../components/CompanyNavbar';
+import { CompanyLayout } from '../../components/company/CompanyLayout';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Search, Filter, Download, Mail, Eye, TrendingUp, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
@@ -78,8 +78,8 @@ export function CompanyCandidatesList() {
   };
 
   return (
-    <Layout>
-      <CompanyNavbar companyName="TechCorp Inc." userName="John Doe" userRole="recruiter" />
+    <CompanyLayout>
+      
       
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6" dir={direction}>
         {/* Header */}
@@ -272,6 +272,6 @@ export function CompanyCandidatesList() {
           </div>
         </div>
       </div>
-    </Layout>
+    </CompanyLayout>
   );
 }

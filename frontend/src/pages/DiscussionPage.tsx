@@ -59,7 +59,7 @@ export function DiscussionPage() {
           page: currentPage,
           limit: POSTS_PER_PAGE,
           search: debouncedSearch || undefined,
-          tags: selectedCategory !== 'all' ? selectedCategory : undefined,
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
           sort: sortMap[sortBy],
         });
         if (cancelled) return;
@@ -168,6 +168,26 @@ export function DiscussionPage() {
                   <span className="hidden sm:inline">Post</span>
                 </button>
               </Link>
+            </div>
+
+            {/* Top category filter (duplicate of sidebar filter, shown at top) */}
+            <div className="mt-3">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {discussionCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryClick(cat.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all shrink-0 ${
+                      selectedCategory === cat.id
+                        ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]'
+                        : 'text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <span className="text-base w-5 text-center leading-none">{cat.icon}</span>
+                    <span className="whitespace-nowrap">{cat.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Mobile search */}

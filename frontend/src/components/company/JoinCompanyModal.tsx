@@ -37,7 +37,13 @@ export function JoinCompanyModal({ isOpen, onClose, initialCode }: JoinCompanyMo
       navigate('/company-space');
     } catch (error: any) {
       const message = error?.response?.data?.message || 'Invalid join code';
-      toast.error(message);
+      if (typeof message === 'string' && message.toLowerCase().includes('already pending')) {
+        toast('Your join request is already pending approval.');
+        onClose();
+        navigate('/company-space');
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +94,7 @@ export function JoinCompanyModal({ isOpen, onClose, initialCode }: JoinCompanyMo
           {mode === 'join' ? (
             <>
               <div className="text-sm text-[var(--text-secondary)] mb-4">
-                Enter the 8-character join code provided by a company member or admin to join their company.
+                Enter the invite code provided by a company owner or recruiter.
               </div>
               
               <div className="space-y-3">
@@ -98,11 +104,11 @@ export function JoinCompanyModal({ isOpen, onClose, initialCode }: JoinCompanyMo
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
                   <Input
-                    placeholder="e.g. ABC123XY"
+                    placeholder="e.g. ABC123XY-MF5G9K"
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     className="pl-11 text-center font-mono text-lg tracking-widest uppercase"
-                    maxLength={8}
+                    maxLength={32}
                   />
                 </div>
               </div>

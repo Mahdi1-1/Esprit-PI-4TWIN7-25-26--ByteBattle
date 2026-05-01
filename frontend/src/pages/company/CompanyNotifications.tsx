@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router';
 import { Layout } from '../../components/Layout';
-import { CompanyNavbar } from '../../components/CompanyNavbar';
+import { CompanyLayout } from '../../components/company/CompanyLayout';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Input } from '../../components/Input';
@@ -144,22 +144,19 @@ export function CompanyNotifications() {
 
   if (loading && notifications.length === 0) {
     return (
-      <Layout>
+      <CompanyLayout>
         <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-[var(--surface-2)] rounded w-1/4"></div>
             <div className="h-64 bg-[var(--surface-2)] rounded-[var(--radius-lg)]"></div>
           </div>
         </div>
-      </Layout>
+      </CompanyLayout>
     );
   }
 
   return (
-    <Layout>
-      {company && (
-        <CompanyNavbar companyName={company.name} userName={user?.username || 'User'} userRole={currentUserRole || 'member'} />
-      )}
+    <CompanyLayout>
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
         <div className="flex items-center gap-4">
           <Link to={`/companies/${companyId}/dashboard`}>
@@ -293,6 +290,6 @@ export function CompanyNotifications() {
           </div>
         )}
       </div>
-    </Layout>
+    </CompanyLayout>
   );
 }

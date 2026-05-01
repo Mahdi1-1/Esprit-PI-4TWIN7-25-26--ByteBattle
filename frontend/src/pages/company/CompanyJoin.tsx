@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Layout } from '../../components/Layout';
+import { CompanyLayout } from '../../components/company/CompanyLayout';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { companiesService, Company, CompanyMembership } from '../../services/companiesService';
@@ -67,7 +68,7 @@ export function CompanyJoin() {
   };
 
   return (
-    <Layout>
+    <CompanyLayout>
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Join Existing Companies</h1>
@@ -152,6 +153,6 @@ export function CompanyJoin() {
           </div>
         )}
       </div>
-    </Layout>
+    </CompanyLayout>
   );
 }

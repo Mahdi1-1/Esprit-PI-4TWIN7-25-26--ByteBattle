@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Layout } from '../../components/Layout';
-import { CompanyNavbar } from '../../components/CompanyNavbar';
+import { CompanyLayout } from '../../components/company/CompanyLayout';
 import { Button } from '../../components/Button';
 import { Input, Select } from '../../components/Input';
 import { useAuth } from '../../context/AuthContext';
@@ -36,21 +36,21 @@ export function CreateChallenge() {
 
   if (initialLoading) {
     return (
-      <Layout>
-        <CompanyNavbar />
+      <CompanyLayout>
+        
         <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
           <div className="flex items-center justify-center">
             <div className="animate-spin w-8 h-8 border-4 border-[var(--brand-primary)] border-t-transparent rounded-full" />
           </div>
         </div>
-      </Layout>
+      </CompanyLayout>
     );
   }
 
   if (!companyId) {
     return (
-      <Layout>
-        <CompanyNavbar />
+      <CompanyLayout>
+        
         <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
           <div className="max-w-md mx-auto text-center">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">No Company</h2>
@@ -60,7 +60,7 @@ export function CreateChallenge() {
             </Button>
           </div>
         </div>
-      </Layout>
+      </CompanyLayout>
     );
   }
 
@@ -96,8 +96,8 @@ export function CreateChallenge() {
 
   if (!canCreate) {
     return (
-      <Layout>
-        <CompanyNavbar />
+      <CompanyLayout>
+        
         <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
           <div className="max-w-md mx-auto text-center">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Access Denied</h2>
@@ -107,13 +107,13 @@ export function CreateChallenge() {
             </Button>
           </div>
         </div>
-      </Layout>
+      </CompanyLayout>
     );
   }
 
   return (
-    <Layout>
-      <CompanyNavbar />
+    <CompanyLayout>
+      
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         <div className="max-w-2xl mx-auto">
           <button
@@ -265,6 +265,6 @@ export function CreateChallenge() {
           </div>
         </div>
       </div>
-    </Layout>
+    </CompanyLayout>
   );
 }

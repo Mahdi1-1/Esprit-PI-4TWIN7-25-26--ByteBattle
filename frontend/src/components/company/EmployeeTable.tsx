@@ -12,14 +12,16 @@ import {
   Trash2,
   ArrowUpDown
 } from 'lucide-react';
-import { CompanyMember, CompanyRole, companyService } from '../../services/companyService';
+import { CompanyMember, CompanyRole, CompanyTeam, companyService } from '../../services/companyService';
 
 interface EmployeeTableProps {
   members: CompanyMember[];
+  teams: CompanyTeam[];
   companyId: string;
   currentUserRole: CompanyRole;
   onMemberRemoved: (memberId: string) => void;
   onRoleChanged: (memberId: string, newRole: CompanyRole) => void;
+  onTeamAssigned: (memberId: string, teamId: string | null) => void;
 }
 
 const roleLabels: Record<CompanyRole, string> = {
@@ -34,9 +36,10 @@ const roleColors: Record<CompanyRole, string> = {
   member: 'bg-[var(--text-muted)]/20 text-[var(--text-secondary)]'
 };
 
-export function EmployeeTable({ members, companyId, currentUserRole, onMemberRemoved, onRoleChanged }: EmployeeTableProps) {
+export function EmployeeTable({ members, teams, companyId, currentUserRole, onMemberRemoved, onRoleChanged, onTeamAssigned }: EmployeeTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<CompanyRole | 'all'>('all');
+  const [teamFilter, setTeamFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'username' | 'elo' | 'level'>('username');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -48,22 +51,23 @@ export function EmployeeTable({ members, companyId, currentUserRole, onMemberRem
   const filteredMembers = useMemo(() => {
     return members
       .filter(member => {
-        const matchesSearch = member.user.username.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = member.user?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false;
         const matchesRole = roleFilter === 'all' || member.role === roleFilter;
-        return matchesSearch && matchesRole;
+        const matchesTeam = teamFilter === 'all' || member.teamId === teamFilter || (teamFilter === 'none' && !member.teamId);
+        return matchesSearch && matchesRole && matchesTeam;
       })
       .sort((a, b) => {
         let comparison = 0;
         if (sortBy === 'username') {
-          comparison = a.user.username.localeCompare(b.user.username);
+          comparison = (a.user?.username || '').localeCompare(b.user?.username || '');
         } else if (sortBy === 'elo') {
-          comparison = (a.user.elo || 0) - (b.user.elo || 0);
+          comparison = (a.user?.elo || 0) - (b.user?.elo || 0);
         } else if (sortBy === 'level') {
-          comparison = (a.user.level || 0) - (b.user.level || 0);
+          comparison = (a.user?.level || 0) - (b.user?.level || 0);
         }
         return sortOrder === 'asc' ? comparison : -comparison;
       });
-  }, [members, searchQuery, roleFilter, sortBy, sortOrder]);
+  }, [members, searchQuery, roleFilter, teamFilter, sortBy, sortOrder]);
 
   const handleSort = (column: 'username' | 'elo' | 'level') => {
     if (sortBy === column) {
@@ -89,7 +93,7 @@ export function EmployeeTable({ members, companyId, currentUserRole, onMemberRem
   };
 
   const handleRemove = async (member: CompanyMember) => {
-    if (!confirm(`Are you sure you want to remove ${member.user.username} from the company?`)) return;
+    if (!confirm(`Are you sure you want to remove ${member.user?.username || 'this user'} from the company?`)) return;
     setActionLoading(member.id);
     try {
       await companyService.removeMember(companyId, member.userId);
@@ -130,6 +134,17 @@ export function EmployeeTable({ members, companyId, currentUserRole, onMemberRem
           <option value="recruiter">Recruiters</option>
           <option value="member">Employees</option>
         </select>
+        <select
+          value={teamFilter}
+          onChange={(e) => setTeamFilter(e.target.value)}
+          className="px-4 py-2 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)]"
+        >
+          <option value="all">All Teams</option>
+          <option value="none">No Team</option>
+          {teams.map(t => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="overflow-x-auto">
@@ -146,6 +161,7 @@ export function EmployeeTable({ members, companyId, currentUserRole, onMemberRem
                 </button>
               </th>
               <th className="text-left p-4 text-sm font-medium text-[var(--text-secondary)]">Role</th>
+              <th className="text-left p-4 text-sm font-medium text-[var(--text-secondary)]">Team</th>
               <th className="text-left p-4 text-sm font-medium text-[var(--text-secondary)]">
                 <button 
                   className="flex items-center gap-1 hover:text-[var(--text-primary)]"
@@ -173,7 +189,7 @@ export function EmployeeTable({ members, companyId, currentUserRole, onMemberRem
               <tr key={member.id} className="border-b border-[var(--border-default)] hover:bg-[var(--surface-2)]">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    {member.user.profileImage ? (
+                    {member.user?.profileImage ? (
                       <img 
                         src={member.user.profileImage} 
                         alt={member.user.username}
@@ -184,7 +200,7 @@ export function EmployeeTable({ members, companyId, currentUserRole, onMemberRem
                         <User className="w-4 h-4 text-[var(--brand-primary)]" />
                       </div>
                     )}
-                    <span className="font-medium text-[var(--text-primary)]">{member.user.username}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{member.user?.username || 'Unknown User'}</span>
                   </div>
                 </td>
                 <td className="p-4">
@@ -193,9 +209,12 @@ export function EmployeeTable({ members, companyId, currentUserRole, onMemberRem
                     {roleLabels[member.role]}
                   </span>
                 </td>
-                <td className="p-4 text-[var(--text-primary)]">{member.user.level || '-'}</td>
-                <td className="p-4 text-[var(--text-primary)]">{member.user.elo || '-'}</td>
-                <td className="p-4 text-[var(--text-secondary)]">{member.user.solvedCount || 0}</td>
+                <td className="p-4 text-[var(--text-primary)]">
+                  {member.team?.name || <span className="text-[var(--text-muted)]">Unassigned</span>}
+                </td>
+                <td className="p-4 text-[var(--text-primary)]">{member.user?.level || '-'}</td>
+                <td className="p-4 text-[var(--text-primary)]">{member.user?.elo || '-'}</td>
+                <td className="p-4 text-[var(--text-secondary)]">{member.user?.solvedCount || 0}</td>
                 {canManage && (
                   <td className="p-4 text-right">
                     <div className="relative">
@@ -240,6 +259,43 @@ export function EmployeeTable({ members, companyId, currentUserRole, onMemberRem
                               <Trash2 className="w-4 h-4" />
                               Remove
                             </button>
+                          )}
+                          {canManage && teams.length > 0 && (
+                            <>
+                              <div className="border-t border-[var(--border-default)] my-1" />
+                              <div className="px-4 py-2 text-xs font-semibold text-[var(--text-muted)]">Assign Team</div>
+                              {member.teamId && (
+                                <button
+                                  className="w-full px-4 py-1 flex items-center gap-2 text-left text-sm hover:bg-[var(--surface-2)] text-[var(--text-primary)]"
+                                  onClick={async () => {
+                                    setActionLoading(member.id);
+                                    try {
+                                      await companyService.assignMemberToTeam(companyId, member.userId, null);
+                                      onTeamAssigned(member.id, null);
+                                    } catch(e) { console.error(e); }
+                                    finally { setActionLoading(null); setOpenDropdownId(null); }
+                                  }}
+                                >
+                                  Clear Team
+                                </button>
+                              )}
+                              {teams.map(t => (
+                                <button
+                                  key={t.id}
+                                  className={`w-full px-4 py-1 text-left text-sm hover:bg-[var(--surface-2)] ${member.teamId === t.id ? 'font-bold text-[var(--brand-primary)]' : 'text-[var(--text-primary)]'} flex justify-between items-center`}
+                                  onClick={async () => {
+                                    setActionLoading(member.id);
+                                    try {
+                                      await companyService.assignMemberToTeam(companyId, member.userId, t.id);
+                                      onTeamAssigned(member.id, t.id);
+                                    } catch(e) { console.error(e); }
+                                    finally { setActionLoading(null); setOpenDropdownId(null); }
+                                  }}
+                                >
+                                  {t.name}
+                                </button>
+                              ))}
+                            </>
                           )}
                         </div>
                       )}
