@@ -1,13 +1,34 @@
-// Unified Data Models - 18 Entities
+// Unified Data Models - synced with backend Prisma schema
 
 export type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN' | 'MODERATOR' | 'MENTOR' | 'ENTERPRISE_MANAGER';
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED';
 export type ThemeId = 'cyber_arena' | 'space_ops' | 'samurai_dojo' | 'pixel_arcade' | 'mythic_rpg' | 'sports_arena';
-export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
-export type Language = 'PYTHON' | 'JAVASCRIPT' | 'CPP' | 'JAVA';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Language = 'python' | 'javascript' | 'typescript' | 'cpp' | 'c' | 'java' | 'go' | 'rust';
 export type Verdict = 'ACCEPTED' | 'WRONG_ANSWER' | 'TLE' | 'RUNTIME_ERROR' | 'COMPILATION_ERROR';
 export type BattleStatus = 'QUEUED' | 'ONGOING' | 'FINISHED' | 'CANCELLED';
-export type HackathonStatus = 'UPCOMING' | 'ONGOING' | 'FROZEN' | 'FINISHED';
+
+// ✅ Synced with Prisma HackathonStatus enum
+export type HackathonStatus =
+  | 'draft'
+  | 'lobby'
+  | 'checkin'
+  | 'active'
+  | 'paused'
+  | 'frozen'
+  | 'ended'
+  | 'cancelled'
+  | 'archived';
+
+// ✅ Synced with Prisma HackathonTeamStatus enum
+export type HackathonTeamStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'disqualified'
+  | 'withdrawn';
+
+export type HackathonScope = 'public' | 'invite_only' | 'enterprise';
 export type CanvasCategory = 'LOGICAL' | 'PHYSICAL' | 'SECURITY' | 'DATAFLOW';
 export type BadgeRarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 export type ReportType = 'ABUSE' | 'SPAM' | 'PLAGIARISM';
@@ -16,22 +37,35 @@ export type JobType = 'RUN_SUBMISSION' | 'GENERATE_PROBLEM' | 'PLAGIARISM_CHECK'
 export type JobStatus = 'PENDING' | 'ACTIVE' | 'FAILED' | 'DONE';
 export type Environment = 'DEV' | 'STAGING' | 'PROD';
 
-// (1) Account
+// (1) Account — synced with Prisma User model
 export interface Account {
   id: string;
   email: string;
   username: string;
-  avatarUrl?: string;
+  profileImage?: string | null;   // ✅ was avatarUrl
   role: UserRole;
   status: UserStatus;
   level: number;
   xp: number;
   elo: number;
+  bio?: string | null;
+  country?: string | null;
   activeThemeId: ThemeId;
   unlockedThemeIds: ThemeId[];
   createdAt: Date;
-  lastLoginAt?: Date;
+  lastLoginAt?: Date | null;
+  googleId?: string | null;       // ✅ added for OAuth users
+  editorTheme?: string | null;    // ✅ code editor theme preference
+  avatar?: {                      // ✅ 3D RPM avatar (optional)
+    thumbnailUrl?: string | null;
+    localImageUrl?: string | null;
+  } | null;
+  companyId?: string | null;
+  companyRole?: 'owner' | 'recruiter' | 'member' | null;
 }
+
+// Alias so AuthContext can import `User` directly
+export type User = Account;
 
 // (2) Session
 export interface Session {
@@ -111,32 +145,55 @@ export interface Battle {
   createdAt: Date;
 }
 
-// (7) Hackathon
+// (7) Hackathon — ✅ fully synced with new Prisma schema
 export interface Hackathon {
   id: string;
   title: string;
+  description?: string | null;
+  coverImage?: string | null;
+  tags: string[];
   startTime: Date;
-  endTime: Date;
-  status: HackathonStatus;
-  freezeAt?: Date;
-  rulesMd: string;
+  duration: number;           // ✅ minutes (endTime = startTime + duration)
+  freezeDuration: number;     // ✅ minutes before end
+  checkinBefore: number;      // ✅ minutes before start
+  extendedTime: number;
+  status: HackathonStatus;    // ✅ 9 states
+  isPaused: boolean;
+  isFrozen: boolean;
   problemIds: string[];
+  maxTeams: number;
+  minTeamSize: number;
+  maxTeamSize: number;
+  allowSolo: boolean;
+  requireApproval: boolean;
+  maxSubmissions?: number | null;
+  submissionCooldown: number;
+  penaltyMinutes: number;
+  allowedLanguages: string[];
+  visibility: HackathonScope;
+  inviteCode?: string | null;
+  createdBy: string;
   createdAt: Date;
+  updatedAt: Date;
+  // computed fields (returned by API)
+  teamCount?: number;
+  participantCount?: number;
+  problemCount?: number;
 }
 
-// (8) Team
-export interface Team {
+// (8) HackathonTeam — ✅ replaces old Team model
+export interface HackathonTeam {
   id: string;
   hackathonId: string;
   name: string;
-  logoUrl?: string;
-  members: Array<{
-    accountId: string;
-    role: 'CAPTAIN' | 'MEMBER';
-  }>;
+  inviteCode: string;
+  captainId: string;
+  memberIds: string[];
+  checkedInIds: string[];
+  status: HackathonTeamStatus;
+  banReason?: string | null;
   solvedCount: number;
-  penaltyTime: number;
-  score: number;
+  penalty: number;
   createdAt: Date;
 }
 
@@ -145,11 +202,13 @@ export interface HackathonSubmission {
   id: string;
   hackathonId: string;
   teamId: string;
-  problemId: string;
+  problemIndex: number;       // ✅ was problemId
   attemptNumber: number;
-  status: 'ACCEPTED' | 'REJECTED';
+  result: 'AC' | 'WA' | 'TLE' | 'RE' | 'CE';  // ✅ short form
   penaltyAdded: number;
-  createdAt: Date;
+  submittedAt: Date;          // ✅ was createdAt
+  language: string;
+  code: string;
 }
 
 // (10) CanvasChallenge

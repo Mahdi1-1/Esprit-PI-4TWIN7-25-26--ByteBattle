@@ -1,74 +1,70 @@
 import { ReactNode } from 'react';
-import { UserRole, UserStatus, ProblemStatus, Verdict, HackathonStatus, ServiceStatus } from '../../data/adminData';
+import { UserRole, UserStatus, ChallengeStatus, HackathonStatus, ServiceStatus } from '../../data/adminData';
 
 // Role Chip
 interface RoleChipProps {
-  role: UserRole;
+  role: UserRole | string;
 }
 
 export function RoleChip({ role }: RoleChipProps) {
-  const colors: Record<UserRole, string> = {
-    SUPER_ADMIN: 'bg-purple-500/10 text-purple-500 border-purple-500/30',
-    ADMIN: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
-    MODERATOR: 'bg-orange-500/10 text-orange-500 border-orange-500/30',
-    MENTOR: 'bg-green-500/10 text-green-500 border-green-500/30',
-    ENTERPRISE_MANAGER: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/30',
-    USER: 'bg-gray-500/10 text-gray-500 border-gray-500/30'
+  const colors: Record<string, string> = {
+    admin: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
+    user: 'bg-gray-500/10 text-gray-500 border-gray-500/30',
   };
 
+  const normalizedRole = (role || '').toLowerCase();
+
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded border ${colors[role]}`}>
-      {role.replace('_', ' ')}
+    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded border ${colors[normalizedRole] || colors.user}`}>
+      {normalizedRole.toUpperCase()}
     </span>
   );
 }
 
 // Status Chip
 interface StatusChipProps {
-  status: UserStatus | ProblemStatus | HackathonStatus | ServiceStatus | string;
+  status: UserStatus | ChallengeStatus | HackathonStatus | ServiceStatus | string;
   type?: 'user' | 'problem' | 'hackathon' | 'service' | 'verdict' | 'job';
 }
 
 export function StatusChip({ status, type = 'user' }: StatusChipProps) {
   const getColor = () => {
-    switch (status) {
+    const s = (status || '').toLowerCase();
+    switch (s) {
       // User/General
-      case 'ACTIVE':
-      case 'PUBLISHED':
-      case 'HEALTHY':
-      case 'ACCEPTED':
+      case 'active':
+      case 'published':
+      case 'healthy':
+      case 'accepted':
       case 'completed':
         return 'bg-green-500/10 text-green-500 border-green-500/30';
-      
-      case 'BANNED':
-      case 'DOWN':
-      case 'COMPILATION_ERROR':
-      case 'RUNTIME_ERROR':
+
+      case 'banned':
+      case 'down':
+      case 'compilation_error':
+      case 'runtime_error':
       case 'failed':
         return 'bg-red-500/10 text-red-500 border-red-500/30';
-      
-      case 'SUSPENDED':
-      case 'LOCKED':
-      case 'ARCHIVED':
-      case 'FINISHED':
+
+      case 'suspended':
+      case 'locked':
+      case 'archived':
+      case 'ended':
         return 'bg-gray-500/10 text-gray-500 border-gray-500/30';
-      
-      case 'DRAFT':
-      case 'UPCOMING':
+
+      case 'draft':
       case 'pending':
         return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30';
-      
-      case 'ONGOING':
-      case 'FROZEN':
-      case 'active':
+
+      case 'frozen':
         return 'bg-blue-500/10 text-blue-500 border-blue-500/30';
-      
-      case 'DEGRADED':
-      case 'WRONG_ANSWER':
-      case 'TLE':
-      case 'MEMORY_LIMIT':
+
+      case 'degraded':
+      case 'wrong_answer':
+      case 'tle':
+      case 'memory_limit':
         return 'bg-orange-500/10 text-orange-500 border-orange-500/30';
-      
+
       default:
         return 'bg-gray-500/10 text-gray-500 border-gray-500/30';
     }
@@ -76,7 +72,7 @@ export function StatusChip({ status, type = 'user' }: StatusChipProps) {
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded border ${getColor()}`}>
-      {status.replace('_', ' ')}
+      {(status || '').toUpperCase().replace('_', ' ')}
     </span>
   );
 }
@@ -102,15 +98,13 @@ export function MetricCard({ title, value, icon, trend, color = 'default' }: Met
   };
 
   return (
-    <div className={`bg-[var(--surface-1)] border ${colors[color]} rounded-lg p-4`}>
-      <div className="flex items-start justify-between mb-2">
-        <span className="text-xs text-[var(--text-secondary)] uppercase tracking-wide">{title}</span>
-        {icon && <span className="text-[var(--text-muted)]">{icon}</span>}
-      </div>
-      <div className="flex items-end justify-between">
-        <span className="text-2xl font-bold text-[var(--text-primary)]">{value}</span>
+    <div className={`bg-[var(--surface-1)] border ${colors[color]} rounded-xl p-5 flex flex-col items-center justify-center text-center min-h-[120px] gap-2`}>
+      {icon && <span className="text-[var(--text-muted)] opacity-60">{icon}</span>}
+      <span className="text-[11px] text-[var(--text-muted)] uppercase tracking-wider font-semibold leading-tight">{title}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-2xl font-bold text-[var(--text-primary)] tabular-nums leading-none">{value}</span>
         {trend && (
-          <span className={`text-xs font-medium ${trend.direction === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+          <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${trend.direction === 'up' ? 'text-green-500 bg-green-500/10' : 'text-red-500 bg-red-500/10'}`}>
             {trend.direction === 'up' ? '↑' : '↓'} {Math.abs(trend.value)}%
           </span>
         )}
@@ -247,11 +241,10 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalItems, 
               <button
                 key={page}
                 onClick={() => onPageChange(page)}
-                className={`w-8 h-8 text-sm rounded ${
-                  currentPage === page
+                className={`w-8 h-8 text-sm rounded ${currentPage === page
                     ? 'bg-[var(--brand-primary)] text-white'
                     : 'border border-[var(--border-default)] hover:bg-[var(--surface-2)]'
-                }`}
+                  }`}
               >
                 {page}
               </button>
@@ -308,11 +301,10 @@ export function ConfirmModal({
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 text-sm rounded transition-colors ${
-              danger
+            className={`px-4 py-2 text-sm rounded transition-colors ${danger
                 ? 'bg-red-500 text-white hover:bg-red-600'
                 : 'bg-[var(--brand-primary)] text-white hover:opacity-90'
-            }`}
+              }`}
           >
             {confirmLabel}
           </button>

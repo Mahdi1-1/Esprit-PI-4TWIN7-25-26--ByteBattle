@@ -1,1005 +1,287 @@
 @import "tailwindcss";
 
 /* ===================================================================
-   BYTEBATTLE DESIGN SYSTEM - 6 THEMES WITH DETAILED DESIGN CHARTS
+   BYTEBATTLE DESIGN SYSTEM - OPTIMIZED v2
    Thèmes: Cyber Arena, Space Ops, Samurai Dojo, Pixel Arcade, Mythic RPG, Sports Arena
    =================================================================== */
 
-/* ==================== GOOGLE FONTS IMPORTS ==================== */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:wght@400;500;600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Barlow:wght@400;600;700&display=swap');
-/* Arabic Font */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+/* ==================== GOOGLE FONTS ==================== */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Chakra+Petch:wght@400;600;700&family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=Press+Start+2P&family=Cinzel:wght@400;700&family=Lora:wght@400;600&family=Teko:wght@400;700&family=Barlow:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&display=swap');
 
-/* ==================== BASE TYPOGRAPHY ==================== */
+@theme {
+  /* Intégration des variables système dans Tailwind v4 */
+  --font-ui: var(--font-ui);
+  --font-title: var(--font-title);
+  --font-code: var(--font-code);
+
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-bg-primary: var(--bg-primary);
+  --color-surface-1: var(--surface-1);
+
+  --radius-theme-btn: var(--btn-radius);
+  --radius-theme-card: var(--card-radius);
+}
+
+/* ==================== BASE CONFIGURATION ==================== */
 @layer base {
   :root {
-    /* Font families - Default */
-    --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-code: 'JetBrains Mono', 'Fira Code', monospace;
-    
-    /* Arabic support */
+    /* Core Scale (8pt Grid) */
+    --space-1: 0.25rem;
+    --space-4: 1rem;
+    --space-8: 2rem;
+
+    /* Typography Scale */
+    --text-h1: clamp(2rem, 5vw, 3rem);
+    --text-body: 0.9375rem;
+
+    /* Default Fallbacks */
+    --font-ui: 'Inter', system-ui, sans-serif;
     --font-arabic: 'Noto Sans Arabic', sans-serif;
-    
-    /* Typography scale */
-    --text-h1: 2rem; /* 32px */
-    --text-h1-lh: 2.5rem; /* 40px */
-    --text-h2: 1.5rem; /* 24px */
-    --text-h2-lh: 2rem; /* 32px */
-    --text-h3: 1.125rem; /* 18px */
-    --text-h3-lh: 1.625rem; /* 26px */
-    --text-body: 0.875rem; /* 14px */
-    --text-body-lh: 1.375rem; /* 22px */
-    --text-caption: 0.75rem; /* 12px */
-    --text-caption-lh: 1rem; /* 16px */
-    
-    /* Spacing scale (8pt grid) */
-    --space-1: 0.25rem; /* 4px */
-    --space-2: 0.5rem; /* 8px */
-    --space-3: 0.75rem; /* 12px */
-    --space-4: 1rem; /* 16px */
-    --space-5: 1.25rem; /* 20px */
-    --space-6: 1.5rem; /* 24px */
-    --space-8: 2rem; /* 32px */
-    --space-10: 2.5rem; /* 40px */
-    --space-12: 3rem; /* 48px */
-    
-    /* Radii */
-    --radius-sm: 0.5rem; /* 8px */
-    --radius-md: 0.75rem; /* 12px */
-    --radius-lg: 1rem; /* 16px */
-    
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Logic Properties Default */
+    --inline-start: 1rem;
   }
 
   html {
     font-family: var(--font-ui);
-    font-size: var(--text-body);
-    line-height: var(--text-body-lh);
-  }
-
-  body {
-    background: var(--bg-primary);
+    font-size: 16px;
+    background-color: var(--bg-primary);
     color: var(--text-primary);
+    scroll-behavior: smooth;
   }
 
-  h1 {
-    font-size: var(--text-h1);
-    line-height: var(--text-h1-lh);
-    font-weight: 600;
-    font-family: var(--font-title);
-  }
-
-  h2 {
-    font-size: var(--text-h2);
-    line-height: var(--text-h2-lh);
-    font-weight: 600;
-    font-family: var(--font-title);
-  }
-
-  h3 {
-    font-size: var(--text-h3);
-    line-height: var(--text-h3-lh);
-    font-weight: 600;
-    font-family: var(--font-title);
-  }
-
-  code, pre {
-    font-family: var(--font-code);
-  }
-}
-
-/* ==================== CYBER ARENA THEME - Dark Mode ==================== */
-[data-theme="cyber_dark"] {
-  /* Typography */
-  --font-title: 'Orbitron', sans-serif;
-  --font-ui: 'Rajdhani', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  /* Colors - Neon Futuristic */
-  --bg-primary: #0B1020;
-  --bg-secondary: #121A2F;
-  --surface-1: #151b2e;
-  --surface-2: #1a2338;
-  --surface-3: #1f2945;
-  --text-primary: #E5E7EB;
-  --text-secondary: #a5b4fc;
-  --text-muted: #6366f1;
-  --border-default: #2d3a5f;
-  --border-strong: #4c5a8f;
-  
-  /* Brand Colors - Neon Cyan & Purple */
-  --brand-primary: #00E5FF;
-  --brand-secondary: #8B5CF6;
-  
-  /* State Colors */
-  --state-success: #22C55E;
-  --state-warning: #F59E0B;
-  --state-error: #EF4444;
-  --state-info: #3b82f6;
-  
-  /* Score Colors */
-  --score-accepted: #22C55E;
-  --score-wrong: #EF4444;
-  --score-tle: #F59E0B;
-  --score-re: #f97316;
-  --score-ce: #6366f1;
-  
-  /* Effects */
-  --fx-glow: 0 0 30px rgba(0, 229, 255, 0.5);
-  --fx-glow-hover: 0 0 50px rgba(0, 229, 255, 0.5);
-  --gradient-brand: linear-gradient(135deg, #00E5FF, #8B5CF6);
-  
-  /* Shape & Style Variables */
-  --btn-radius: 8px;
-  --card-radius: 12px;
-  --border-width: 2px;
-  --border-style: solid;
-  --shadow-style: 0px 0px 30px rgba(0, 229, 255, 0.3);
-  --shadow-hover: 0px 0px 50px rgba(0, 229, 255, 0.5);
-  --transition-speed: 0.2s;
-  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --corner-clip: 0px;
-  --btn-text-transform: uppercase;
-  --btn-letter-spacing: 2px;
-}
-
-/* ==================== CYBER ARENA THEME - Light Mode ==================== */
-[data-theme="cyber_light"] {
-  --font-title: 'Orbitron', sans-serif;
-  --font-ui: 'Rajdhani', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --surface-1: #ffffff;
-  --surface-2: #e2e8f0;
-  --surface-3: #cbd5e1;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --border-default: #cbd5e1;
-  --border-strong: #94a3b8;
-  --brand-primary: #0891b2;
-  --brand-secondary: #7c3aed;
-  --state-success: #059669;
-  --state-warning: #d97706;
-  --state-error: #dc2626;
-  --state-info: #2563eb;
-  --score-accepted: #059669;
-  --score-wrong: #dc2626;
-  --score-tle: #d97706;
-  --score-re: #ea580c;
-  --score-ce: #4f46e5;
-  --fx-glow: 0 0 10px rgba(8, 145, 178, 0.2);
-  --fx-glow-hover: 0 0 20px rgba(8, 145, 178, 0.3);
-  --gradient-brand: linear-gradient(135deg, #0891b2, #7c3aed);
-}
-
-/* ==================== SPACE OPS THEME - Dark Mode ==================== */
-[data-theme="space_dark"] {
-  /* Typography */
-  --font-title: 'Chakra Petch', sans-serif;
-  --font-ui: 'Rajdhani', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  /* Colors - Deep Space Blue */
-  --bg-primary: #070A1A;
-  --bg-secondary: #0c1326;
-  --surface-1: #0f172a;
-  --surface-2: #1e293b;
-  --surface-3: #334155;
-  --text-primary: #FFFFFF;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --border-default: #1e293b;
-  --border-strong: #334155;
-  
-  /* Brand Colors - Cyan & Magenta */
-  --brand-primary: #22D3EE;
-  --brand-secondary: #E879F9;
-  
-  /* State Colors */
-  --state-success: #14b8a6;
-  --state-warning: #f59e0b;
-  --state-error: #f43f5e;
-  --state-info: #0ea5e9;
-  
-  /* Score Colors */
-  --score-accepted: #14b8a6;
-  --score-wrong: #f43f5e;
-  --score-tle: #f59e0b;
-  --score-re: #fb7185;
-  --score-ce: #60a5fa;
-  
-  /* Effects */
-  --fx-glow: 0 0 15px rgba(34, 211, 238, 0.4);
-  --fx-glow-hover: 0 0 30px rgba(34, 211, 238, 0.5);
-  --gradient-brand: linear-gradient(135deg, #22D3EE, #E879F9);
-  
-  /* Shape & Style Variables - Technical/Mission Control */
-  --btn-radius: 6px;
-  --card-radius: 12px;
-  --border-width: 1px;
-  --border-style: solid;
-  --shadow-style: 0px 8px 24px rgba(34, 211, 238, 0.3);
-  --shadow-hover: 0px 12px 32px rgba(34, 211, 238, 0.4);
-  --transition-speed: 0.25s;
-  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --corner-clip: 0px;
-  --btn-text-transform: uppercase;
-  --btn-letter-spacing: 2px;
-}
-
-/* ==================== SPACE OPS THEME - Light Mode ==================== */
-[data-theme="space_light"] {
-  --font-title: 'Chakra Petch', sans-serif;
-  --font-ui: 'Rajdhani', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --surface-1: #f1f5f9;
-  --surface-2: #e2e8f0;
-  --surface-3: #cbd5e1;
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --border-default: #cbd5e1;
-  --border-strong: #94a3b8;
-  --brand-primary: #0891b2;
-  --brand-secondary: #2563eb;
-  --state-success: #0d9488;
-  --state-warning: #d97706;
-  --state-error: #e11d48;
-  --state-info: #0284c7;
-  --score-accepted: #0d9488;
-  --score-wrong: #e11d48;
-  --score-tle: #d97706;
-  --score-re: #f43f5e;
-  --score-ce: #3b82f6;
-  --fx-glow: 0 0 8px rgba(8, 145, 178, 0.15);
-  --fx-glow-hover: 0 0 16px rgba(8, 145, 178, 0.25);
-  --gradient-brand: linear-gradient(135deg, #0891b2, #2563eb);
-}
-
-/* ==================== SAMURAI DOJO THEME - Dark Mode ==================== */
-[data-theme="samurai_dark"] {
-  /* Typography */
-  --font-title: 'Noto Serif JP', serif;
-  --font-ui: 'Noto Sans JP', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  /* Colors - Ink & Ivory */
-  --bg-primary: #0B0B0D;
-  --bg-secondary: #121212;
-  --surface-1: #1a1a1a;
-  --surface-2: #262626;
-  --surface-3: #333333;
-  --text-primary: #F5F1E8;
-  --text-secondary: #e5e5e5;
-  --text-muted: #a3a3a3;
-  --border-default: #262626;
-  --border-strong: #404040;
-  
-  /* Brand Colors - Red & Gold */
-  --brand-primary: #DC2626;
-  --brand-secondary: #D4AF37;
-  
-  /* State Colors */
-  --state-success: #22c55e;
-  --state-warning: #f59e0b;
-  --state-error: #dc2626;
-  --state-info: #737373;
-  
-  /* Score Colors */
-  --score-accepted: #22c55e;
-  --score-wrong: #dc2626;
-  --score-tle: #f59e0b;
-  --score-re: #ef4444;
-  --score-ce: #525252;
-  
-  /* Effects */
-  --fx-glow: 0 0 10px rgba(220, 38, 38, 0.3);
-  --fx-glow-hover: 0 0 20px rgba(220, 38, 38, 0.4);
-  --gradient-brand: linear-gradient(135deg, #DC2626, #D4AF37);
-  
-  /* Shape & Style Variables - Zen Minimalism */
-  --btn-radius: 0px;
-  --card-radius: 0px;
-  --border-width: 2px;
-  --border-style: solid;
-  --shadow-style: none;
-  --shadow-hover: none;
-  --transition-speed: 0.4s;
-  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --corner-clip: 0px;
-  --btn-text-transform: uppercase;
-  --btn-letter-spacing: 2px;
-}
-
-/* ==================== SAMURAI DOJO THEME - Light Mode ==================== */
-[data-theme="samurai_light"] {
-  --font-title: 'Noto Serif JP', serif;
-  --font-ui: 'Noto Sans JP', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  --bg-primary: #fafafa;
-  --bg-secondary: #f5f5f5;
-  --surface-1: #ffffff;
-  --surface-2: #e5e5e5;
-  --surface-3: #d4d4d4;
-  --text-primary: #0a0a0a;
-  --text-secondary: #404040;
-  --text-muted: #737373;
-  --border-default: #e5e5e5;
-  --border-strong: #a3a3a3;
-  --brand-primary: #b91c1c;
-  --brand-secondary: #d97706;
-  --state-success: #16a34a;
-  --state-warning: #d97706;
-  --state-error: #b91c1c;
-  --state-info: #525252;
-  --score-accepted: #16a34a;
-  --score-wrong: #b91c1c;
-  --score-tle: #d97706;
-  --score-re: #dc2626;
-  --score-ce: #404040;
-  --fx-glow: 0 0 5px rgba(185, 28, 28, 0.15);
-  --fx-glow-hover: 0 0 10px rgba(185, 28, 28, 0.2);
-  --gradient-brand: linear-gradient(135deg, #b91c1c, #d97706);
-}
-
-/* ==================== PIXEL ARCADE THEME - Dark Mode ==================== */
-[data-theme="pixel_dark"] {
-  /* Typography */
-  --font-title: 'Press Start 2P', cursive;
-  --font-ui: 'Press Start 2P', cursive;
-  --font-code: 'Press Start 2P', cursive;
-  
-  /* Colors - Vibrant Arcade */
-  --bg-primary: #1A1A2E;
-  --bg-secondary: #16213E;
-  --surface-1: #252542;
-  --surface-2: #2f2f5a;
-  --surface-3: #3d3d6b;
-  --text-primary: #FFFFFF;
-  --text-secondary: #00ffff;
-  --text-muted: #ff00ff;
-  --border-default: #3d3d6b;
-  --border-strong: #5a5a8f;
-  
-  /* Brand Colors - Bright & Saturated */
-  --brand-primary: #06FFA5;
-  --brand-secondary: #FF006E;
-  
-  /* State Colors */
-  --state-success: #06FFA5;
-  --state-warning: #FFBE0B;
-  --state-error: #FF006E;
-  --state-info: #3A86FF;
-  
-  /* Score Colors */
-  --score-accepted: #06FFA5;
-  --score-wrong: #FF006E;
-  --score-tle: #FFBE0B;
-  --score-re: #ff5500;
-  --score-ce: #8338EC;
-  
-  /* Effects */
-  --fx-glow: 0 0 8px rgba(255, 0, 255, 0.6), 0 0 16px rgba(0, 255, 255, 0.4);
-  --fx-glow-hover: 0 0 12px rgba(255, 0, 255, 0.8), 0 0 24px rgba(0, 255, 255, 0.6);
-  --gradient-brand: linear-gradient(135deg, #FF006E, #3A86FF);
-  
-  /* Shape & Style Variables - 8-bit Retro */
-  --btn-radius: 0px;
-  --card-radius: 0px;
-  --border-width: 4px;
-  --border-style: solid;
-  --shadow-style: 0px 4px 0px rgba(0, 0, 0, 1);
-  --shadow-hover: 0px 2px 0px rgba(0, 0, 0, 1);
-  --transition-speed: 0s;
-  --transition-ease: steps(1);
-  --corner-clip: 4px;
-  --btn-text-transform: uppercase;
-  --btn-letter-spacing: 1px;
-}
-
-[data-theme="pixel_dark"] * {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-}
-
-/* ==================== PIXEL ARCADE THEME - Light Mode ==================== */
-[data-theme="pixel_light"] {
-  --font-title: 'Press Start 2P', cursive;
-  --font-ui: 'Press Start 2P', cursive;
-  --font-code: 'Press Start 2P', cursive;
-  
-  --bg-primary: #ffe6f7;
-  --bg-secondary: #ffd6ee;
-  --surface-1: #ffffff;
-  --surface-2: #ffb3dd;
-  --surface-3: #ff99cc;
-  --text-primary: #330066;
-  --text-secondary: #660099;
-  --text-muted: #9933cc;
-  --border-default: #ff99cc;
-  --border-strong: #ff66bb;
-  --brand-primary: #00aa00;
-  --brand-secondary: #cc00cc;
-  --state-success: #00cc00;
-  --state-warning: #ff9900;
-  --state-error: #ff0044;
-  --state-info: #0099cc;
-  --score-accepted: #00cc00;
-  --score-wrong: #ff0044;
-  --score-tle: #ff9900;
-  --score-re: #ff4400;
-  --score-ce: #9900cc;
-  --fx-glow: 0 0 4px rgba(204, 0, 204, 0.3);
-  --fx-glow-hover: 0 0 8px rgba(204, 0, 204, 0.5);
-  --gradient-brand: linear-gradient(135deg, #cc00cc, #0099cc);
-}
-
-[data-theme="pixel_light"] * {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-}
-
-/* ==================== MYTHIC RPG THEME - Dark Mode ==================== */
-[data-theme="mythic_dark"] {
-  /* Typography */
-  --font-title: 'Cinzel', serif;
-  --font-ui: 'Lora', serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  /* Colors - Fantasy Purple & Gold */
-  --bg-primary: #0F172A;
-  --bg-secondary: #1a1228;
-  --surface-1: #251a35;
-  --surface-2: #2f2442;
-  --surface-3: #3d2f54;
-  --text-primary: #FEF3C7;
-  --text-secondary: #d4b3ff;
-  --text-muted: #a380d6;
-  --border-default: #3d2f54;
-  --border-strong: #5a4570;
-  
-  /* Brand Colors - Rune Purple & Gold */
-  --brand-primary: #6D28D9;
-  --brand-secondary: #F59E0B;
-  
-  /* State Colors */
-  --state-success: #16A34A;
-  --state-warning: #fbbf24;
-  --state-error: #f87171;
-  --state-info: #60a5fa;
-  
-  /* Score Colors */
-  --score-accepted: #16A34A;
-  --score-wrong: #f87171;
-  --score-tle: #fbbf24;
-  --score-re: #fb923c;
-  --score-ce: #c084fc;
-  
-  /* Effects */
-  --fx-glow: 0 0 20px rgba(109, 40, 217, 0.5), 0 0 30px rgba(245, 158, 11, 0.3);
-  --fx-glow-hover: 0 0 40px rgba(109, 40, 217, 0.6), 0 0 50px rgba(245, 158, 11, 0.4);
-  --gradient-brand: linear-gradient(135deg, #6D28D9, #F59E0B);
-  
-  /* Shape & Style Variables - Epic Fantasy */
-  --btn-radius: 0px;
-  --card-radius: 12px;
-  --border-width: 2px;
-  --border-style: solid;
-  --shadow-style: 0px 8px 24px rgba(109, 40, 217, 0.4);
-  --shadow-hover: 0px 20px 60px rgba(109, 40, 217, 0.3);
-  --transition-speed: 0.4s;
-  --transition-ease: ease-out;
-  --corner-clip: 8px;
-  --btn-text-transform: uppercase;
-  --btn-letter-spacing: 2px;
-}
-
-/* ==================== MYTHIC RPG THEME - Light Mode ==================== */
-[data-theme="mythic_light"] {
-  --font-title: 'Cinzel', serif;
-  --font-ui: 'Lora', serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  --bg-primary: #faf5ff;
-  --bg-secondary: #f3e8ff;
-  --surface-1: #ffffff;
-  --surface-2: #e9d5ff;
-  --surface-3: #d8b4fe;
-  --text-primary: #3b0764;
-  --text-secondary: #581c87;
-  --text-muted: #7e22ce;
-  --border-default: #e9d5ff;
-  --border-strong: #c084fc;
-  --brand-primary: #9333ea;
-  --brand-secondary: #f59e0b;
-  --state-success: #059669;
-  --state-warning: #f59e0b;
-  --state-error: #ef4444;
-  --state-info: #3b82f6;
-  --score-accepted: #059669;
-  --score-wrong: #ef4444;
-  --score-tle: #f59e0b;
-  --score-re: #f97316;
-  --score-ce: #a855f7;
-  --fx-glow: 0 0 10px rgba(147, 51, 234, 0.2);
-  --fx-glow-hover: 0 0 20px rgba(147, 51, 234, 0.3);
-  --gradient-brand: linear-gradient(135deg, #9333ea, #f59e0b);
-}
-
-/* ==================== SPORTS ARENA THEME - Dark Mode ==================== */
-[data-theme="sports_dark"] {
-  /* Typography */
-  --font-title: 'Teko', sans-serif;
-  --font-ui: 'Barlow', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  /* Colors - Stadium Sports */
-  --bg-primary: #111827;
-  --bg-secondary: #162329;
-  --surface-1: #1f2d35;
-  --surface-2: #2a3942;
-  --surface-3: #374551;
-  --text-primary: #FFFFFF;
-  --text-secondary: #bae6fd;
-  --text-muted: #7dd3fc;
-  --border-default: #2a3942;
-  --border-strong: #475569;
-  
-  /* Brand Colors - Team Blue & Yellow */
-  --brand-primary: #2563EB;
-  --brand-secondary: #FBBF24;
-  
-  /* State Colors */
-  --state-success: #22c55e;
-  --state-warning: #facc15;
-  --state-error: #EF4444;
-  --state-info: #38bdf8;
-  
-  /* Score Colors */
-  --score-accepted: #22c55e;
-  --score-wrong: #EF4444;
-  --score-tle: #facc15;
-  --score-re: #f97316;
-  --score-ce: #0ea5e9;
-  
-  /* Effects */
-  --fx-glow: 0 0 12px rgba(37, 99, 235, 0.4);
-  --fx-glow-hover: 0 0 30px rgba(37, 99, 235, 0.6);
-  --gradient-brand: linear-gradient(135deg, #2563EB, #FBBF24);
-  
-  /* Shape & Style Variables - Dynamic Sports */
-  --btn-radius: 0px;
-  --card-radius: 0px;
-  --border-width: 3px;
-  --border-style: solid;
-  --shadow-style: 0px 4px 8px rgba(0, 0, 0, 0.4);
-  --shadow-hover: 0px 8px 16px rgba(37, 99, 235, 0.4);
-  --transition-speed: 0.3s;
-  --transition-ease: ease;
-  --corner-clip: 8px;
-  --btn-text-transform: uppercase;
-  --btn-letter-spacing: 2px;
-}
-
-/* ==================== SPORTS ARENA THEME - Light Mode ==================== */
-[data-theme="sports_light"] {
-  --font-title: 'Teko', sans-serif;
-  --font-ui: 'Barlow', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
-  
-  --bg-primary: #f0f9ff;
-  --bg-secondary: #e0f2fe;
-  --surface-1: #ffffff;
-  --surface-2: #bae6fd;
-  --surface-3: #7dd3fc;
-  --text-primary: #0c4a6e;
-  --text-secondary: #075985;
-  --text-muted: #0369a1;
-  --border-default: #bae6fd;
-  --border-strong: #38bdf8;
-  --brand-primary: #0284c7;
-  --brand-secondary: #f97316;
-  --state-success: #16a34a;
-  --state-warning: #eab308;
-  --state-error: #dc2626;
-  --state-info: #0284c7;
-  --score-accepted: #16a34a;
-  --score-wrong: #dc2626;
-  --score-tle: #eab308;
-  --score-re: #ea580c;
-  --score-ce: #0284c7;
-  --fx-glow: 0 0 6px rgba(2, 132, 199, 0.15);
-  --fx-glow-hover: 0 0 12px rgba(2, 132, 199, 0.25);
-  --gradient-brand: linear-gradient(135deg, #0284c7, #f97316);
-}
-
-/* ==================== ANIMATIONS & EFFECTS ==================== */
-@keyframes glowPulse {
-  0%, 100% { box-shadow: var(--fx-glow); }
-  50% { box-shadow: var(--fx-glow-hover); }
-}
-
-@keyframes gridScroll {
-  0% { background-position: 0 0; }
-  100% { background-position: 50px 50px; }
-}
-
-@keyframes scanLine {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-@keyframes scanHorizontal {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100vw); }
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
-@keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
-@keyframes spin {
-  0%, 100% { transform: rotateY(0deg); }
-  50% { transform: rotateY(180deg); }
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-/* ==================== CANVAS CHALLENGE SPECIFIC STYLES ==================== */
-.bg-grid {
-  background-image: 
-    linear-gradient(to right, rgba(var(--border-default-rgb, 100, 100, 100), 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(var(--border-default-rgb, 100, 100, 100), 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-/* Drawing canvas grid animation */
-[data-theme^="cyber"] .bg-grid {
-  background-image: 
-    linear-gradient(to right, rgba(0, 229, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 229, 255, 0.1) 1px, transparent 1px);
-}
-
-[data-theme^="space"] .bg-grid {
-  background-image: 
-    linear-gradient(to right, rgba(34, 211, 238, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(34, 211, 238, 0.08) 1px, transparent 1px);
-}
-
-[data-theme^="pixel"] .bg-grid {
-  background-image: 
-    linear-gradient(to right, rgba(6, 255, 165, 0.15) 2px, transparent 2px),
-    linear-gradient(to bottom, rgba(6, 255, 165, 0.15) 2px, transparent 2px);
-  background-size: 16px 16px;
-}
-
-/* Canvas tool tooltips */
-.canvas-tooltip {
-  position: absolute;
-  pointer-events: none;
-  z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.canvas-tooltip.show {
-  opacity: 1;
-}
-
-/* ==================== UTILITY CLASSES ==================== */
-@layer utilities {
-  .text-caption {
-    font-size: var(--text-caption);
-    line-height: var(--text-caption-lh);
-  }
-  
-  .font-code {
-    font-family: var(--font-code);
-  }
-
-  .font-title {
-    font-family: var(--font-title);
-  }
-
-  .font-ui {
-    font-family: var(--font-ui);
-  }
-  
-  .glow {
-    box-shadow: var(--fx-glow);
-  }
-
-  .glow-hover:hover {
-    box-shadow: var(--fx-glow-hover);
-  }
-
-  .glow-pulse {
-    animation: glowPulse 2s ease-in-out infinite;
-  }
-
-  .gradient-brand {
-    background: var(--gradient-brand);
-  }
-
-  .gradient-brand-text {
-    background: var(--gradient-brand);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* Grid Background - Cyber/Space themes */
-  .bg-grid {
-    background-image: 
-      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 50px 50px;
-  }
-
-  .bg-grid-animated {
-    animation: gridScroll 20s linear infinite;
-  }
-
-  /* Scan Line Effect */
-  .scan-line {
-    position: absolute;
-    width: 100%;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, var(--brand-primary), transparent);
-    animation: scanLine 4s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 50;
-  }
-
-  .scan-horizontal {
-    position: absolute;
-    width: 3px;
-    height: 100%;
-    background: linear-gradient(0deg, transparent, var(--brand-primary), transparent);
-    animation: scanHorizontal 3s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 50;
-  }
-
-  /* Reduced Motion Support */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-  
-  /* ==================== THEME-ADAPTIVE BUTTON STYLES ==================== */
-  .theme-btn {
-    border-radius: var(--btn-radius);
-    border-width: var(--border-width);
-    border-style: var(--border-style);
-    box-shadow: var(--shadow-style);
-    transition-duration: var(--transition-speed);
-    transition-timing-function: var(--transition-ease);
-    text-transform: var(--btn-text-transform);
-    letter-spacing: var(--btn-letter-spacing);
-  }
-  
-  .theme-btn:hover:not(:disabled) {
-    box-shadow: var(--shadow-hover);
-  }
-  
-  /* ==================== THEME-ADAPTIVE CARD STYLES ==================== */
-  .theme-card {
-    border-radius: var(--card-radius);
-    border-width: var(--border-width);
-    border-style: var(--border-style);
-    box-shadow: var(--shadow-style);
-    transition-duration: var(--transition-speed);
-    transition-timing-function: var(--transition-ease);
-  }
-  
-  .theme-card:hover {
-    box-shadow: var(--shadow-hover);
-  }
-  
-  /* ==================== CORNER BRACKETS (Cyber/Space) ==================== */
-  [data-theme^="cyber"] .corner-brackets::before,
-  [data-theme^="cyber"] .corner-brackets::after,
-  [data-theme^="space"] .corner-brackets::before,
-  [data-theme^="space"] .corner-brackets::after {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-color: var(--brand-primary);
-    opacity: 0.4;
-    transition: opacity var(--transition-speed);
-  }
-  
-  [data-theme^="cyber"] .corner-brackets::before,
-  [data-theme^="space"] .corner-brackets::before {
-    top: 0;
-    left: 0;
-    border-top: 2px solid;
-    border-left: 2px solid;
-  }
-  
-  [data-theme^="cyber"] .corner-brackets::after,
-  [data-theme^="space"] .corner-brackets::after {
-    bottom: 0;
-    right: 0;
-    border-bottom: 2px solid;
-    border-right: 2px solid;
-  }
-  
-  [data-theme^="cyber"] .corner-brackets:hover::before,
-  [data-theme^="cyber"] .corner-brackets:hover::after,
-  [data-theme^="space"] .corner-brackets:hover::before,
-  [data-theme^="space"] .corner-brackets:hover::after {
-    opacity: 1;
-  }
-  
-  /* ==================== CLIPPED CORNERS (Mythic/Sports) ==================== */
-  [data-theme="mythic_dark"] .theme-btn,
-  [data-theme="mythic_light"] .theme-btn {
-    clip-path: polygon(
-      8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%,
-      0 100%, 0 8px
-    );
-  }
-  
-  [data-theme^="sports"] .theme-btn,
-  [data-theme^="sports"] .theme-card {
-    clip-path: polygon(
-      8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%,
-      0 100%, 0 8px
-    );
-  }
-  
-  /* ==================== PIXEL CORNER NOTCHES ==================== */
-  [data-theme^="pixel"] .theme-btn,
-  [data-theme^="pixel"] .theme-card {
-    clip-path: polygon(
-      4px 0, calc(100% - 4px) 0, 100% 4px,
-      100% calc(100% - 4px), calc(100% - 4px) 100%,
-      4px 100%, 0 calc(100% - 4px), 0 4px
-    );
-  }
-  
-  /* ==================== SAMURAI ORNAMENTS ==================== */
-  [data-theme^="samurai"] .theme-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, 
-      transparent, 
-      var(--brand-secondary) 50%, 
-      transparent
-    );
-    opacity: 0.3;
-  }
-  
-  [data-theme^="samurai"] .theme-card:hover::before {
-    opacity: 0.6;
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* ==================== RTL SUPPORT ==================== */
+  /* Support Automatique RTL via Propriétés Logiques */
   [dir="rtl"] {
-    direction: rtl;
     font-family: var(--font-arabic), var(--font-ui);
   }
 
-  /* RTL Text alignment */
-  [dir="rtl"] .text-left {
-    text-align: right;
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-title);
+    font-weight: 700;
+    text-wrap: balance;
   }
 
-  [dir="rtl"] .text-right {
-    text-align: left;
+  code {
+    font-family: var(--font-code);
+  }
+}
+
+/* ==================== THEMES DEFINITIONS ==================== */
+
+/* --- CYBER ARENA (Neon/Futuristic) --- */
+[data-theme^="cyber"] {
+  --font-title: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+  --btn-radius: 4px;
+  --card-radius: 8px;
+  --border-width: 2px;
+}
+
+[data-theme="cyber_dark"] {
+  --bg-primary: #0B1020;
+  --surface-1: #151b2e;
+  --text-primary: #E5E7EB;
+  --text-secondary: #818CF8;
+  --brand-primary: #00E5FF;
+  --brand-primary-rgb: 0, 229, 255;
+  --brand-secondary: #8B5CF6;
+  --fx-glow: 0 0 20px rgba(0, 229, 255, 0.4);
+  --border-default: #373f6b;
+}
+
+/* --- SPACE OPS (Technical/NASA) --- */
+[data-theme^="space"] {
+  --font-title: 'Chakra Petch', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --btn-radius: 0px;
+  --card-radius: 12px;
+  --border-width: 1px;
+}
+
+[data-theme="space_dark"] {
+  --bg-primary: #070A1A;
+  --surface-1: #0f172a;
+  --text-primary: #FFFFFF;
+  --text-secondary: #22D3EE;
+  --brand-primary: #22D3EE;
+  --brand-secondary: #E879F9;
+  --fx-glow: 0 0 15px rgba(34, 211, 238, 0.3);
+  --border-default: #253348;
+}
+
+/* --- SAMURAI DOJO (Minimalism/Elegance) --- */
+[data-theme^="samurai"] {
+  --font-title: 'Noto Serif JP', serif;
+  --font-ui: 'Noto Sans JP', sans-serif;
+  --btn-radius: 0px;
+  --card-radius: 0px;
+  --border-width: 2px;
+}
+
+[data-theme="samurai_dark"] {
+  --bg-primary: #0B0B0D;
+  --surface-1: #1a1a1a;
+  --text-primary: #F5F1E8;
+  --brand-primary: #DC2626;
+  --brand-secondary: #D4AF37;
+  --border-default: #262626;
+}
+
+/* --- PIXEL ARCADE (Retro 8-bit) --- */
+[data-theme^="pixel"] {
+  --font-title: 'Press Start 2P', cursive;
+  --font-ui: 'Press Start 2P', cursive;
+  --btn-radius: 0px;
+  --border-width: 4px;
+  --transition-speed: 0s;
+  --transition-ease: steps(1);
+}
+
+[data-theme="pixel_dark"] {
+  --bg-primary: #1A1A2E;
+  --surface-1: #252542;
+  --text-primary: #FFFFFF;
+  --brand-primary: #06FFA5;
+  --brand-secondary: #FF006E;
+  --border-default: #3d3d6b;
+  --fx-glow: 4px 4px 0px #000;
+}
+
+/* --- MYTHIC RPG (Epic/Fantasy) --- */
+[data-theme^="mythic"] {
+  --font-title: 'Cinzel', serif;
+  --font-ui: 'Lora', serif;
+  --btn-radius: 0px;
+  --card-radius: 16px;
+  --border-width: 2px;
+}
+
+[data-theme="mythic_dark"] {
+  --bg-primary: #0F172A;
+  --surface-1: #1a1228;
+  --text-primary: #FEF3C7;
+  --brand-primary: #7C3AED;
+  --brand-secondary: #F59E0B;
+  --border-default: #3d2f54;
+}
+
+/* --- SPORTS ARENA (Aggressive/Dynamic) --- */
+[data-theme^="sports"] {
+  --font-title: 'Teko', sans-serif;
+  --font-ui: 'Barlow', sans-serif;
+  --btn-radius: 0px;
+  --border-width: 3px;
+}
+
+[data-theme="sports_dark"] {
+  --bg-primary: #111827;
+  --surface-1: #1f2d35;
+  --text-primary: #FFFFFF;
+  --brand-primary: #2563EB;
+  --brand-secondary: #FBBF24;
+  --border-default: #2a3942;
+}
+
+/* ==================== COMPONENTS & UTILITIES ==================== */
+@layer utilities {
+
+  /* Boutons thématiques avec Clipping */
+  .theme-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: var(--border-width) solid var(--brand-primary);
+    background: transparent;
+    color: var(--brand-primary);
+    /* Only transition GPU-composited properties to avoid non-composited animation warnings */
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
   }
 
-  /* RTL Flexbox and Grid */
-  [dir="rtl"] .flex-row {
-    flex-direction: row-reverse;
+  .theme-btn:hover {
+    background: var(--brand-primary);
+    color: var(--bg-primary);
+    box-shadow: var(--fx-glow);
   }
 
-  /* RTL Icons and Chevrons - mirror directional icons */
-  [dir="rtl"] .icon-chevron-right {
-    transform: scaleX(-1);
+  /* Clip-paths dynamiques par thème */
+  [data-theme^="sports"] .theme-btn,
+  [data-theme^="mythic"] .theme-btn {
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   }
 
-  [dir="rtl"] .icon-chevron-left {
-    transform: scaleX(-1);
+  [data-theme^="pixel"] .theme-btn {
+    clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
   }
 
-  [dir="rtl"] .icon-arrow-right {
-    transform: scaleX(-1);
+  /* Scanline Effect (Optimisé avec will-change) */
+  .scanline-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(to bottom,
+        transparent 50%,
+        rgba(0, 0, 0, 0.1) 51%);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.1;
   }
 
-  [dir="rtl"] .icon-arrow-left {
-    transform: scaleX(-1);
+  /* Propriétés Logiques (Remplace vos utilitaires RTL manuels) */
+  .p-start {
+    padding-inline-start: var(--space-4);
   }
 
-  /* RTL Padding and Margin utilities */
-  [dir="rtl"] .pl-4 {
-    padding-left: 0;
-    padding-right: 1rem;
+  .m-end {
+    margin-inline-end: var(--space-4);
   }
 
-  [dir="rtl"] .pr-4 {
-    padding-right: 0;
-    padding-left: 1rem;
+  .border-s {
+    border-inline-start: 1px solid var(--border-default);
+  }
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes cyber-pulse {
+  0% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 2px var(--brand-primary));
   }
 
-  [dir="rtl"] .ml-4 {
-    margin-left: 0;
-    margin-right: 1rem;
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 10px var(--brand-primary));
   }
 
-  [dir="rtl"] .mr-4 {
-    margin-right: 0;
-    margin-left: 1rem;
+  100% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 2px var(--brand-primary));
   }
+}
 
-  /* RTL Border radius */
-  [dir="rtl"] .rounded-l-lg {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    border-top-right-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
-  }
+.animate-cyber {
+  animation: cyber-pulse 2s infinite ease-in-out;
+}
 
-  [dir="rtl"] .rounded-r-lg {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    border-top-left-radius: 0.5rem;
-    border-bottom-left-radius: 0.5rem;
-  }
+/* Suppression du flou sur Pixel Art */
+[data-theme^="pixel"] img {
+  image-rendering: pixelated;
+}
 
-  /* RTL Specific font smoothing for Arabic */
-  [dir="rtl"] * {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+/* Support Accessibilité : Réduction de mouvement */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

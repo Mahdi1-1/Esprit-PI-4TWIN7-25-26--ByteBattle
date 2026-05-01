@@ -1,0 +1,34 @@
+{
+  "metrics": {
+    "m1_accuracy": 0.770833,
+    "m2_quadratic_weighted_kappa": 0.768421,
+    "m3_mae": 0.130275
+  },
+  "split": {
+    "train_size": 192,
+    "test_size": 48,
+    "stratified_on": "target_level"
+  },
+  "sample_weighting": {
+    "real_weight": 1.0,
+    "synthetic_weight": 0.3
+  },
+  "feature_columns": [
+    "cf_rating",
+    "minutes_stuck",
+    "attempts_count",
+    "last_hint_level",
+    "difficulty",
+    "code_lines",
+    "tags_text"
+  ],
+  "m3_target_columns": [
+    "skill_algo",
+    "skill_ds",
+    "skill_dp",
+    "skill_graph",
+    "skill_debug",
+    "skill_clean_code",
+    "skill_speed"
+  ]
+}

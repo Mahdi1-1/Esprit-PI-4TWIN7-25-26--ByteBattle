@@ -1,5 +1,4 @@
 import { useTheme } from '../context/ThemeContext';
-import { useEffect, useState } from 'react';
 
 // Animated Grid Background for Cyber/Sports themes
 export function AnimatedGrid() {
@@ -29,40 +28,50 @@ export function ScanLine() {
   );
 }
 
-// Animated Stars for Space theme
+// Generate a deterministic box-shadow string for N stars (no DOM nodes per star)
+function generateStarShadows(count: number): string {
+  // Use a seeded pseudo-random sequence for SSR-consistency and zero re-renders
+  let seed = 42;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    return Math.abs(seed) / 0x7fffffff;
+  };
+  const shadows: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const x = Math.floor(rand() * 2000);
+    const y = Math.floor(rand() * 2000);
+    const opacity = 0.4 + rand() * 0.6;
+    shadows.push(`${x}px ${y}px 0 rgba(255,255,255,${opacity.toFixed(2)})`);
+  }
+  return shadows.join(',');
+}
+
+// Cache at module level — computed once, never re-creates DOM nodes
+const STAR_SHADOWS = generateStarShadows(150);
+
+// Animated Stars for Space theme — single div, zero per-star DOM nodes
 export function SpaceStars() {
   const { theme } = useTheme();
-  const [stars, setStars] = useState<{ x: number; y: number; delay: number; duration: number }[]>([]);
-
-  useEffect(() => {
-    if (theme === 'space') {
-      const newStars = Array.from({ length: 100 }, () => ({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        delay: Math.random() * 3,
-        duration: 2 + Math.random() * 2,
-      }));
-      setStars(newStars);
-    }
-  }, [theme]);
 
   if (theme !== 'space') return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-      {stars.map((star, i) => (
-        <div
-          key={i}
-          className="absolute w-[2px] h-[2px] bg-white rounded-full"
-          style={{
-            left: `${star.x}%`,
-            top: `${star.y}%`,
-            animation: `twinkle ${star.duration}s infinite`,
-            animationDelay: `${star.delay}s`,
-          }}
-        />
-      ))}
-    </div>
+    <div
+      aria-hidden="true"
+      className="fixed pointer-events-none"
+      style={{
+        zIndex: 0,
+        width: '2px',
+        height: '2px',
+        top: 0,
+        left: 0,
+        borderRadius: '50%',
+        background: 'transparent',
+        boxShadow: STAR_SHADOWS,
+        animation: 'twinkle 4s ease-in-out infinite alternate',
+        transform: 'translateZ(0)', // promote to GPU layer
+      }}
+    />
   );
 }
 

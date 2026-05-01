@@ -1,12 +1,14 @@
-import { useState, useCallback } from 'react';
-import { Navbar } from '../components/Navbar';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 import { ExcalidrawEditor } from '../components/ExcalidrawEditor';
 import type { SavedScene } from '../components/ExcalidrawEditor';
 import { ThemeEffects } from '../components/ThemeEffects';
 import { useLanguage } from '../context/LanguageContext';
-import { Pencil, FolderOpen, Trash2, X, Clock, Plus } from 'lucide-react';
+import { challengesService } from '../services/challengesService';
+import { Pencil, FolderOpen, Trash2, X, Clock, Plus, Sparkles, Loader2 } from 'lucide-react';
 
 const STORAGE_KEY = 'bytebattle-sketchpad-scenes';
+const DRAFT_KEY = 'bytebattle-sketchpad-current';
 
 function loadSavedScenes(): SavedScene[] {
   try {
@@ -21,12 +23,65 @@ function persistScenes(scenes: SavedScene[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(scenes));
 }
 
+function loadCurrentDraft(): SavedScene | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistCurrentDraft(draft: SavedScene) {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+}
+
+function clearCurrentDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
+
 export function SketchpadPage() {
   const { t } = useLanguage();
   const [savedScenes, setSavedScenes] = useState<SavedScene[]>(loadSavedScenes);
   const [showGallery, setShowGallery] = useState(false);
-  const [activeScene, setActiveScene] = useState<SavedScene | null>(null);
+  const [currentDraft, setCurrentDraft] = useState<SavedScene | null>(loadCurrentDraft);
+  const [activeScene, setActiveScene] = useState<SavedScene | null>(loadCurrentDraft);
   const [editorKey, setEditorKey] = useState(0);
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiDraft, setAiDraft] = useState<{
+    title: string;
+    difficulty?: string;
+    category?: string;
+    briefMd?: string;
+    deliverables?: string;
+    rubric?: any;
+    assets?: string[];
+    hints?: string[];
+    excalidrawElements?: any[];
+  } | null>(null);
+  const [injectedElements, setInjectedElements] = useState<any[] | null>(null);
+  const lastPersistedDraft = useRef<string | null>(null);
+
+  const initialSceneData = useMemo(() => {
+    if (injectedElements) {
+      return {
+        elements: injectedElements,
+        appState: { viewBackgroundColor: '#ffffff' },
+        files: undefined,
+      };
+    }
+
+    return activeScene
+      ? {
+          elements: JSON.parse(activeScene.data)?.elements,
+          appState: JSON.parse(activeScene.data)?.appState,
+          files: JSON.parse(activeScene.data)?.files,
+        }
+      : undefined;
+  }, [activeScene, injectedElements]);
 
   const handleSave = useCallback((scene: SavedScene) => {
     setSavedScenes((prev) => {
@@ -41,10 +96,15 @@ export function SketchpadPage() {
       persistScenes(updated);
       return updated;
     });
+    setCurrentDraft(scene);
+    persistCurrentDraft(scene);
   }, []);
 
   const handleLoadScene = (scene: SavedScene) => {
+    setInjectedElements(null);
     setActiveScene(scene);
+    setCurrentDraft(scene);
+    persistCurrentDraft(scene);
     setEditorKey((k) => k + 1);
     setShowGallery(false);
   };
@@ -58,7 +118,10 @@ export function SketchpadPage() {
   };
 
   const handleNewCanvas = () => {
+    setInjectedElements(null);
     setActiveScene(null);
+    setCurrentDraft(null);
+    clearCurrentDraft();
     setEditorKey((k) => k + 1);
     setShowGallery(false);
   };
@@ -77,10 +140,70 @@ export function SketchpadPage() {
     }
   };
 
+  const handleEditorChange = useCallback(
+    (elements: readonly any[], appState: any, files: any) => {
+      const draftName = activeScene?.name || 'Draft';
+      const data = JSON.stringify({ elements, appState, files });
+      if (lastPersistedDraft.current === data) {
+        return;
+      }
+
+      const draft: SavedScene = {
+        name: draftName,
+        data,
+        thumbnail: activeScene?.thumbnail || '',
+        date: new Date().toLocaleString('fr-FR'),
+      };
+
+      lastPersistedDraft.current = data;
+      setCurrentDraft(draft);
+      persistCurrentDraft(draft);
+    },
+    [activeScene],
+  );
+
+  const handleGenerateCanvasDraft = async () => {
+    if (!aiPrompt.trim()) {
+      setAiError('Veuillez saisir un prompt pour générer un brouillon.');
+      return;
+    }
+
+    setAiError(null);
+    setAiLoading(true);
+
+    try {
+      const result = await challengesService.generateDraft({ prompt: aiPrompt, kind: 'CANVAS' });
+      if (!result || result.title === 'AI Draft Error' || !result.title?.trim()) {
+        throw new Error('AI service returned an invalid draft.');
+      }
+
+      setAiDraft(result as any);
+
+      if (result.excalidrawElements?.length > 0) {
+        setInjectedElements(result.excalidrawElements);
+        setEditorKey((k) => k + 1);
+        toast.success(`✏️ ${result.excalidrawElements.length} éléments dessinés sur le canvas`);
+      } else {
+        setInjectedElements(null);
+        toast.success('Brouillon Canvas AI généré');
+      }
+    } catch (err: any) {
+      const isServiceUnavailable = err?.response?.status === 503 || err?.status === 503;
+      const message = isServiceUnavailable
+        ? 'AI service temporarily unavailable, please retry.'
+        : err?.response?.data?.message || err?.message || 'Erreur lors de la génération du brouillon AI';
+
+      setAiError(message);
+      toast.error(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden">
       <ThemeEffects />
-      <Navbar />
+
 
       {/* Header bar */}
       <div className="bg-[var(--surface-1)] border-b border-[var(--border-default)] px-4 sm:px-6 lg:px-10">
@@ -98,6 +221,13 @@ export function SketchpadPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAiPanel((prev) => !prev)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-[var(--radius-md)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Générer avec AI</span>
+            </button>
             <button
               onClick={handleNewCanvas}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-white hover:opacity-90 transition-opacity"
@@ -120,6 +250,145 @@ export function SketchpadPage() {
           </div>
         </div>
       </div>
+
+      {showAiPanel && (
+  <div className="bg-[var(--surface-2)] border-b border-[var(--border-default)] px-4 py-4 sm:px-6 lg:px-10 max-h-[45vh] overflow-y-auto flex-shrink-0">
+    <div className="max-w-5xl mx-auto space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+            Génération de brouillon Canvas par AI
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Saisis un prompt, puis génère un brouillon de challenge Canvas avec le modèle AI.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleGenerateCanvasDraft}
+            disabled={aiLoading}
+            className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--brand-primary)] px-3 py-1.5 text-sm text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {aiLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Génération...
+              </>
+            ) : (
+              'Générer le brouillon AI'
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAiPanel(false)}
+            className="p-1.5 rounded-[var(--radius-md)] hover:bg-[var(--surface-1)] text-[var(--text-muted)]"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <textarea
+        rows={2}
+        value={aiPrompt}
+        onChange={(e) => setAiPrompt(e.target.value)}
+        placeholder="Décris le type de challenge Canvas..."
+        className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-1)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand-primary)]"
+      />
+
+      {aiError && (
+        <div className="rounded-[var(--radius-md)] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+          <p>{aiError}</p>
+          <button
+            type="button"
+            onClick={handleGenerateCanvasDraft}
+            disabled={aiLoading}
+            className="ml-3 shrink-0 rounded-[var(--radius-md)] border border-red-500 px-3 py-1 text-sm text-red-600 hover:bg-red-500/20 disabled:opacity-50"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {aiDraft && aiDraft.title !== 'AI Draft Error' && (
+        <details className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-1)] overflow-hidden">
+          <summary className="cursor-pointer px-4 py-3 flex items-center justify-between hover:bg-[var(--surface-2)] transition-colors">
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] inline">
+                Brouillon généré
+              </h3>
+              <span className="ml-2 text-sm text-[var(--text-secondary)]">
+                — {aiDraft.title}
+              </span>
+            </div>
+            <span className="text-xs text-[var(--text-muted)]">Cliquer pour développer</span>
+          </summary>
+
+          <div className="px-4 pb-4 pt-2 border-t border-[var(--border-default)]">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Titre</p>
+                <p className="mt-1 text-sm text-[var(--text-primary)]">{aiDraft.title}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Catégorie</p>
+                <p className="mt-1 text-sm text-[var(--text-primary)]">{aiDraft.category || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Difficulté</p>
+                <p className="mt-1 text-sm text-[var(--text-primary)]">{aiDraft.difficulty || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Hints</p>
+                <p className="mt-1 text-sm text-[var(--text-primary)]">
+                  {aiDraft.hints?.join(', ') || 'Aucun'}
+                </p>
+              </div>
+            </div>
+
+            {aiDraft.briefMd && (
+              <div className="mt-3">
+                <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Description</p>
+                <p className="mt-1 whitespace-pre-line text-sm text-[var(--text-primary)] max-h-40 overflow-y-auto">
+                  {aiDraft.briefMd}
+                </p>
+              </div>
+            )}
+
+            {aiDraft.deliverables && (
+              <div className="mt-3">
+                <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Livrables</p>
+                <p className="mt-1 whitespace-pre-line text-sm text-[var(--text-primary)]">
+                  {aiDraft.deliverables}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-4 px-4 pb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (aiDraft?.excalidrawElements?.length > 0) {
+                    setInjectedElements(aiDraft.excalidrawElements);
+                    setEditorKey((k) => k + 1);
+                    setShowAiPanel(false);
+                    toast.success('✏️ Éléments dessinés sur le canvas');
+                  } else {
+                    toast.error('Aucun élément canvas généré. Réessayez.');
+                  }
+                }}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--brand-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                <Sparkles className="w-4 h-4" />
+                Dessiner sur le Canvas
+              </button>
+            </div>
+          </div>
+        </details>
+      )}
+    </div>
+  </div>
+)}
 
       {/* Gallery overlay */}
       {showGallery && (
@@ -223,16 +492,9 @@ export function SketchpadPage() {
       <div key={editorKey} className="flex-1 min-h-0">
         <ExcalidrawEditor
           onSave={handleSave}
+          onChange={handleEditorChange}
           initialScenes={savedScenes}
-          initialData={
-            activeScene
-              ? {
-                  elements: JSON.parse(activeScene.data)?.elements,
-                  appState: JSON.parse(activeScene.data)?.appState,
-                  files: JSON.parse(activeScene.data)?.files,
-                }
-              : undefined
-          }
+          initialData={initialSceneData}
         />
       </div>
     </div>

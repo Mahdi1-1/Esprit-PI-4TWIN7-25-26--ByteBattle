@@ -1,15 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
 
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>ByteBattle UI/UX Design</title>
-    </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0B1020" />
+  <meta name="description" content="ByteBattle — Gamified competitive programming platform. Solve algorithm challenges, duel other developers in real-time 1v1, and compete in ICPC-style hackathons with an integrated Monaco IDE and AI assistant." />
+  <title>ByteBattle</title>
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
-  
+  <!-- Preconnect — réduit la latence DNS/TLS pour Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Fonts chargées en non-bloquant (display=swap + media=print trick) -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Chakra+Petch:wght@400;600;700&family=Press+Start+2P&family=Teko:wght@400;600;700&family=Barlow:wght@400;600;700&family=Noto+Sans+Arabic:wght@400;600&display=swap"
+    media="print"
+    onload="this.media='all'"
+  />
+  <noscript>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Chakra+Petch:wght@400;600;700&family=Press+Start+2P&family=Teko:wght@400;600;700&family=Barlow:wght@400;600;700&family=Noto+Sans+Arabic:wght@400;600&display=swap"
+    />
+  </noscript>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

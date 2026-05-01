@@ -3,11 +3,14 @@ import { Trophy, TrendingDown, TrendingUp } from 'lucide-react';
 interface MatchCardProps {
   opponent: string;
   opponentAvatar: string;
-  result: 'win' | 'loss';
-  eloDelta: number;
+  result: 'win' | 'loss' | 'draw';
+  eloDelta?: number;
   problem: string;
   duration: number;
   date: string;
+  difficulty?: string;
+  score?: string;
+  tests?: string;
 }
 
 export function MatchCard({
@@ -18,8 +21,13 @@ export function MatchCard({
   problem,
   duration,
   date,
+  difficulty,
+  score,
+  tests,
 }: MatchCardProps) {
   const isWin = result === 'win';
+  const isLoss = result === 'loss';
+  const isDraw = result === 'draw';
 
   return (
     <div
@@ -44,36 +52,59 @@ export function MatchCard({
             <div className="flex items-center gap-2">
               <span className="font-medium text-[var(--text-primary)]">{opponent}</span>
               {isWin && <Trophy className="w-4 h-4 text-[var(--brand-secondary)]" />}
+              {isDraw && <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--text-muted)]">Draw</span>}
             </div>
             <p className="text-caption text-[var(--text-muted)]">{date}</p>
           </div>
         </div>
 
         {/* Elo Delta */}
-        <div
-          className={`
-            flex items-center gap-1
-            px-3 py-1
-            rounded-[var(--radius-md)]
-            font-medium
-            ${isWin 
-              ? 'bg-[var(--state-success)]/10 text-[var(--state-success)]' 
-              : 'bg-[var(--state-error)]/10 text-[var(--state-error)]'
-            }
-          `}
-        >
-          {isWin ? (
-            <TrendingUp className="w-4 h-4" />
-          ) : (
-            <TrendingDown className="w-4 h-4" />
-          )}
-          <span>{isWin ? '+' : ''}{eloDelta}</span>
-        </div>
+        {typeof eloDelta === 'number' && (
+          <div
+            className={`
+              flex items-center gap-1
+              px-3 py-1
+              rounded-[var(--radius-md)]
+              font-medium
+              ${isWin
+                ? 'bg-[var(--state-success)]/10 text-[var(--state-success)]'
+                : isLoss
+                  ? 'bg-[var(--state-error)]/10 text-[var(--state-error)]'
+                  : 'bg-[var(--surface-2)] text-[var(--text-muted)]'
+              }
+            `}
+          >
+            {isWin ? (
+              <TrendingUp className="w-4 h-4" />
+            ) : (
+              <TrendingDown className="w-4 h-4" />
+            )}
+            <span>{isWin && eloDelta > 0 ? '+' : ''}{eloDelta}</span>
+          </div>
+        )}
       </div>
 
       {/* Match Details */}
       <div className="flex items-center gap-4 text-caption text-[var(--text-muted)]">
         <span className="font-medium text-[var(--text-secondary)]">{problem}</span>
+        {difficulty && (
+          <>
+            <span>•</span>
+            <span className="capitalize">{difficulty.toLowerCase()}</span>
+          </>
+        )}
+        {score && (
+          <>
+            <span>•</span>
+            <span>{score}</span>
+          </>
+        )}
+        {tests && (
+          <>
+            <span>•</span>
+            <span>{tests}</span>
+          </>
+        )}
         <span>•</span>
         <span>{duration}m {Math.floor((duration % 1) * 60)}s</span>
       </div>

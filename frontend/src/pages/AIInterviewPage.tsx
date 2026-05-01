@@ -1,120 +1,296 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { useLanguage } from '../context/LanguageContext';
 import {
   Bot, Send, Play, StopCircle, RotateCcw, Clock, Star, TrendingUp,
-  ChevronRight, Code2, MessageSquare, BarChart3, Mic, MicOff,
-  Sparkles, Target, Lightbulb, Award, BookOpen, ArrowLeft,
-  CheckCircle2, XCircle, AlertTriangle,
+  ChevronRight, ChevronLeft, Code2, MessageSquare, BarChart3, Mic, MicOff,
+  Sparkles, Target, Lightbulb, Award, BookOpen, ArrowLeft, Globe,
+  CheckCircle2, XCircle, AlertTriangle, ThumbsUp, ThumbsDown, Minus,
 } from 'lucide-react';
 import {
-  interviewTopics,
+  interviewDomains,
   difficultyLevels,
-  mockInterviewSession,
-  mockCompletedSession,
-  pastInterviews,
-  type InterviewTopic,
-  type InterviewDifficulty,
+  type InterviewDomain,
+  type InterviewLanguage,
   type InterviewMessage,
   type InterviewSession,
+  type InterviewFeedback,
   type InterviewSummary,
+  type CompetencyScore,
+  getVerdictStyling,
+  getDomainById,
 } from '../data/interviewData';
+import { interviewsService } from '../services/interviewsService';
+import { VoiceRecorder } from '../components/interview/VoiceRecorder';
+import { useVoiceSettings } from '../hooks/useVoiceSettings';
+import { AudioPlayButton } from '../components/interview/AudioPlayButton';
+import { useAudioPlayer } from '../hooks/useAudioPlayer';
+import { VoiceSettingsPanel } from '../components/interview/VoiceSettingsPanel';
 
 type ViewMode = 'setup' | 'interview' | 'review';
+type SetupStep = 'domain' | 'difficulty' | 'language';
 
 export function AIInterviewPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [viewMode, setViewMode] = useState<ViewMode>('setup');
-  const [selectedTopic, setSelectedTopic] = useState<InterviewTopic | null>(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<InterviewDifficulty | null>(null);
+  const [setupStep, setSetupStep] = useState<SetupStep>('domain');
+  const [selectedDomain, setSelectedDomain] = useState<InterviewDomain | null>(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<InterviewLanguage>('FR');
   const [session, setSession] = useState<InterviewSession | null>(null);
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [pastSessions, setPastSessions] = useState<any[]>([]);
+  const [pastSessionIndex, setPastSessionIndex] = useState(0);
+
+  // Voice Settings configuration
+  const { settings, updateSettings } = useVoiceSettings();
+
+  const player = useAudioPlayer({ sessionId: session?.id || '', settings });
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [session?.messages]);
 
-  const handleStartInterview = () => {
-    if (!selectedTopic || !selectedDifficulty) return;
-    setSession(mockInterviewSession);
+  useEffect(() => {
+    const fetchPastSessions = async () => {
+      try {
+        const res = await interviewsService.getSessions();
+        if (Array.isArray(res)) {
+          setPastSessions(res.map((s: any) => {
+            const score = s.feedback?.overallScore != null ? Math.round(s.feedback.overallScore * 10) : undefined;
+            return {
+              id: s.id,
+              topic: s.topic,
+              domain: s.domain,
+              difficulty: s.difficulty,
+              verdict: s.verdict,
+              score,
+              duration: s.duration || 30,
+              date: new Date(s.createdAt).toLocaleDateString(),
+            };
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load past sessions:', err);
+      }
+    };
+    fetchPastSessions();
+  }, []);
+
+  const handleStartInterview = async () => {
+    if (!selectedDomain || !selectedDifficulty || !selectedLanguage) return;
+    try {
+      const res = await interviewsService.start({
+        domain: selectedDomain,
+        difficulty: selectedDifficulty,
+        language: selectedLanguage,
+      });
+      if (res?.id) {
+        setSession({
+          id: res.id,
+          difficulty: res.difficulty || selectedDifficulty,
+          domain: res.domain || selectedDomain,
+          language: res.language || selectedLanguage,
+          topic: res.topic,
+          status: 'active',
+          tokensUsed: res.tokensUsed || 0,
+          duration: 30,
+          messages: (res.messages || []).map((m: any) => ({
+            id: m.id || `ai-${Date.now()}`,
+            role: m.role === 'assistant' ? 'ai' : m.role,
+            content: m.content,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            audioUrl: m.audioUrl,
+            isVoice: m.isVoice,
+          })),
+        });
+      } else {
+        console.error('Failed to start interview: no session returned');
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to start interview:', err);
+      return;
+    }
     setViewMode('interview');
   };
 
-  const handleSendMessage = () => {
-    if (!userInput.trim() || !session) return;
+  const processMessageSending = async (inputStr: string, isVoice = false, voiceAudioUrl?: string, originalBlobUrl?: string) => {
+    if (!inputStr.trim() || !session) return;
+
+    // Add user message to UI immediately
+    const userMsgId = `user-${Date.now()}`;
     const newMsg: InterviewMessage = {
-      id: `user-${Date.now()}`,
+      id: userMsgId,
       role: 'user',
-      content: userInput,
+      content: inputStr,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isVoice,
+      audioUrl: originalBlobUrl,
     };
+
     setSession({ ...session, messages: [...session.messages, newMsg] });
     setUserInput('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      let aiResponseContent = '';
+      let replyAudioUrl = voiceAudioUrl;
+
+      const res = await interviewsService.sendMessage(session.id, { content: inputStr });
+      if (res?.reply) {
+        aiResponseContent = res.reply;
+
+        const aiMsg: InterviewMessage = {
+          id: `ai-${Date.now()}`,
+          role: 'ai',
+          content: aiResponseContent,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          audioUrl: replyAudioUrl,
+        };
+
+        setSession((prev) => {
+          if (!prev) return null;
+          const newMessages = [...prev.messages, aiMsg];
+          if (settings.autoPlay) {
+            setTimeout(() => {
+              player.play(newMessages.length - 1, aiResponseContent, replyAudioUrl);
+            }, 100);
+          }
+          return { ...prev, messages: newMessages };
+        });
+
+      } else {
+        throw new Error('No reply');
+      }
+    } catch (err) {
+      console.error('Failed to send message:', err);
       const aiMsg: InterviewMessage = {
         id: `ai-${Date.now()}`,
         role: 'ai',
-        content: "That's a good approach! Let me follow up on that. Can you think of any edge cases that might break your solution? Consider empty inputs, duplicates, and very large datasets.",
+        content: "Sorry, I couldn't process your message. Please try again.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setSession((prev) => prev ? { ...prev, messages: [...prev.messages, aiMsg] } : null);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
-  const handleEndInterview = () => {
-    setSession(mockCompletedSession);
+  const handleSendMessage = () => {
+    processMessageSending(userInput, false);
+  };
+
+  const handleVoiceMessageSent = (data: { transcript: string; audioUrl?: string; originalBlobUrl?: string }) => {
+    if (!data.audioUrl) {
+      processMessageSending(data.transcript, true, undefined, data.originalBlobUrl);
+    } else {
+      processMessageSending(data.transcript, true, data.audioUrl, data.originalBlobUrl);
+    }
+  };
+
+  const handleEndInterview = async () => {
+    if (session) {
+      try {
+        const res = await interviewsService.endInterview(session.id);
+        if (res?.feedback) {
+          const scaledFeedback = {
+            ...res.feedback,
+            overallScore: typeof res.feedback.overallScore === 'number' ? Math.round(res.feedback.overallScore * 10) : res.feedback.overallScore,
+            technicalScore: typeof res.feedback.technicalScore === 'number' ? Math.round(res.feedback.technicalScore * 10) : res.feedback.technicalScore,
+            communicationScore: typeof res.feedback.communicationScore === 'number' ? Math.round(res.feedback.communicationScore * 10) : res.feedback.communicationScore,
+            problemSolvingScore: typeof res.feedback.problemSolvingScore === 'number' ? Math.round(res.feedback.problemSolvingScore * 10) : res.feedback.problemSolvingScore,
+            competencyScores: Array.isArray(res.feedback.competencyScores)
+              ? res.feedback.competencyScores.map((c: any) => ({ ...c, score: typeof c.score === 'number' ? Math.round(c.score * 10) : c.score }))
+              : res.feedback.competencyScores,
+          };
+          setSession({ ...session, status: 'completed', feedback: scaledFeedback, verdict: res.verdict });
+        } else {
+          setSession({ ...session, status: 'completed' });
+        }
+      } catch (err) {
+        console.error('Failed to end interview:', err);
+        setSession({ ...session, status: 'completed' });
+      }
+    }
     setViewMode('review');
   };
 
-  if (viewMode === 'review' && session?.summary) {
-    return <ReviewView summary={session.summary} onBack={() => setViewMode('setup')} />;
+  if (viewMode === 'review' && session?.feedback) {
+    const summary: InterviewSummary = {
+      ...session.feedback,
+      verdictLabel: getVerdictStyling(session.feedback.verdict).label,
+      verdictColor: getVerdictStyling(session.feedback.verdict).color,
+    };
+    return <ReviewView
+      summary={summary}
+      domain={session.domain}
+      difficulty={session.difficulty}
+      onBack={() => {
+        setViewMode('setup');
+        setSelectedDomain(null);
+        setSelectedDifficulty(null);
+        setSetupStep('domain');
+      }}
+    />;
   }
 
   if (viewMode === 'interview' && session) {
+    const domainInfo = getDomainById(session.domain);
     return (
       <Layout>
-        <Navbar />
+
         <div className="w-full px-4 sm:px-6 lg:px-10 py-4">
           {/* Interview Header */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center glow">
+              <div className="w-10 h-10 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center glow shrink-0">
                 <Bot className="w-6 h-6 text-[var(--bg-primary)]" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-[var(--text-primary)] font-title">{t('interview.title')}</h2>
                 <p className="text-xs text-[var(--text-muted)]">
-                  {interviewTopics.find((tp) => tp.id === session.topic)?.label} • {session.difficulty}
+                  {domainInfo?.icon} {domainInfo?.label} • {session.difficulty}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)]">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <VoiceSettingsPanel settings={settings} updateSettings={updateSettings} />
+
+              <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] border-l border-[var(--border-default)] pl-3">
+                <Globe className="w-4 h-4" />
+                <span>{session.language === 'EN' ? '🇬🇧 EN' : '🇫🇷 FR'}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] border-l border-[var(--border-default)] pl-3">
                 <Clock className="w-4 h-4" />
                 <span>{session.duration} min</span>
               </div>
-              <Button variant="destructive" size="sm" onClick={handleEndInterview}>
+              <Button variant="destructive" size="sm" onClick={handleEndInterview} className="ml-2">
                 <StopCircle className="w-4 h-4" />
                 {t('interview.end')}
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" style={{ height: 'calc(100vh - 160px)' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[calc(100vh-200px)] lg:min-h-[calc(100vh-160px)]">
             {/* Chat Area */}
             <div className="lg:col-span-2 flex flex-col theme-card overflow-hidden">
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {session.messages.map((msg) => (
-                  <ChatMessage key={msg.id} message={msg} />
+                {session.messages.map((msg, index) => (
+                  <ChatMessage
+                    key={msg.id}
+                    message={msg}
+                    playerState={player.currentMessageIndex === index ? player.state : 'idle'}
+                    onPlay={() => player.play(index, msg.content, msg.audioUrl)}
+                    onPause={player.pause}
+                    onResume={player.resume}
+                  />
                 ))}
                 {isTyping && (
                   <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
@@ -131,30 +307,55 @@ export function AIInterviewPage() {
 
               {/* Input */}
               <div className="border-t border-[var(--border-default)] p-3">
-                <div className="flex gap-2">
+                <div className="flex gap-2 relative">
+                  <VoiceRecorder
+                    sessionId={session.id}
+                    settings={settings}
+                    onMessageSent={handleVoiceMessageSent}
+                    disabled={isTyping}
+                  />
+
                   <textarea
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
                     placeholder={t('interview.typePlaceholder')}
-                    rows={2}
+                    rows={1}
                     className="flex-1 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-md)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--brand-primary)] transition-colors resize-none"
+                    disabled={isTyping}
                   />
-                  <div className="flex flex-col gap-1">
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!userInput.trim()}
-                      className="flex-1 px-3 rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-[var(--bg-primary)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
+
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!userInput.trim() || isTyping}
+                    className="w-10 flex-shrink-0 flex justify-center items-center rounded-[var(--radius-md)] bg-[var(--brand-primary)] text-[var(--bg-primary)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Side Panel */}
             <div className="space-y-4 overflow-y-auto">
+              {/* Domain Info */}
+              {domainInfo && (
+                <div className="theme-card p-4" style={{ borderLeft: `4px solid ${domainInfo.color}` }}>
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-2">
+                    <span className="text-xl">{domainInfo.icon}</span>
+                    {domainInfo.label}
+                  </h3>
+                  <p className="text-xs text-[var(--text-secondary)] mb-3">{domainInfo.description}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {domainInfo.subTopics.slice(0, 4).map(sub => (
+                      <span key={sub} className="text-[10px] px-2 py-1 rounded-full bg-[var(--surface-2)] text-[var(--text-muted)]">
+                        {sub}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Tips */}
               <div className="theme-card p-4">
                 <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-3">
@@ -196,162 +397,190 @@ export function AIInterviewPage() {
     );
   }
 
-  // Setup View
+  // Setup View with 3-step flow
   return (
     <Layout>
-      <Navbar />
-      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
+
+      <div className="w-full px-4 sm:px-8 lg:px-16 py-12" style={{ lineHeight: 1.6 }}>
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-[var(--radius-lg)] bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center glow">
-            <Bot className="w-10 h-10 text-[var(--bg-primary)]" />
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center glow" style={{ borderRadius: 16 }}>
+            <Bot className="w-11 h-11 text-[var(--bg-primary)]" />
           </div>
-          <h1 className="text-3xl font-bold gradient-brand-text font-title">{t('interview.title')}</h1>
-          <p className="text-[var(--text-muted)] mt-2 max-w-lg mx-auto">{t('interview.subtitle')}</p>
+          <h1 className="text-4xl font-bold gradient-brand-text font-title">{t('interview.title')}</h1>
+          <p className="text-[var(--text-muted)] mt-3 max-w-xl mx-auto text-base">{t('interview.subtitle')}</p>
         </div>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          {[
-            { label: t('interview.totalSessions'), value: '12', icon: <MessageSquare className="w-5 h-5" /> },
-            { label: t('interview.avgScore'), value: '81%', icon: <Star className="w-5 h-5" /> },
-            { label: t('interview.bestScore'), value: '91%', icon: <Award className="w-5 h-5" /> },
-            { label: t('interview.streak'), value: '5 days', icon: <TrendingUp className="w-5 h-5" /> },
-          ].map((stat) => (
-            <div key={stat.label} className="theme-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--brand-primary)]/10 flex items-center justify-center text-[var(--brand-primary)]">
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-xl font-bold text-[var(--text-primary)]">{stat.value}</p>
-                <p className="text-xs text-[var(--text-muted)]">{stat.label}</p>
-              </div>
-            </div>
-          ))}
+        {/* Step Indicator */}
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center gap-4">
+            {(['domain', 'difficulty', 'language'] as SetupStep[]).map((step, idx) => (
+              <React.Fragment key={step}>
+                <div className={`flex items-center gap-2 ${setupStep === step ? 'text-[var(--brand-primary)]' :
+                  (setupStep === 'difficulty' && idx === 0) || (setupStep === 'language' && idx <= 1)
+                    ? 'text-[var(--state-success)]' : 'text-[var(--text-muted)]'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${setupStep === step
+                    ? 'bg-[var(--brand-primary)] text-[var(--bg-primary)]'
+                    : (setupStep === 'difficulty' && idx === 0) || (setupStep === 'language' && idx <= 1)
+                      ? 'bg-[var(--state-success)] text-white'
+                      : 'bg-[var(--surface-2)]'
+                    }`}>
+                    {idx + 1}
+                  </div>
+                  <span className="text-sm font-medium hidden sm:inline">
+                    {step === 'domain' ? 'Domain' : step === 'difficulty' ? 'Difficulty' : 'Language'}
+                  </span>
+                </div>
+                {idx < 2 && <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        {/* Setup Form */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Topic Selection */}
-          <div className="lg:col-span-2 space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-[var(--brand-primary)]" />
-                {t('interview.selectTopic')}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {interviewTopics.map((topic) => (
-                  <button
-                    key={topic.id}
-                    onClick={() => setSelectedTopic(topic.id)}
-                    className={`text-left p-4 rounded-[var(--card-radius)] border transition-all ${
-                      selectedTopic === topic.id
-                        ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/5 ring-1 ring-[var(--brand-primary)]/20'
-                        : 'border-[var(--border-default)] bg-[var(--surface-1)] hover:border-[var(--brand-primary)]/40'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl">{topic.icon}</span>
-                      <div>
-                        <h3 className="font-medium text-[var(--text-primary)]">{topic.label}</h3>
-                        <p className="text-xs text-[var(--text-muted)]">{topic.questionCount} questions</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-[var(--text-secondary)]">{topic.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Difficulty */}
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5 text-[var(--brand-primary)]" />
-                {t('interview.selectDifficulty')}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {difficultyLevels.map((diff) => (
-                  <button
-                    key={diff.id}
-                    onClick={() => setSelectedDifficulty(diff.id)}
-                    className={`text-left p-4 rounded-[var(--card-radius)] border transition-all ${
-                      selectedDifficulty === diff.id
-                        ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/5 ring-1 ring-[var(--brand-primary)]/20'
-                        : 'border-[var(--border-default)] bg-[var(--surface-1)] hover:border-[var(--brand-primary)]/40'
-                    }`}
-                  >
-                    <h3 className="font-medium text-[var(--text-primary)] mb-1">{diff.label}</h3>
-                    <p className="text-xs text-[var(--text-secondary)]">{diff.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Start Button */}
-            <div className="pt-4">
-              <Button
-                variant="primary"
-                size="lg"
-                disabled={!selectedTopic || !selectedDifficulty}
-                onClick={handleStartInterview}
-                className="w-full md:w-auto glow-hover"
-              >
-                <Play className="w-5 h-5" />
-                {t('interview.startInterview')}
-              </Button>
-            </div>
-          </div>
-
-          {/* Past Interviews */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[var(--brand-primary)]" />
-              {t('interview.pastSessions')}
+        {/* Step 1: Domain Selection */}
+        {setupStep === 'domain' && (
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-5 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-[var(--brand-primary)]" />
+              Select your interview domain
             </h2>
-            <div className="space-y-3">
-              {pastInterviews.map((pi) => {
-                const topicInfo = interviewTopics.find((tp) => tp.id === pi.topic);
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {interviewDomains.map((domain) => (
+                <button
+                  key={domain.id}
+                  onClick={() => {
+                    setSelectedDomain(domain.id);
+                    setSetupStep('difficulty');
+                  }}
+                  className="text-left border transition-all hover:scale-[1.02]"
+                  style={{
+                    padding: '20px 16px',
+                    borderRadius: 16,
+                    borderColor: selectedDomain === domain.id ? domain.color : 'var(--border-default)',
+                    backgroundColor: selectedDomain === domain.id ? `${domain.color}10` : 'var(--surface-1)',
+                  }}
+                >
+                  <div className="text-3xl mb-3">{domain.icon}</div>
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{domain.label}</h3>
+                  <p className="text-[11px] text-[var(--text-muted)]">{domain.subTopics.length} topics</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Difficulty Selection */}
+        {setupStep === 'difficulty' && (
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={() => setSetupStep('domain')}
+              className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors mb-6"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to domain selection
+            </button>
+
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+              <Target className="w-5 h-5 text-[var(--brand-primary)]" />
+              Select difficulty level
+            </h2>
+            <p className="text-sm text-[var(--text-muted)] mb-6">
+              {getDomainById(selectedDomain!)?.icon} {getDomainById(selectedDomain!)?.label}
+            </p>
+
+            <div className="space-y-4">
+              {difficultyLevels.map((diff) => {
+                const domainInfo = getDomainById(selectedDomain!);
+                const duration = domainInfo?.estimatedDurations[diff.id as keyof typeof domainInfo.estimatedDurations];
                 return (
                   <button
-                    key={pi.id}
+                    key={diff.id}
                     onClick={() => {
-                      setSession(mockCompletedSession);
-                      setViewMode('review');
+                      setSelectedDifficulty(diff.id);
+                      setSetupStep('language');
                     }}
-                    className="w-full text-left theme-card p-4 hover:border-[var(--brand-primary)]/40 transition-all"
+                    className="w-full text-left border transition-all"
+                    style={{
+                      padding: 24,
+                      borderRadius: 16,
+                      borderColor: selectedDifficulty === diff.id ? diff.color : 'var(--border-default)',
+                      backgroundColor: selectedDifficulty === diff.id ? `${diff.color}10` : 'var(--surface-1)',
+                    }}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{topicInfo?.icon}</span>
-                        <span className="text-sm font-medium text-[var(--text-primary)]">{topicInfo?.label}</span>
-                      </div>
-                      <span className={`text-sm font-bold ${pi.score >= 80 ? 'text-[var(--state-success)]' : pi.score >= 60 ? 'text-[var(--state-warning)]' : 'text-[var(--state-error)]'}`}>
-                        {pi.score}%
-                      </span>
+                      <h3 className="text-base font-semibold text-[var(--text-primary)]">{diff.label}</h3>
+                      <span className="text-sm text-[var(--text-muted)]">{duration}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
-                      <span className="capitalize">{pi.difficulty}</span>
-                      <span>•</span>
-                      <span>{pi.duration} min</span>
-                      <span>•</span>
-                      <span>{pi.date}</span>
-                    </div>
-                    {/* Score bar */}
-                    <div className="mt-2 h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${pi.score}%`,
-                          backgroundColor: pi.score >= 80 ? 'var(--state-success)' : pi.score >= 60 ? 'var(--state-warning)' : 'var(--state-error)',
-                        }}
-                      />
-                    </div>
+                    <p className="text-sm text-[var(--text-secondary)]">{diff.description}</p>
                   </button>
                 );
               })}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Step 3: Language Selection */}
+        {setupStep === 'language' && (
+          <div className="max-w-xl mx-auto">
+            <button
+              onClick={() => setSetupStep('difficulty')}
+              className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors mb-6"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to difficulty selection
+            </button>
+
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-5 flex items-center gap-2">
+              <Globe className="w-5 h-5 text-[var(--brand-primary)]" />
+              Select interview language
+            </h2>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setSelectedLanguage('FR')}
+                className={`p-6 border-2 transition-all ${selectedLanguage === 'FR'
+                  ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/10'
+                  : 'border-[var(--border-default)] bg-[var(--surface-1)] hover:border-[var(--brand-primary)]/40'}`}
+                style={{ borderRadius: 16 }}
+              >
+                <div className="text-4xl mb-3">🇫🇷</div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">French</h3>
+                <p className="text-sm text-[var(--text-muted)]">French interview</p>
+              </button>
+              <button
+                onClick={() => setSelectedLanguage('EN')}
+                className={`p-6 border-2 transition-all ${selectedLanguage === 'EN'
+                  ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/10'
+                  : 'border-[var(--border-default)] bg-[var(--surface-1)] hover:border-[var(--brand-primary)]/40'}`}
+                style={{ borderRadius: 16 }}
+              >
+                <div className="text-4xl mb-3">🇬🇧</div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">English</h3>
+                <p className="text-sm text-[var(--text-muted)]">English interview</p>
+              </button>
+            </div>
+
+            {/* Start Button */}
+            <div className="mt-8 text-center">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleStartInterview}
+                className="glow-hover"
+                style={{ paddingInline: 48, paddingBlock: 18, borderRadius: 16, fontSize: '1.1rem' }}
+              >
+                <Play className="w-6 h-6" />
+                Start Interview
+              </Button>
+              <p className="text-sm text-[var(--text-muted)] mt-3">
+                {getDomainById(selectedDomain!)?.icon} {getDomainById(selectedDomain!)?.label} • {selectedDifficulty} • {selectedLanguage === 'FR' ? '🇫🇷 French' : '🇬🇧 English'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom spacing */}
+        <div className="h-16 w-full"></div>
       </div>
     </Layout>
   );
@@ -359,7 +588,15 @@ export function AIInterviewPage() {
 
 /* ───── Chat Message Component ───── */
 
-function ChatMessage({ message, ...rest }: { message: InterviewMessage } & React.HTMLAttributes<HTMLDivElement>) {
+interface ChatMessageProps extends React.HTMLAttributes<HTMLDivElement> {
+  message: InterviewMessage & { audioUrl?: string, isVoice?: boolean };
+  playerState?: 'idle' | 'loading' | 'playing' | 'paused';
+  onPlay?: () => void;
+  onPause?: () => void;
+  onResume?: () => void;
+}
+
+function ChatMessage({ message, playerState = 'idle', onPlay, onPause, onResume, ...rest }: ChatMessageProps) {
   if (message.role === 'system') {
     return (
       <div className="text-center py-3">
@@ -374,20 +611,55 @@ function ChatMessage({ message, ...rest }: { message: InterviewMessage } & React
 
   return (
     <div className={`flex gap-3 ${isAI ? '' : 'flex-row-reverse'}`}>
-      <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${
-        isAI
-          ? 'bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]'
-          : 'bg-[var(--surface-3)]'
-      }`}>
+      <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${isAI
+        ? 'bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]'
+        : 'bg-[var(--surface-3)]'
+        }`}>
         {isAI ? <Bot className="w-5 h-5 text-[var(--bg-primary)]" /> : <span className="text-sm">👤</span>}
       </div>
       <div className={`max-w-[75%] space-y-2 ${isAI ? '' : 'items-end'}`}>
-        <div className={`px-4 py-3 rounded-[var(--radius-lg)] text-sm leading-relaxed whitespace-pre-wrap ${
-          isAI
-            ? 'bg-[var(--surface-1)] border border-[var(--border-default)] text-[var(--text-primary)]'
-            : 'bg-[var(--brand-primary)] text-[var(--bg-primary)]'
-        }`}>
+        <div className={`px-4 py-3 rounded-[var(--radius-lg)] text-sm leading-relaxed whitespace-pre-wrap flex flex-col relative group ${isAI
+          ? 'bg-[var(--surface-1)] border border-[var(--border-default)] text-[var(--text-primary)] pl-12'
+          : 'bg-[var(--brand-primary)] text-[var(--bg-primary)]'
+          }`}>
+
+          {isAI && onPlay && onPause && onResume && (
+            <div className="absolute left-3 top-3">
+              <AudioPlayButton
+                isCurrentMessage={playerState !== 'idle'}
+                state={playerState}
+                onPlay={onPlay}
+                onPause={onPause}
+                onResume={onResume}
+              />
+            </div>
+          )}
+
+          {message.isVoice && !isAI && (
+            <div className="flex items-center gap-1.5 mb-2 text-xs opacity-90 border-b border-[var(--bg-primary)]/20 pb-1.5">
+              <Mic className="w-3.5 h-3.5" />
+              <span>Voice message transcribed</span>
+              {message.audioUrl && (
+                <button
+                  onClick={() => {
+                    const audio = new Audio(message.audioUrl);
+                    audio.play();
+                  }}
+                  className="ml-auto p-1 hover:bg-white/20 rounded-full transition-colors"
+                  title="Replay your message"
+                >
+                  <Play className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
           {message.content}
+
+          {message.audioUrl && isAI && (
+            <div className="mt-2 pt-2 border-t border-[var(--border-default)] opacity-90">
+              <audio controls src={message.audioUrl} className="h-8 max-w-[200px]" />
+            </div>
+          )}
         </div>
 
         {/* Code Block */}
@@ -406,9 +678,8 @@ function ChatMessage({ message, ...rest }: { message: InterviewMessage } & React
         {/* Feedback Badge */}
         {message.feedback && (
           <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-            <span className={`font-medium ${
-              message.feedback.score >= 80 ? 'text-[var(--state-success)]' : message.feedback.score >= 60 ? 'text-[var(--state-warning)]' : 'text-[var(--state-error)]'
-            }`}>
+            <span className={`font-medium ${message.feedback.score >= 80 ? 'text-[var(--state-success)]' : message.feedback.score >= 60 ? 'text-[var(--state-warning)]' : 'text-[var(--state-error)]'
+              }`}>
               Score: {message.feedback.score}/100
             </span>
           </div>
@@ -422,15 +693,32 @@ function ChatMessage({ message, ...rest }: { message: InterviewMessage } & React
 
 /* ───── Review View ───── */
 
-function ReviewView({ summary, onBack }: { summary: InterviewSummary; onBack: () => void }) {
+interface ReviewViewProps {
+  summary: InterviewSummary;
+  domain: InterviewDomain;
+  difficulty: string;
+  onBack: () => void;
+}
+
+function ReviewView({ summary, domain, difficulty, onBack }: ReviewViewProps) {
   const { t } = useLanguage();
+  const domainInfo = getDomainById(domain);
+  const verdictStyle = getVerdictStyling(summary.verdict);
 
   const scoreColor = (score: number) =>
     score >= 80 ? 'var(--state-success)' : score >= 60 ? 'var(--state-warning)' : 'var(--state-error)';
 
+  const getVerdictIcon = (verdict: string) => {
+    switch (verdict) {
+      case 'HIRE': return <ThumbsUp className="w-5 h-5" />;
+      case 'NO_HIRE': return <ThumbsDown className="w-5 h-5" />;
+      default: return <Minus className="w-5 h-5" />;
+    }
+  };
+
   return (
     <Layout>
-      <Navbar />
+
       <div className="max-w-[960px] mx-auto px-6 lg:px-10 py-8">
         <button
           onClick={onBack}
@@ -440,9 +728,27 @@ function ReviewView({ summary, onBack }: { summary: InterviewSummary; onBack: ()
           {t('interview.backToSetup')}
         </button>
 
-        {/* Overall Score */}
+        {/* Domain & Difficulty Header */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <span className="text-2xl">{domainInfo?.icon}</span>
+          <span className="text-lg font-semibold text-[var(--text-primary)]">{domainInfo?.label}</span>
+          <span className="text-[var(--text-muted)]">•</span>
+          <span className="text-lg text-[var(--text-secondary)] capitalize">{difficulty}</span>
+        </div>
+
+        {/* Overall Score + Verdict */}
         <div className="theme-card p-8 text-center mb-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 font-title">{t('interview.reviewTitle')}</h2>
+
+          {/* Verdict Badge */}
+          <div
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full mb-6"
+            style={{ backgroundColor: verdictStyle.bgColor, color: verdictStyle.color }}
+          >
+            {getVerdictIcon(summary.verdict)}
+            <span className="text-lg font-bold">{verdictStyle.label}</span>
+          </div>
+
           <div
             className="w-28 h-28 mx-auto rounded-full border-4 flex items-center justify-center mb-4"
             style={{ borderColor: scoreColor(summary.overallScore) }}
@@ -457,9 +763,9 @@ function ReviewView({ summary, onBack }: { summary: InterviewSummary; onBack: ()
         {/* Score Breakdown */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {[
-            { label: t('interview.technical'), score: summary.technicalScore, icon: <Code2 className="w-5 h-5" /> },
-            { label: t('interview.communication'), score: summary.communicationScore, icon: <MessageSquare className="w-5 h-5" /> },
-            { label: t('interview.problemSolving'), score: summary.problemSolvingScore, icon: <Lightbulb className="w-5 h-5" /> },
+            { label: t('interview.technical'), score: summary.technicalScore ?? 0, icon: <Code2 className="w-5 h-5" /> },
+            { label: t('interview.communication'), score: summary.communicationScore ?? 0, icon: <MessageSquare className="w-5 h-5" /> },
+            { label: t('interview.problemSolving'), score: summary.problemSolvingScore ?? 0, icon: <Lightbulb className="w-5 h-5" /> },
           ].map((item) => (
             <div key={item.label} className="theme-card p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -476,6 +782,32 @@ function ReviewView({ summary, onBack }: { summary: InterviewSummary; onBack: ()
             </div>
           ))}
         </div>
+
+        {/* Competency Scores */}
+        {summary.competencyScores && summary.competencyScores.length > 0 && (
+          <div className="theme-card p-5 mb-6">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 mb-4">
+              <BarChart3 className="w-4 h-4 text-[var(--brand-primary)]" />
+              Competency Breakdown
+            </h3>
+            <div className="space-y-3">
+              {summary.competencyScores.map((comp: CompetencyScore, idx: number) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <span className="text-sm text-[var(--text-secondary)] w-40">{comp.competency}</span>
+                  <div className="flex-1 h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${comp.score * 10}%`, backgroundColor: scoreColor(comp.score) }}
+                    />
+                  </div>
+                  <span className="text-sm font-medium w-8 text-right" style={{ color: scoreColor(comp.score) }}>
+                    {comp.score}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Strengths & Improvements */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -509,13 +841,44 @@ function ReviewView({ summary, onBack }: { summary: InterviewSummary; onBack: ()
           </div>
         </div>
 
-        {/* Recommendation */}
+        {/* Recommended Resources */}
+        {summary.recommendedResources && summary.recommendedResources.length > 0 && (
+          <div className="theme-card p-5 mb-6">
+            <h3 className="text-sm font-semibold text-[var(--brand-primary)] flex items-center gap-2 mb-3">
+              <BookOpen className="w-4 h-4" />
+              Recommended Resources
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {summary.recommendedResources.map((resource, idx) => (
+                <a
+                  key={idx}
+                  href={resource.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 bg-[var(--surface-2)] hover:bg-[var(--brand-primary)]/10 rounded-[var(--radius-md)] transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[var(--brand-primary)]/10 flex items-center justify-center">
+                    {resource.type === 'course' ? <BookOpen className="w-4 h-4 text-[var(--brand-primary)]" /> :
+                      resource.type === 'article' ? <Code2 className="w-4 h-4 text-[var(--brand-primary)]" /> :
+                        <Target className="w-4 h-4 text-[var(--brand-primary)]" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{resource.title}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] uppercase">{resource.type}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Closing Message */}
         <div className="theme-card p-5">
           <h3 className="text-sm font-semibold text-[var(--brand-primary)] flex items-center gap-2 mb-2">
             <Sparkles className="w-4 h-4" />
-            {t('interview.recommendation')}
+            Final Words
           </h3>
-          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{summary.recommendation}</p>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{summary.closingMessage}</p>
         </div>
 
         {/* Actions */}

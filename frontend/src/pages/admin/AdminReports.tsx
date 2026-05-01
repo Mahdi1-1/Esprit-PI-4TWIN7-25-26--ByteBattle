@@ -1,18 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { Breadcrumb, StatusChip, FilterBar } from '../../components/admin/AdminComponents';
-import { Search, Flag, AlertTriangle, CheckCircle, X } from 'lucide-react';
-import { reports, Report } from '../../data/adminData';
+import { Search, Flag, AlertTriangle, CheckCircle, X, Loader } from 'lucide-react';
+import { type Report } from '../../data/adminData';
+import { adminService } from '../../services/adminService';
 
 export function AdminReports() {
-  const [reportsList] = useState<Report[]>(reports);
+  const [reportsList, setReportsList] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
 
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const res = await adminService.getReports();
+        const data = Array.isArray(res) ? res : res.data || [];
+        setReportsList(data);
+      } catch (err) {
+        console.error('Failed to load reports:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, []);
+
   const filteredReports = reportsList.filter((report) => {
     const matchesSearch =
-      report.reporter.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.target.toLowerCase().includes(searchTerm.toLowerCase());
+      report.reporterId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.targetId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || report.type === typeFilter;
     return matchesSearch && matchesType;
   });
@@ -97,8 +114,8 @@ export function AdminReports() {
                         <span className="text-sm text-[var(--text-primary)]">{report.type}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-[var(--text-primary)]">{report.reporter}</td>
-                    <td className="px-4 py-3 text-sm text-[var(--text-primary)]">{report.target}</td>
+                    <td className="px-4 py-3 text-sm text-[var(--text-primary)]">{report.reporterId}</td>
+                    <td className="px-4 py-3 text-sm text-[var(--text-primary)]">{report.targetId}</td>
                     <td className="px-4 py-3 text-sm text-[var(--text-secondary)] max-w-xs truncate">
                       {report.reason}
                     </td>

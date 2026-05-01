@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'NodeJS-20'
+    }
+
+    environment {
+        SCANNER_HOME = tool('SonarQubeScanner')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('backend') {
+                    sh 'npm install -g pnpm'
+                    sh 'pnpm install --frozen-lockfile'
+                }
+            }
+        }
+
+        stage('Prisma Generate') {
+            steps {
+                dir('backend') {
+                    sh 'npx prisma generate'
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                dir('backend') {
+                    sh 'pnpm run lint || true'
+                }
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                dir('backend') {
+                    sh 'pnpm run test -- --passWithNoTests --coverage'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                dir('backend') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh "${SCANNER_HOME}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo '✅ Backend CI pipeline completed successfully!'
+        }
+        failure {
+            echo '❌ Backend CI pipeline failed!'
+        }
+    }
+}

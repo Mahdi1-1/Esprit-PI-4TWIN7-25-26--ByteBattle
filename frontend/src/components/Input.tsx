@@ -1,12 +1,14 @@
-import { InputHTMLAttributes, useState } from 'react';
+import React, { InputHTMLAttributes, SelectHTMLAttributes, useState } from 'react';
 import { Eye, EyeOff, Search } from 'lucide-react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  hint?: string;
+  className?: string;
 }
 
-export function Input({ label, error, className = '', ...props }: InputProps) {
+export function Input({ label, error, hint, className = '', ...props }: InputProps) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
@@ -30,6 +32,9 @@ export function Input({ label, error, className = '', ...props }: InputProps) {
         `}
         {...props}
       />
+      {hint && !error && (
+        <p className="text-caption text-[var(--text-muted)]">{hint}</p>
+      )}
       {error && (
         <p className="text-caption text-[var(--state-error)]">{error}</p>
       )}
@@ -37,7 +42,7 @@ export function Input({ label, error, className = '', ...props }: InputProps) {
   );
 }
 
-export function PasswordInput({ label, error, className = '', ...props }: InputProps) {
+export function PasswordInput({ label, error, hint, className = '', ...props }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -74,6 +79,9 @@ export function PasswordInput({ label, error, className = '', ...props }: InputP
           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
+      {hint && !error && (
+        <p className="text-caption text-[var(--text-muted)]">{hint}</p>
+      )}
       {error && (
         <p className="text-caption text-[var(--state-error)]">{error}</p>
       )}
@@ -81,33 +89,44 @@ export function PasswordInput({ label, error, className = '', ...props }: InputP
   );
 }
 
-export function SearchInput({ className = '', ...props }: InputHTMLAttributes<HTMLInputElement>) {
+export function SearchInput({ className = '', label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
   return (
-    <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-      <input
-        type="search"
-        className={`
-          h-10 pl-10 pr-3
-          w-full
-          bg-[var(--surface-1)]
-          border border-[var(--border-default)]
-          rounded-[var(--radius-md)]
-          text-[var(--text-primary)]
-          placeholder:text-[var(--text-muted)]
-          focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent
-          transition-all duration-150
-          ${className}
-        `}
-        {...props}
-      />
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <label className="text-[0.875rem] font-medium text-[var(--text-primary)]">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+        <input
+          type="search"
+          className={`
+            h-10 pl-10 pr-3
+            w-full
+            bg-[var(--surface-1)]
+            border border-[var(--border-default)]
+            rounded-[var(--radius-md)]
+            text-[var(--text-primary)]
+            placeholder:text-[var(--text-muted)]
+            focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent
+            transition-all duration-150
+            ${className}
+          `}
+          {...props}
+        />
+      </div>
     </div>
   );
 }
 
-interface SelectProps extends InputHTMLAttributes<HTMLSelectElement> {
+interface SelectProps {
   label?: string;
   options: { value: string; label: string }[];
+  className?: string;
+  value?: string | number | readonly string[];
+  onChange?: React.ChangeEventHandler<HTMLSelectElement>;
+  [key: string]: any;
 }
 
 export function Select({ label, options, className = '', ...props }: SelectProps) {
@@ -133,7 +152,7 @@ export function Select({ label, options, className = '', ...props }: SelectProps
         {...props}
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} style={{ backgroundColor: 'var(--surface-1)', color: 'var(--text-primary)' }}>
             {option.label}
           </option>
         ))}

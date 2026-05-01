@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: judge-deployment
+  namespace: bytebattle
+  labels:
+    app: judge-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: judge-worker
+  template:
+    metadata:
+      labels:
+        app: judge-worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: judge-worker
+          image: bytebattle/judge-worker:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              value: "mongodb://mongodb-service:27017/bytebattle?directConnection=true"
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: NODE_ENV
+              value: "production"
+            - name: SANDBOX_TIMEOUT_MS
+              value: "10000"
+            - name: SANDBOX_MEMORY_LIMIT
+              value: "128m"
+            - name: SANDBOX_CPU_LIMIT
+              value: "0.5"
+          volumeMounts:
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: judge-service
+  namespace: bytebattle
+  labels:
+    app: judge-worker
+spec:
+  type: ClusterIP
+  selector:
+    app: judge-worker
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP

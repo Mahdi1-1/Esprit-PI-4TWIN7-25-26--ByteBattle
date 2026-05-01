@@ -1,22 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { canvasChallenges, CanvasChallenge } from '../data/canvasChallengeData';
-import { mockUser } from '../data/mockData';
+import { Loader } from 'lucide-react';
+import { type CanvasChallenge } from '../data/canvasChallengeData';
+import { canvasService } from '../services/canvasService';
 
 export function CanvasCatalog() {
   const navigate = useNavigate();
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [challenges, setChallenges] = useState<CanvasChallenge[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredChallenges = canvasChallenges.filter((challenge) => {
-    if (selectedType !== 'all' && challenge.type !== selectedType) return false;
-    if (selectedDifficulty !== 'all' && challenge.difficulty !== selectedDifficulty) return false;
-    return true;
-  });
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        const params: any = {};
+        if (selectedType !== 'all') params.type = selectedType;
+        if (selectedDifficulty !== 'all') params.difficulty = selectedDifficulty;
+        const res = await canvasService.getChallenges(params);
+        setChallenges(res?.data ?? []);
+      } catch (err) {
+        console.error('Failed to load canvas challenges:', err);
+        setChallenges([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChallenges();
+  }, [selectedType, selectedDifficulty]);
+
+  const filteredChallenges = challenges;
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -30,21 +46,16 @@ export function CanvasCatalog() {
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
-      case 'new': return <Badge variant="info">🆕 New</Badge>;
-      case 'attempted': return <Badge variant="warning">🔄 In Progress</Badge>;
-      case 'completed': return <Badge variant="success">✅ Completed</Badge>;
+      case 'new': return <Badge variant="default">🆕 New</Badge>;
+      case 'attempted': return <Badge variant="ongoing">🔄 In Progress</Badge>;
+      case 'completed': return <Badge variant="ACCEPTED">✅ Completed</Badge>;
       default: return null;
     }
   };
 
   return (
     <Layout>
-      <Navbar 
-              isLoggedIn 
-              userAvatar={mockUser.avatar} 
-              username={mockUser.username} 
-            />
-      <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full px-4 sm:px-6 lg:px-10 space-y-8">
           {/* Header */}
           <div className="space-y-4">
@@ -131,10 +142,10 @@ export function CanvasCatalog() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Available Challenges', value: canvasChallenges.length, icon: '🎯' },
-              { label: 'Completed', value: canvasChallenges.filter(c => c.status === 'completed').length, icon: '✅' },
-              { label: 'In Progress', value: canvasChallenges.filter(c => c.status === 'attempted').length, icon: '🔄' },
-              { label: 'New', value: canvasChallenges.filter(c => c.status === 'new').length, icon: '🆕' }
+              { label: 'Available Challenges', value: challenges.length, icon: '🎯' },
+              { label: 'Completed', value: challenges.filter(c => c.status === 'completed').length, icon: '✅' },
+              { label: 'In Progress', value: challenges.filter(c => c.status === 'attempted').length, icon: '🔄' },
+              { label: 'New', value: challenges.filter(c => !c.status || c.status === 'new').length, icon: '🆕' }
             ].map((stat, idx) => (
               <div key={idx} className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -148,19 +159,25 @@ export function CanvasCatalog() {
 
           {/* Challenge Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredChallenges.map((challenge) => (
-              <ChallengeCard
-                key={challenge.id}
-                challenge={challenge}
-                onStart={() => navigate(`/canvas/${challenge.id}/brief`)}
-                getDifficultyColor={getDifficultyColor}
-                getStatusBadge={getStatusBadge}
-              />
-            ))}
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 animate-pulse h-80 rounded-lg" />
+              ))
+            ) : (
+              filteredChallenges.map((challenge) => (
+                <ChallengeCard
+                  key={challenge.id}
+                  challenge={challenge}
+                  onStart={() => navigate(`/canvas/${challenge.id}/brief`)}
+                  getDifficultyColor={getDifficultyColor}
+                  getStatusBadge={getStatusBadge}
+                />
+              ))
+            )}
           </div>
 
           {/* Empty State */}
-          {filteredChallenges.length === 0 && (
+          {!loading && filteredChallenges.length === 0 && (
             <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-12 text-center">
               <span className="text-6xl mb-4 block">🔍</span>
               <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">
@@ -211,7 +228,7 @@ function ChallengeCard({ challenge, onStart, getDifficultyColor, getStatusBadge 
               {challenge.difficulty.toUpperCase()}
             </span>
             <span className="px-2 py-0.5 text-xs border border-[var(--border-default)] rounded-full text-[var(--text-secondary)]">
-              ⏱️ {challenge.duration} min
+              ⏱️ {challenge.duration ?? '—'} min
             </span>
           </div>
         </div>
@@ -225,7 +242,7 @@ function ChallengeCard({ challenge, onStart, getDifficultyColor, getStatusBadge 
 
       {/* Tags */}
       <div className="flex flex-wrap gap-1.5">
-        {challenge.tags.slice(0, 3).map((tag) => (
+        {(challenge.tags ?? []).slice(0, 3).map((tag) => (
           <span
             key={tag}
             className="px-2 py-1 text-xs bg-[var(--surface-2)] text-[var(--text-secondary)] rounded"
@@ -233,9 +250,9 @@ function ChallengeCard({ challenge, onStart, getDifficultyColor, getStatusBadge 
             {tag}
           </span>
         ))}
-        {challenge.tags.length > 3 && (
+        {(challenge.tags ?? []).length > 3 && (
           <span className="px-2 py-1 text-xs text-[var(--text-muted)]">
-            +{challenge.tags.length - 3}
+            +{(challenge.tags ?? []).length - 3}
           </span>
         )}
       </div>
@@ -248,15 +265,15 @@ function ChallengeCard({ challenge, onStart, getDifficultyColor, getStatusBadge 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="text-center">
-          <div className="font-semibold text-[var(--text-primary)]">{challenge.requirements.length}</div>
+          <div className="font-semibold text-[var(--text-primary)]">{(challenge.requirements ?? []).length}</div>
           <div className="text-[var(--text-muted)]">Requirements</div>
         </div>
         <div className="text-center">
-          <div className="font-semibold text-[var(--text-primary)]">{challenge.constraints.length}</div>
+          <div className="font-semibold text-[var(--text-primary)]">{(challenge.constraints ?? []).length}</div>
           <div className="text-[var(--text-muted)]">Constraints</div>
         </div>
         <div className="text-center">
-          <div className="font-semibold text-[var(--brand-primary)]">{challenge.rubric.reduce((sum, r) => sum + r.maxPoints, 0)}</div>
+          <div className="font-semibold text-[var(--brand-primary)]">{(challenge.rubric ?? []).reduce((sum, r) => sum + r.maxPoints, 0)}</div>
           <div className="text-[var(--text-muted)]">Max points</div>
         </div>
       </div>

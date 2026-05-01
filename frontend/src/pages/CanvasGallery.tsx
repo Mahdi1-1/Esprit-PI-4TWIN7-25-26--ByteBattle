@@ -1,19 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { communityDesigns, canvasChallenges } from '../data/canvasChallengeData';
-import { mockUser } from '../data/mockData';
-import { Eye, Heart, TrendingUp, Calendar, Award, Share2, Bookmark } from 'lucide-react';
+import { type CommunityDesign, type CanvasChallenge } from '../data/canvasChallengeData';
+import { canvasService } from '../services/canvasService';
+import { Eye, Heart, TrendingUp, Calendar, Award, Share2, Bookmark, Loader } from 'lucide-react';
 
 export function CanvasGallery() {
   const navigate = useNavigate();
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'top'>('popular');
+  const [designs, setDesigns] = useState<CommunityDesign[]>([]);
+  const [challenges, setChallenges] = useState<CanvasChallenge[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredDesigns = communityDesigns.filter((design) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [designsRes, challengesRes] = await Promise.allSettled([
+          canvasService.getCommunityDesigns({ sort: sortBy }),
+          canvasService.getChallenges(),
+        ]);
+        if (designsRes.status === 'fulfilled' && Array.isArray(designsRes.value?.data)) {
+          setDesigns(designsRes.value.data);
+        }
+        if (challengesRes.status === 'fulfilled' && Array.isArray(challengesRes.value?.data)) {
+          setChallenges(challengesRes.value.data);
+        }
+      } catch (err) {
+        console.error('Failed to load gallery data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [sortBy]);
+
+  const filteredDesigns = designs.filter((design) => {
     if (selectedFilter === 'all') return true;
     return design.challengeId === selectedFilter;
   });
@@ -44,12 +68,7 @@ export function CanvasGallery() {
 
   return (
     <Layout>
-      <Navbar 
-        isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
-      />
-      <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full px-4 sm:px-6 lg:px-10 space-y-8">
           {/* Header */}
           <div className="space-y-4">
@@ -69,7 +88,7 @@ export function CanvasGallery() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Designs partagés', value: '1,234', icon: '🎨' },
+              { label: 'Shared designs', value: '1,234', icon: '🎨' },
               { label: 'Contributeurs', value: '567', icon: '👥' },
               { label: 'Likes totaux', value: '12.5K', icon: '❤️' },
               { label: 'Cette semaine', value: '+48', icon: '📈' }
@@ -105,7 +124,7 @@ export function CanvasGallery() {
                   >
                     Tous
                   </button>
-                  {canvasChallenges.slice(0, 4).map((challenge) => (
+                  {challenges.slice(0, 4).map((challenge) => (
                     <button
                       key={challenge.id}
                       onClick={() => setSelectedFilter(challenge.id)}
@@ -133,7 +152,7 @@ export function CanvasGallery() {
                   {[
                     { value: 'popular', label: '❤️ Plus populaires', icon: Heart },
                     { value: 'top', label: '🏆 Meilleurs scores', icon: Award },
-                    { value: 'recent', label: '📅 Récents', icon: Calendar }
+                    { value: 'recent', label: '📅 Recent', icon: Calendar }
                   ].map((sort) => (
                     <button
                       key={sort.value}
@@ -174,7 +193,7 @@ export function CanvasGallery() {
                 Aucun design trouvé
               </h3>
               <p className="text-[var(--text-secondary)] mb-4">
-                Essayez de modifier vos filtres
+                Try changing your filters
               </p>
               <Button variant="secondary" onClick={() => setSelectedFilter('all')}>
                 Voir tous les designs

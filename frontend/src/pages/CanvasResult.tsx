@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { canvasChallenges } from '../data/canvasChallengeData';
-import { mockUser } from '../data/mockData';
-import { ArrowLeft, Download, Share2, Trophy, Clock, Zap } from 'lucide-react';
+import { type CanvasChallenge } from '../data/canvasChallengeData';
+import { canvasService } from '../services/canvasService';
+import { ArrowLeft, Download, Share2, Trophy, Clock, Zap, Loader } from 'lucide-react';
 
 interface SubmissionData {
   challengeId: string;
@@ -21,8 +20,22 @@ export function CanvasResult() {
   const navigate = useNavigate();
   const [submission, setSubmission] = useState<SubmissionData | null>(null);
   const [aiAnalyzing, setAiAnalyzing] = useState(true);
+  const [challenge, setChallenge] = useState<CanvasChallenge | null>(null);
+  const [loadingChallenge, setLoadingChallenge] = useState(true);
 
-  const challenge = canvasChallenges.find((c) => c.id === id);
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      try {
+        const data = await canvasService.getChallengeById(id!);
+        setChallenge(data);
+      } catch (err) {
+        console.error('Failed to load challenge:', err);
+      } finally {
+        setLoadingChallenge(false);
+      }
+    };
+    fetchChallenge();
+  }, [id]);
 
   useEffect(() => {
     // Load submission from localStorage
@@ -44,10 +57,21 @@ export function CanvasResult() {
     return () => clearTimeout(timer);
   }, [id]);
 
+  if (loadingChallenge) {
+    return (
+      <Layout>
+
+        <div className="flex items-center justify-center h-64">
+          <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+        </div>
+      </Layout>
+    );
+  }
+
   if (!challenge) {
     return (
       <Layout>
-        <Navbar isLoggedIn userAvatar={mockUser.avatar} username={mockUser.username} />
+
         <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
@@ -77,7 +101,7 @@ export function CanvasResult() {
 
   return (
     <Layout>
-      <Navbar isLoggedIn userAvatar={mockUser.avatar} username={mockUser.username} />
+
       
       <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full px-4 sm:px-6 lg:px-10 space-y-8">
@@ -190,7 +214,7 @@ export function CanvasResult() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h4 className="font-semibold text-[var(--text-primary)]">
-                            {item.criterion}
+                            {item.category}
                           </h4>
                           <p className="text-sm text-[var(--text-secondary)] mt-1">
                             {item.description}

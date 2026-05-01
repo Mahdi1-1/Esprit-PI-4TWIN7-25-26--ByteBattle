@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import {
@@ -8,12 +8,14 @@ import {
   EmptyState,
   Breadcrumb
 } from '../../components/admin/AdminComponents';
-import { problems, Problem } from '../../data/adminData';
-import { Search, Plus, Edit, Copy, Archive, Eye, MoreVertical } from 'lucide-react';
+import { type Problem } from '../../data/adminData';
+import { challengesService } from '../../services/challengesService';
+import { Search, Plus, Edit, Copy, Archive, Eye, MoreVertical, Loader } from 'lucide-react';
 
 export function AdminProblems() {
   const navigate = useNavigate();
-  const [problemsList] = useState<Problem[]>(problems);
+  const [problemsList, setProblemsList] = useState<Problem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -21,13 +23,42 @@ export function AdminProblems() {
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
   const itemsPerPage = 10;
 
+  useEffect(() => {
+    const fetchProblems = async () => {
+      try {
+        const res = await challengesService.getAllAdmin({ kind: 'CODE' });
+        const data = Array.isArray(res) ? res : res.data || [];
+        setProblemsList(data.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug || p.title.toLowerCase().replace(/\s+/g, '-'),
+          kind: p.kind || 'CODE',
+          difficulty: p.difficulty,
+          category: p.category || '',
+          tags: p.tags || [],
+          acceptanceRate: p.acceptanceRate ?? (p._count?.submissions ? 0 : 0),
+          submissions: p._count?.submissions || 0,
+          timeLimit: p.constraints?.timeLimit || 1000,
+          memoryLimit: p.constraints?.memoryLimit || 256,
+          status: (p.status || 'draft').toLowerCase(),
+          createdAt: p.createdAt,
+        })));
+      } catch (err) {
+        console.error('Failed to load problems:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProblems();
+  }, []);
+
   const filteredProblems = problemsList.filter((problem) => {
     const matchesSearch =
       problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       problem.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
       problem.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesDifficulty = difficultyFilter === 'all' || problem.difficulty === difficultyFilter;
-    const matchesStatus = statusFilter === 'all' || problem.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || (problem.status || '').toLowerCase() === statusFilter;
     return matchesSearch && matchesDifficulty && matchesStatus;
   });
 
@@ -47,6 +78,73 @@ export function AdminProblems() {
         return 'text-red-500';
       default:
         return 'text-gray-500';
+    }
+  };
+
+  const mapProblemRow = (p: any): Problem => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug || p.title.toLowerCase().replace(/\s+/g, '-'),
+    kind: p.kind || 'CODE',
+    difficulty: p.difficulty,
+    category: p.category || '',
+    tags: p.tags || [],
+    acceptanceRate: p.acceptanceRate ?? (p._count?.submissions ? 0 : 0),
+    submissions: p._count?.submissions || 0,
+    timeLimit: p.constraints?.timeLimit || 1000,
+    memoryLimit: p.constraints?.memoryLimit || 256,
+    status: (p.status || 'draft').toLowerCase(),
+    createdAt: p.createdAt,
+  });
+
+  const handleDuplicate = async (problemId: string) => {
+    setShowActionMenu(null);
+    try {
+      const full = await challengesService.getByIdAdmin(problemId);
+      if (full.kind === 'CANVAS') {
+        const created = await challengesService.createCanvasChallenge({
+          title: `${full.title} (Copy)`,
+          kind: 'CANVAS',
+          category: full.category || 'general',
+          difficulty: full.difficulty,
+          briefMd: full.descriptionMd || '',
+          deliverables: full.deliverables,
+          rubric: full.rubric || {},
+          assets: full.assets || [],
+          hints: full.hints || [],
+          status: 'draft',
+        });
+        setProblemsList((prev) => [mapProblemRow(created), ...prev]);
+      } else {
+        const created = await challengesService.createCodeChallenge({
+          title: `${full.title} (Copy)`,
+          kind: 'CODE',
+          difficulty: full.difficulty,
+          tags: full.tags || [],
+          statementMd: full.descriptionMd || '',
+          status: 'draft',
+          allowedLanguages: full.allowedLanguages || [],
+          constraints: full.constraints || {},
+          hints: full.hints || [],
+          tests: full.tests || [],
+        });
+        setProblemsList((prev) => [mapProblemRow(created), ...prev]);
+      }
+    } catch (err) {
+      console.error('Failed to duplicate problem:', err);
+    }
+  };
+
+  const handleToggleArchive = async (problem: Problem) => {
+    setShowActionMenu(null);
+    try {
+      const nextStatus = problem.status === 'archived' ? 'draft' : 'archived';
+      await challengesService.update(problem.id, { status: nextStatus as any });
+      setProblemsList((prev) =>
+        prev.map((p) => (p.id === problem.id ? { ...p, status: nextStatus } : p)),
+      );
+    } catch (err) {
+      console.error('Failed to update problem status:', err);
     }
   };
 
@@ -108,9 +206,9 @@ export function AdminProblems() {
             className="px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-primary)] outline-none"
           >
             <option value="all">All Status</option>
-            <option value="DRAFT">Draft</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="ARCHIVED">Archived</option>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="archived">Archived</option>
           </select>
         </FilterBar>
 
@@ -206,7 +304,7 @@ export function AdminProblems() {
                           <Edit className="w-4 h-4 text-[var(--text-secondary)]" />
                         </button>
                         <button
-                          onClick={() => navigate(`/problem/${problem.slug}`)}
+                          onClick={() => navigate(`/problem/${problem.id}`)}
                           className="p-1.5 hover:bg-[var(--surface-3)] rounded transition-colors"
                           title="Preview"
                         >
@@ -226,18 +324,18 @@ export function AdminProblems() {
                           {showActionMenu === problem.id && (
                             <div className="absolute right-0 mt-1 w-48 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg shadow-lg z-10">
                               <button
-                                onClick={() => setShowActionMenu(null)}
+                                onClick={() => handleDuplicate(problem.id)}
                                 className="w-full px-4 py-2 text-left text-sm hover:bg-[var(--surface-2)] flex items-center gap-2 text-[var(--text-secondary)]"
                               >
                                 <Copy className="w-4 h-4" />
                                 Duplicate
                               </button>
                               <button
-                                onClick={() => setShowActionMenu(null)}
+                                onClick={() => handleToggleArchive(problem)}
                                 className="w-full px-4 py-2 text-left text-sm hover:bg-[var(--surface-2)] flex items-center gap-2 text-[var(--text-secondary)]"
                               >
                                 <Archive className="w-4 h-4" />
-                                {problem.status === 'ARCHIVED' ? 'Unarchive' : 'Archive'}
+                                {problem.status === 'archived' ? 'Unarchive' : 'Archive'}
                               </button>
                             </div>
                           )}

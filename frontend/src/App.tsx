@@ -1,23 +1,92 @@
-import React from 'react';
-import { RouterProvider } from 'react-router';
+import React, { Suspense, lazy } from 'react';
+import { RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { FontSizeProvider } from './context/FontSizeContext';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { router } from './routes';
+import { EditorThemeProvider } from './context/EditorThemeContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { router } from './router';
+// import { LoadingSpinner } from './components/LoadingSpinner';
+
+// ─── Fallback de chargement global ───
+// NOTE: min-h-0 intentional — avoids CLS from height reservation during lazy load
+export function PageLoader() {
+  return (
+    <div
+      className="flex items-center justify-center"
+      style={{ minHeight: '100vh', contain: 'layout' }}
+      aria-busy="true"
+      aria-label="Loading page"
+    >
+      <div
+        className="w-8 h-8 rounded-full border-2 border-[var(--brand-primary)] border-t-transparent animate-spin"
+        role="status"
+      />
+    </div>
+  );
+}
+
+// ─── Error Boundary ───
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-900 text-white">
+          <div className="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full border border-gray-700">
+            <h1 className="text-2xl font-bold mb-4 text-red-500">Something went wrong</h1>
+            <p className="mb-4 text-gray-300">We're sorry, but an unexpected error occurred.</p>
+            <pre className="bg-black/50 p-4 rounded text-sm overflow-auto mb-6 text-red-400 font-mono">
+              {this.state.error?.message}
+            </pre>
+            <button
+              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+              onClick={() => window.location.reload()}
+            >
+              Reload Application
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   return (
     <React.StrictMode>
-    <LanguageProvider>
-      <ThemeProvider>
-        <FontSizeProvider>
-          <AuthProvider>
-            <RouterProvider router={router} />
-          </AuthProvider>
-        </FontSizeProvider>
-      </ThemeProvider>
-    </LanguageProvider>
+      <ErrorBoundary>
+        <LanguageProvider>
+          <FontSizeProvider>
+            <AuthProvider>
+              <NotificationProvider>
+                <ThemeProvider>
+                  <EditorThemeProvider>
+                    <RouterProvider router={router} />
+                  </EditorThemeProvider>
+                </ThemeProvider>
+              </NotificationProvider>
+            </AuthProvider>
+          </FontSizeProvider>
+        </LanguageProvider>
+      </ErrorBoundary>
     </React.StrictMode>
   );
 }

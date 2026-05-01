@@ -1,7 +1,6 @@
 // VisualizerPage.tsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { useLanguage } from '../context/LanguageContext';
 import {
   Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Shuffle,
@@ -607,7 +606,7 @@ export function VisualizerPage() {
 
   return (
     <Layout>
-      <Navbar />
+
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {/* Header */}

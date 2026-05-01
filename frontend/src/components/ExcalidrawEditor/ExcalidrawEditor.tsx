@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
   Excalidraw,
   exportToBlob,
@@ -19,6 +19,15 @@ import { ToolbarButton } from "./ToolbarButton";
 import { Sidebar } from "./Sidebar";
 import type { Theme, SavedScene, ExcalidrawEditorProps } from "./types";
 
+function normalizeAppState(appState: Record<string, any> | undefined, theme: Theme) {
+  return {
+    viewBackgroundColor: theme === "dark" ? "#1e1e1e" : "#ffffff",
+    currentItemFontFamily: 1,
+    ...appState,
+    collaborators: Array.isArray(appState?.collaborators) ? appState?.collaborators : [],
+  };
+}
+
 export function ExcalidrawEditor({
   initialTheme,
   langCode = "fr-FR",
@@ -35,6 +44,15 @@ export function ExcalidrawEditor({
 }: ExcalidrawEditorProps) {
   const { colorScheme, toggleColorScheme } = useTheme();
   const excalidrawTheme: Theme = initialTheme || (colorScheme === "dark" ? "dark" : "light");
+
+  const memoizedInitialData = useMemo(
+    () => ({
+      appState: normalizeAppState(initialData?.appState, excalidrawTheme),
+      elements: initialData?.elements || [],
+      files: initialData?.files,
+    }),
+    [initialData?.appState, initialData?.elements, initialData?.files, excalidrawTheme]
+  );
 
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
@@ -80,7 +98,7 @@ export function ExcalidrawEditor({
       showNotification("✅ Image PNG exportée !");
     } catch (err) {
       console.error(err);
-      showNotification("❌ Erreur lors de l'export");
+      showNotification("❌ Export error");
     }
   }, [excalidrawAPI, excalidrawTheme, showNotification, onExport]);
 
@@ -189,7 +207,7 @@ export function ExcalidrawEditor({
         setShowSidebar(false);
       } catch (err) {
         console.error(err);
-        showNotification("❌ Erreur de chargement");
+        showNotification("❌ Loading error");
       }
     },
     [excalidrawAPI, showNotification]
@@ -335,25 +353,25 @@ export function ExcalidrawEditor({
             <ToolbarButton
               onClick={() => setShowSidebar(!showSidebar)}
               theme={excalidrawTheme}
-              title="Scènes sauvegardées"
+              title="Saved scenes"
               active={showSidebar}
               icon={
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               }
-              label="Scènes"
+              label="Scenes"
             />
             <ToolbarButton
               onClick={handleClearCanvas}
               theme={excalidrawTheme}
-              title="Nettoyer le canvas"
+              title="Clear canvas"
               icon={
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               }
-              label="Effacer"
+              label="Clear"
               danger
             />
 
@@ -411,16 +429,7 @@ export function ExcalidrawEditor({
                 export: false,
               },
             }}
-            initialData={{
-              appState: {
-                viewBackgroundColor:
-                  excalidrawTheme === "dark" ? "#1e1e1e" : "#ffffff",
-                currentItemFontFamily: 1,
-                ...initialData?.appState,
-              },
-              elements: initialData?.elements || [],
-              files: initialData?.files,
-            }}
+            initialData={memoizedInitialData}
           />
         </div>
       </div>

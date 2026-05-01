@@ -1,32 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Layout } from '../components/Layout';
-import { Navbar } from '../components/Navbar';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { canvasChallenges } from '../data/canvasChallengeData';
-import { mockUser } from '../data/mockData';
-import { ArrowLeft, Clock, Target, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { type CanvasChallenge } from '../data/canvasChallengeData';
+import { canvasService } from '../services/canvasService';
+import { ArrowLeft, Clock, Target, AlertTriangle, CheckCircle2, Loader } from 'lucide-react';
 
 export function CanvasChallengeBrief() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedMode, setSelectedMode] = useState<'solo' | 'duel' | 'hackathon'>('solo');
+  const [challenge, setChallenge] = useState<CanvasChallenge | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const challenge = canvasChallenges.find((c) => c.id === id);
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      try {
+        const res = await canvasService.getChallengeById(id!);
+        setChallenge(res);
+      } catch (err) {
+        console.error('Failed to load challenge:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChallenge();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Layout>
+
+        <div className="flex items-center justify-center h-64">
+          <Loader className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!challenge) {
     return (
       <Layout>
-        <Navbar 
-          isLoggedIn 
-          userAvatar={mockUser.avatar} 
-          username={mockUser.username} 
-        />
-        <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+                <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
-              Challenge non trouvé
+              Challenge not found
             </h2>
             <Button onClick={() => navigate('/canvas')}>
               Back to Catalog
@@ -53,12 +72,7 @@ export function CanvasChallengeBrief() {
 
   return (
     <Layout>
-      <Navbar 
-        isLoggedIn 
-        userAvatar={mockUser.avatar} 
-        username={mockUser.username} 
-      />
-      <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-[var(--bg-primary)] py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto space-y-8">
           {/* Back Button */}
           <Button
@@ -150,7 +164,7 @@ export function CanvasChallengeBrief() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-6 h-6 text-[var(--state-warning)]" />
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Contraintes</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Constraints</h2>
             </div>
             <ul className="space-y-2">
               {challenge.constraints.map((constraint, idx) => (
@@ -166,7 +180,7 @@ export function CanvasChallengeBrief() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-2xl">📦</span>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">À livrer</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Deliverables</h2>
             </div>
             <ul className="space-y-2">
               {challenge.deliverables.map((deliverable, idx) => (
@@ -182,7 +196,7 @@ export function CanvasChallengeBrief() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🎯</span>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Critères de réussite</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Success criteria</h2>
             </div>
             <ul className="space-y-2">
               {challenge.successCriteria.map((criterion, idx) => (
@@ -198,14 +212,14 @@ export function CanvasChallengeBrief() {
           <div className="theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-2xl">📊</span>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Grille d'évaluation</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Evaluation rubric</h2>
             </div>
             <div className="space-y-3">
               {challenge.rubric.map((item, idx) => (
                 <div key={idx} className="flex items-start justify-between gap-4 pb-3 border-b border-[var(--border-default)] last:border-0">
                   <div className="flex-1">
                     <div className="font-semibold text-[var(--text-primary)] mb-1">
-                      {item.criterion}
+                      {item.category}
                     </div>
                     <div className="text-sm text-[var(--text-secondary)]">
                       {item.description}
@@ -228,7 +242,7 @@ export function CanvasChallengeBrief() {
           {/* Mode Selection */}
           <div className="theme-card corner-brackets relative bg-[var(--surface-1)] border-[var(--border-default)] p-6 space-y-4">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
-              Choisir un mode
+              Choose a mode
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
@@ -276,7 +290,7 @@ export function CanvasChallengeBrief() {
                     {mode.description}
                   </div>
                   {!mode.available && (
-                    <Badge variant="warning" className="mt-2">Bientôt disponible</Badge>
+                    <Badge variant="warning" className="mt-2">Coming soon</Badge>
                   )}
                 </button>
               ))}
@@ -290,7 +304,7 @@ export function CanvasChallengeBrief() {
               size="lg"
               onClick={() => navigate('/canvas')}
             >
-              Annuler
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -298,7 +312,7 @@ export function CanvasChallengeBrief() {
               onClick={handleStart}
               className="min-w-[200px]"
             >
-              🎨 Ouvrir le Canvas
+              🎨 Open Canvas
             </Button>
           </div>
         </div>

@@ -5,6 +5,8 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import { useAuth } from "./AuthContext";
+import { THEME_LEVEL_REQUIREMENTS } from "./themeConstants";
 
 export type ThemeName =
   | "cyber"
@@ -28,24 +30,18 @@ const ThemeContext = createContext<
   ThemeContextType | undefined
 >(undefined);
 
-const THEME_LEVEL_REQUIREMENTS: Record<ThemeName, number> = {
-  cyber: 1,
-  space: 20,
-  samurai: 40,
-  pixel: 60,
-  mythic: 80,
-  sports: 100,
-};
-
 export function ThemeProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [theme, setThemeState] = useState<ThemeName>("cyber");
+  const { user } = useAuth();
+  const [theme, setThemeState] = useState<ThemeName>("samurai");
   const [colorScheme, setColorScheme] =
     useState<ColorScheme>("dark");
-  const [userLevel, setUserLevel] = useState(115); // Mock level for demo
+
+  // Use real user level from AuthContext, fallback to 1 if not authenticated
+  const userLevel = user?.level ?? 1;
 
   // Calculate unlocked themes based on user level
   const unlockedThemes = Object.entries(
@@ -119,5 +115,3 @@ export function useTheme() {
   }
   return context;
 }
-
-export { THEME_LEVEL_REQUIREMENTS };

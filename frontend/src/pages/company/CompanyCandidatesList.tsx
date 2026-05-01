@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Layout } from '../../components/Layout';
-import { CompanyNavbar } from '../../components/CompanyNavbar';
+import { CompanyLayout } from '../../components/company/CompanyLayout';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
 import { Search, Filter, Download, Mail, Eye, TrendingUp, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
@@ -70,16 +70,16 @@ export function CompanyCandidatesList() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'passed': return 'success';
-      case 'failed': return 'error';
-      case 'pending': return 'warning';
+      case 'passed': return 'easy';
+      case 'failed': return 'hard';
+      case 'pending': return 'medium';
       default: return 'default';
     }
   };
 
   return (
-    <Layout>
-      <CompanyNavbar companyName="TechCorp Inc." userName="John Doe" userRole="recruiter" />
+    <CompanyLayout>
+      
       
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6" dir={direction}>
         {/* Header */}
@@ -272,6 +272,6 @@ export function CompanyCandidatesList() {
           </div>
         </div>
       </div>
-    </Layout>
+    </CompanyLayout>
   );
 }
