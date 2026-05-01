@@ -1,11 +1,8 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'NodeJS-20'
-    }
-
     environment {
+        // Garde ceci uniquement si tu as configuré le scanner SonarQube dans "Tools"
         SCANNER_HOME = tool('SonarQubeScanner')
     }
 
@@ -19,7 +16,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir('frontend') {
-                    sh 'npm install -g pnpm'
+                    // Plus besoin de npm install -g pnpm, on l'a fait en bash
                     sh 'pnpm install --frozen-lockfile'
                 }
             }
@@ -36,6 +33,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 dir('frontend') {
+                    // Assure-toi que 'SonarQube' est bien configuré dans System > SonarQube servers
                     withSonarQubeEnv('SonarQube') {
                         sh "${SCANNER_HOME}/bin/sonar-scanner"
                     }
@@ -45,6 +43,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
+                // Cette étape attend le retour de SonarQube pour valider le pipeline
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
@@ -58,6 +57,8 @@ pipeline {
         }
         success {
             echo '✅ Frontend CI pipeline completed successfully!'
+            // Optionnel : déclencher le CD automatiquement
+            // build job: 'BB-Frontend-CD', wait: false
         }
         failure {
             echo '❌ Frontend CI pipeline failed!'
