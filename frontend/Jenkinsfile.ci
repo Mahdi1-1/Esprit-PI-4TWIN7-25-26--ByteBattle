@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        // Garde ceci uniquement si tu as configuré le scanner SonarQube dans "Tools"
-        SCANNER_HOME = tool('SonarQubeScanner')
-    }
-
     stages {
         stage('Checkout') {
             steps {
