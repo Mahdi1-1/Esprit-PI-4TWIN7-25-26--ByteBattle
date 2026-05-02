@@ -189,7 +189,6 @@ export class UsersService {
       },
     });
     if (!user) throw new NotFoundException('User not found');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...profile } = user;
     
     await this.cache.set(cacheKey, profile, 3600); // 1 hour cache
@@ -204,7 +203,6 @@ export class UsersService {
       where: { id },
       data: dto,
     });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...profile } = updated;
 
     await this.cache.del(`user:profile:${id}`);
@@ -293,7 +291,6 @@ export class UsersService {
       data: { profileImage: dataUri },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...profile } = updated;
 
     await this.cache.del(`user:profile:${userId}`);
@@ -392,7 +389,6 @@ export class UsersService {
       data: { email: dto.newEmail },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...profile } = updated;
     return profile;
   }
@@ -529,8 +525,6 @@ export class UsersService {
         updated_skills: profile?.updated_skills || profile?.current_skills || currentSkills,
         recommended_challenges: recommendedChallenges,
       };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       return {
         user_id: userId,

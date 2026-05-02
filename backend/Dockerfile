@@ -35,4 +35,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 4001
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/main.js"]
