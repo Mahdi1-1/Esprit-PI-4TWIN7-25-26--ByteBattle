@@ -8,6 +8,7 @@ data:
   NODE_ENV: "production"
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
+  MONGO_URI: "mongodb://mongodb-service:27017/bytebattle?directConnection=true"
   DATABASE_URL: "mongodb://mongodb-service:27017/bytebattle?directConnection=true"
 
 ---
@@ -43,9 +44,12 @@ spec:
         prometheus.io/port: "4001"
         prometheus.io/path: "/metrics"
     spec:
+      # Optional scheduling hint for multi-node clusters:
+      # nodeSelector:
+      #   role: web
       containers:
         - name: backend
-          image: bytebattle/backend:latest
+          image: mahdimasmoudi/bytebattle-backend:latest
           ports:
             - containerPort: 4001
           envFrom:
@@ -62,13 +66,13 @@ spec:
               memory: "512Mi"
           livenessProbe:
             httpGet:
-              path: /api
+              path: /api/challenges
               port: 4001
             initialDelaySeconds: 30
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /api
+              path: /api/challenges
               port: 4001
             initialDelaySeconds: 15
             periodSeconds: 10

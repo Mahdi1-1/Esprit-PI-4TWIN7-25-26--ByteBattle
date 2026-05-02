@@ -15,9 +15,12 @@ spec:
       labels:
         app: frontend
     spec:
+      # Optional scheduling hint for multi-node clusters:
+      # nodeSelector:
+      #   role: web
       containers:
         - name: frontend
-          image: bytebattle/frontend:latest
+          image: mahdimasmoudi/bytebattle-frontend:latest
           ports:
             - containerPort: 80
           resources:

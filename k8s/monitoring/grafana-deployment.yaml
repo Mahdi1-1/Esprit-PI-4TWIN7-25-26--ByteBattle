@@ -41,6 +41,18 @@ spec:
             limits:
               cpu: "250m"
               memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
       volumes:
         - name: grafana-datasources
           configMap:
@@ -49,24 +61,6 @@ spec:
           persistentVolumeClaim:
             claimName: grafana-pvc
 
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-datasources
-  namespace: bytebattle
-data:
-  datasources.yml: |
-    apiVersion: 1
-    datasources:
-      - name: Prometheus
-        type: prometheus
-        access: proxy
-        url: http://prometheus-service:9090
-        isDefault: true
-        editable: true
-
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

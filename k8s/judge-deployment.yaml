@@ -19,9 +19,12 @@ spec:
         prometheus.io/port: "3000"
         prometheus.io/path: "/metrics"
     spec:
+      # Optional scheduling hint for multi-node clusters:
+      # nodeSelector:
+      #   role: compute
       containers:
         - name: judge-worker
-          image: bytebattle/judge-worker:latest
+          image: mahdimasmoudi/bytebattle-judge:latest
           ports:
             - containerPort: 3000
           env:
@@ -31,6 +34,8 @@ spec:
               value: "redis-service"
             - name: REDIS_PORT
               value: "6379"
+            - name: BACKEND_URL
+              value: "http://backend-service:4001"
             - name: NODE_ENV
               value: "production"
             - name: SANDBOX_TIMEOUT_MS
