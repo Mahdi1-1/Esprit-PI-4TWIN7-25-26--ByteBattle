@@ -9,6 +9,8 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY prisma ./prisma
+
+# ✅ Générer ici
 RUN pnpm exec prisma generate
 
 COPY . .
@@ -28,8 +30,8 @@ RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
-# 🔥 IMPORTANT FIX
-RUN pnpm exec prisma generate
+# ❌ SUPPRIMER cette ligne
+# RUN pnpm exec prisma generate
 
 EXPOSE 4001
 
