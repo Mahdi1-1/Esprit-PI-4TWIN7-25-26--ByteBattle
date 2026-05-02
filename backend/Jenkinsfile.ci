@@ -12,6 +12,7 @@ pipeline {
             steps {
                 dir('backend') {
                     sh 'pnpm install --frozen-lockfile'
+                    sh 'pnpm approve-builds'
                 }
             }
         }
@@ -19,7 +20,7 @@ pipeline {
         stage('Lint') {
             steps {
                 dir('backend') {
-                    sh 'pnpm run lint || true'
+                    sh 'pnpm run lint'
                 }
             }
         }
@@ -27,7 +28,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('backend') {
-                    sh 'pnpm run test -- --passWithNoTests --coverage'
+                    sh 'pnpm run test'
                 }
             }
         }
@@ -37,11 +38,13 @@ pipeline {
                 dir('backend') {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         withSonarQubeEnv('My SonarQube Server') {
-                            sh "npx sonar-scanner \
-                                -Dsonar.projectKey=bytebattle-backend \
-                                -Dsonar.sources=. \
-                                -Dsonar.host.url=http://sonarqube:9000 \
-                                -Dsonar.token=${SONAR_TOKEN}"
+                            sh '''
+                            pnpm exec sonar-scanner \
+                              -Dsonar.projectKey=bytebattle-backend \
+                              -Dsonar.sources=. \
+                              -Dsonar.host.url=http://sonarqube:9000 \
+                              -Dsonar.token=$SONAR_TOKEN
+                            '''
                         }
                     }
                 }
@@ -60,6 +63,6 @@ pipeline {
     post {
         always { cleanWs() }
         success { echo '✅ Backend CI pipeline completed successfully!' }
-        failure  { echo '❌ Backend CI pipeline failed!' }
+        failure { echo '❌ Backend CI pipeline failed!' }
     }
 }
