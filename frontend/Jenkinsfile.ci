@@ -25,16 +25,22 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                dir('frontend') {
-                    // Assure-toi que 'SonarQube' est bien configuré dans System > SonarQube servers
-                    withSonarQubeEnv('SonarQube') {
-                        sh "${SCANNER_HOME}/bin/sonar-scanner"
-                    }
+    stage('SonarQube Analysis') {
+    steps {
+        dir('frontend') {
+            // "sonar-token" est l'ID que je vois sur ta capture d'écran
+            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                withSonarQubeEnv('My SonarQube Server') {
+                    sh "npx sonar-scanner \
+                        -Dsonar.projectKey=bytebattle-frontend \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.token=${SONAR_TOKEN}"
                 }
             }
         }
+    }
+}
 
         stage('Quality Gate') {
             steps {
