@@ -79,7 +79,9 @@ export class AiInterviewService {
             return this.getMockInitialPrompt(domain, difficulty, lang);
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const persona = domainConfig.persona[lang];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const subTopics = domainConfig.subTopics.join(', ');
 
         const prompt = this.buildSystemPrompt(domainConfig, difficulty, lang);
@@ -296,6 +298,7 @@ Base your evaluation on answer quality, communication, and problem-solving. Be c
 
     // Helper methods
     private buildSystemPrompt(domainConfig: DomainPromptConfig, difficulty: string, lang: string): string {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const persona = domainConfig.persona[lang];
         const questions = domainConfig.questionsByLevel[difficulty as keyof typeof domainConfig.questionsByLevel] || domainConfig.questionsByLevel.medium;
         const criteria = domainConfig.evaluationCriteria.map(c => `- ${c}`).join('\n');

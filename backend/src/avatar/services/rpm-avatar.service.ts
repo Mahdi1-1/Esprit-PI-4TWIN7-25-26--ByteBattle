@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';

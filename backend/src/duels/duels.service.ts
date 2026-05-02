@@ -611,7 +611,7 @@ export class DuelsService {
       p2StatUpdate = this.updatePlayerStats(state.player2.id, null);
     }
 
-    const [_, p1Stats, p2Stats] = await this.prisma.$transaction([
+    const [_result, p1Stats, p2Stats] = await this.prisma.$transaction([
       duelUpdate,
       p1StatUpdate,
       p2StatUpdate,

@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Param, Query, Body, Res, HttpCode, HttpStatus,
+  Param, Query, Body, Res,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -298,8 +298,10 @@ export class HackathonsController {
   @ApiOperation({ summary: 'Create a hackathon (admin)' })
   create(
     @Body() dto: CreateHackathonDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return this.hackathonsService.create(dto, adminId);
   }
 
@@ -319,8 +321,10 @@ export class HackathonsController {
   transitionStatus(
     @Param('id') hackathonId: string,
     @Body() dto: TransitionStatusDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return this.hackathonsService.transitionStatus(hackathonId, dto.status, adminId);
   }
 
@@ -332,8 +336,10 @@ export class HackathonsController {
   cancelHackathon(
     @Param('id') hackathonId: string,
     @Body() dto: CancelHackathonDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return this.hackathonsService.cancelHackathon(hackathonId, adminId, dto.reason);
   }
 
@@ -344,8 +350,10 @@ export class HackathonsController {
   @ApiOperation({ summary: 'Delete a hackathon (admin)' })
   remove(
     @Param('id') id: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return this.hackathonsService.deleteHackathon(id, adminId);
   }
 
@@ -356,11 +364,13 @@ export class HackathonsController {
   @ApiOperation({ summary: 'Answer a clarification (admin)' })
   answerClarification(
     @Param('clarificationId') clarificationId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
     @Body() dto: AnswerClarificationDto,
   ) {
     return this.clarificationService.answerClarification(
       clarificationId,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       adminId,
       dto.answer,
       dto.isBroadcast,
@@ -374,11 +384,13 @@ export class HackathonsController {
   @ApiOperation({ summary: 'Create an announcement (admin)' })
   createAnnouncement(
     @Param('id') hackathonId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
     @Body() dto: CreateAnnouncementDto,
   ) {
     return this.announcementService.createAnnouncement(
       hackathonId,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       adminId,
       dto.content,
       dto.isPinned,
@@ -402,6 +414,7 @@ export class HackathonsController {
   rejudge(
     @Param('id') hackathonId: string,
     @Body() body: { challengeId?: string; teamId?: string },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
   ) {
     if (body.challengeId) {
@@ -421,9 +434,11 @@ export class HackathonsController {
   disqualifyTeam(
     @Param('id') hackathonId: string,
     @Param('teamId') teamId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
     @Body('reason') reason: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return this.hackathonsService.disqualifyTeam(hackathonId, teamId, adminId, reason);
   }
 
@@ -434,8 +449,10 @@ export class HackathonsController {
   reinstateTeam(
     @Param('id') hackathonId: string,
     @Param('teamId') teamId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @CurrentUser('id') adminId: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return this.hackathonsService.reinstateTeam(hackathonId, teamId, adminId);
   }
 

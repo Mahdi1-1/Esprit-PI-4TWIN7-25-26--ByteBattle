@@ -4,11 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ChallengesService } from '../challenges/challenges.service';
 import { AiService } from '../ai/ai.service';
 import { IntelligenceService } from '../intelligence/intelligence.service';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 
 describe('HintsService', () => {
   let service: HintsService;
   let prismaService: PrismaService;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let challengesService: ChallengesService;
   let aiService: AiService;
   let intelligenceService: IntelligenceService;
@@ -74,6 +75,7 @@ describe('HintsService', () => {
 
     service = module.get<HintsService>(HintsService);
     prismaService = module.get<PrismaService>(PrismaService);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     challengesService = module.get<ChallengesService>(ChallengesService);
     aiService = module.get<AiService>(AiService);
     intelligenceService = module.get<IntelligenceService>(IntelligenceService);

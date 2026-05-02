@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsInt, IsNumber } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsInt } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateSubmissionDto {

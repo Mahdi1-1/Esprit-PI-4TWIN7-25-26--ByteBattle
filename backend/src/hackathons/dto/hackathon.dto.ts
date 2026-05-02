@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsObject, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsDateString, IsObject } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateHackathonDto {

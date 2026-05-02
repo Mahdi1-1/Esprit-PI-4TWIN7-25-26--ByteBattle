@@ -1,9 +1,9 @@
 // src/interviews/interviews.service.ts
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AiInterviewService, InterviewFeedback } from '../ai/ai-interview.service';
+import { AiInterviewService } from '../ai/ai-interview.service';
 import { VoiceService } from '../voice/voice.service';
-import { StartInterviewDto, SendMessageDto, SendVoiceMessageDto, InterviewDomainEnum, InterviewLanguageEnum } from './dto/interview.dto';
+import { StartInterviewDto, SendMessageDto, InterviewDomainEnum, InterviewLanguageEnum } from './dto/interview.dto';
 import { DOMAIN_PROMPTS } from '../ai/prompts';
 import { Prisma } from '@prisma/client';
 
