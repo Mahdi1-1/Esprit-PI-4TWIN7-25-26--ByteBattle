@@ -1,4 +1,4 @@
-# ── Stage 1: Build ─────────────────────────────────────────
+# -------- BUILDER --------
 FROM node:20-alpine AS builder
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -9,12 +9,13 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN pnpm exec prisma generate
 
 COPY . .
 RUN pnpm run build
 
-# ── Stage 2: Production ───────────────────────────────────
+
+# -------- PRODUCTION --------
 FROM node:20-alpine AS production
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -27,7 +28,8 @@ RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
-RUN npx prisma generate
+# 🔥 IMPORTANT FIX
+RUN pnpm exec prisma generate
 
 EXPOSE 4001
 
