@@ -1,14 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'NodeJS-20'
-    }
-
-    environment {
-        SCANNER_HOME = tool('SonarQubeScanner')
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -19,16 +11,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir('judge-worker') {
-                    sh 'npm install -g pnpm'
                     sh 'pnpm install --frozen-lockfile'
-                }
-            }
-        }
-
-        stage('Prisma Generate') {
-            steps {
-                dir('judge-worker') {
-                    sh 'npx prisma generate'
                 }
             }
         }
@@ -52,8 +35,14 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 dir('judge-worker') {
-                    withSonarQubeEnv('SonarQube') {
-                        sh "${SCANNER_HOME}/bin/sonar-scanner"
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('My SonarQube Server') {
+                            sh "npx sonar-scanner \
+                                -Dsonar.projectKey=bytebattle-judge-worker \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=http://sonarqube:9000 \
+                                -Dsonar.token=${SONAR_TOKEN}"
+                        }
                     }
                 }
             }
@@ -69,14 +58,8 @@ pipeline {
     }
 
     post {
-        always {
-            cleanWs()
-        }
-        success {
-            echo '✅ Judge Worker CI pipeline completed successfully!'
-        }
-        failure {
-            echo '❌ Judge Worker CI pipeline failed!'
-        }
+        always { cleanWs() }
+        success { echo '✅ Judge Worker CI pipeline completed successfully!' }
+        failure  { echo '❌ Judge Worker CI pipeline failed!' }
     }
 }

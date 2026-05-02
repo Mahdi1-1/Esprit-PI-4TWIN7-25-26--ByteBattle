@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE    = 'bytebattle/backend'
-        DOCKER_TAG      = "${BUILD_NUMBER}"
+        DOCKER_IMAGE = 'mahdimasmoudi/bytebattle-backend'
+        DOCKER_TAG   = "${BUILD_NUMBER}"
     }
 
     stages {
@@ -38,9 +38,14 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig-credentials']) {
-                    sh "kubectl set image deployment/backend-deployment backend=${DOCKER_IMAGE}:${DOCKER_TAG} -n bytebattle"
-                    sh "kubectl rollout status deployment/backend-deployment -n bytebattle --timeout=120s"
+                withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
+                    sh """
+                        kubectl set image deployment/backend-deployment \
+                            backend=${DOCKER_IMAGE}:${DOCKER_TAG} \
+                            -n bytebattle
+                        kubectl rollout status deployment/backend-deployment \
+                            -n bytebattle --timeout=120s
+                    """
                 }
             }
         }
@@ -51,11 +56,7 @@ pipeline {
             sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
             cleanWs()
         }
-        success {
-            echo '✅ Backend CD pipeline completed successfully!'
-        }
-        failure {
-            echo '❌ Backend CD pipeline failed!'
-        }
+        success { echo '✅ Backend CD pipeline completed successfully!' }
+        failure  { echo '❌ Backend CD pipeline failed!' }
     }
 }
