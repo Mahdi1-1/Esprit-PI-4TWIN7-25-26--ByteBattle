@@ -12,7 +12,7 @@ pipeline {
             steps {
                 dir('backend') {
                     sh 'pnpm install --frozen-lockfile'
-                    sh 'pnpm approve-builds'
+                    sh 'pnpm exec prisma generate'
                 }
             }
         }
