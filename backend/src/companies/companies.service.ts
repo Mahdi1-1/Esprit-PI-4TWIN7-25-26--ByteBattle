@@ -104,7 +104,6 @@ export class CompaniesService {
   }
 
   private async requireActiveMember(companyId: string, userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.getCompanyMembership(companyId, userId);
     if (!membership || membership.status !== 'active') {
       throw new ForbiddenException('Access denied to company resources');
@@ -113,7 +112,6 @@ export class CompaniesService {
   }
 
   private async requireCompanyMember(companyId: string, userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.getCompanyMembership(companyId, userId);
     if (!membership) {
       throw new ForbiddenException('Access denied to company resources');
@@ -227,7 +225,6 @@ export class CompaniesService {
   }
 
   async getUserCompanies(userId: string): Promise<CompanyMemberResponseDto[]> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const memberships = await this.prisma.companyMembership.findMany({
       where: { userId },
       include: { company: true },
@@ -251,7 +248,6 @@ export class CompaniesService {
   }
 
   async getMyCompany(userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.findFirst({
       where: { userId, status: 'active' },
       include: { company: true },
@@ -275,7 +271,6 @@ export class CompaniesService {
   }
 
   async requestVerification(userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.findFirst({
       where: { userId, status: 'active', role: 'owner' },
       include: { company: true },
@@ -322,7 +317,6 @@ export class CompaniesService {
       await this.prisma.companyMembership.delete({ where: { id: existingMembership.id } });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.create({
       data: {
         companyId,
@@ -475,7 +469,6 @@ export class CompaniesService {
 
   async assignMemberToTeam(companyId: string, memberUserId: string, teamId: string | null, actorId: string) {
     await this.requireCompanyAdmin(companyId, actorId);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: memberUserId } },
     });
@@ -532,7 +525,6 @@ export class CompaniesService {
       throw new BadRequestException('Cannot change the owner\'s role');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: targetUserId } },
     });
@@ -570,7 +562,6 @@ export class CompaniesService {
       throw new BadRequestException('Cannot remove the company owner');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: targetUserId } },
     });
@@ -614,7 +605,6 @@ export class CompaniesService {
       throw new BadRequestException('User is already a member or has a pending request');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.create({
       data: {
         companyId,
@@ -645,7 +635,6 @@ export class CompaniesService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const company = await this.requireCompanyAdmin(companyId, adminId);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: targetUserId } },
     });
@@ -786,7 +775,6 @@ export class CompaniesService {
   }
 
   async getCompanyCourses(companyId: string, userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.getCompanyMembership(companyId, userId);
     const where: any = { companyId };
     if (!membership) {
@@ -1160,7 +1148,6 @@ export class CompaniesService {
   }
 
   async getCompanyForumPosts(companyId: string, userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.getCompanyMembership(companyId, userId);
     const where: any = { companyId };
     if (!membership || membership.status !== 'active') {
@@ -1173,7 +1160,6 @@ export class CompaniesService {
   }
 
   async createCompanyForumPost(companyId: string, userId: string, dto: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.getCompanyMembership(companyId, userId);
     if (dto.visibility === 'company_only' && (!membership || membership.status !== 'active')) {
       throw new ForbiddenException('Only company members can post private content');
@@ -1201,7 +1187,6 @@ export class CompaniesService {
   }
 
   async getCompanyNotifications(companyId: string, userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.requireCompanyMember(companyId, userId);
 
     const where: any = { companyId };
@@ -1221,7 +1206,6 @@ export class CompaniesService {
       throw new NotFoundException('Company notification not found');
     }
     if (notification.userId && notification.userId !== userId) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const membership = await this.getCompanyMembership(notification.companyId, userId);
       if (!membership || membership.role === 'member') {
         throw new ForbiddenException('Not allowed to update this notification');
@@ -1234,7 +1218,6 @@ export class CompaniesService {
   }
 
   async userIsCompanyMember(userId: string, companyId: string): Promise<boolean> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId } },
     });
@@ -1242,7 +1225,6 @@ export class CompaniesService {
   }
 
   async getCompanyMember(companyId: string, userId: string): Promise<CompanyMemberResponseDto> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId } },
       include: { company: true },

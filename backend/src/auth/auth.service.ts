@@ -185,6 +185,7 @@ export class AuthService {
       include: { company: { select: { id: true, name: true, slug: true, verified: true } } },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...profile } = user;
     return {
       ...profile,

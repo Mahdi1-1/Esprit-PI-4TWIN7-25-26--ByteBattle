@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import _Redis from 'ioredis';
 import { CacheService } from './cache.service';
 
 jest.mock('ioredis', () => ({

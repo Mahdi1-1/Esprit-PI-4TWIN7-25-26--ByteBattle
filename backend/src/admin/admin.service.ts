@@ -8,7 +8,8 @@ import {
   NotificationType,
 } from '../notifications/notification.constants';
 
-const _ALLOWED_ROLES = ['user', 'moderator', 'admin'] as const;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _ALLOWED_ROLES = ["user", "moderator", "admin"] as const;
 type AllowedRole = typeof _ALLOWED_ROLES[number];
 
 @Injectable()
