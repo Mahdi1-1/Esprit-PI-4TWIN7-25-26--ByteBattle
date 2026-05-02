@@ -38,11 +38,11 @@ pipeline {
                 dir('judge-worker') {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         withSonarQubeEnv('My SonarQube Server') {
-                            sh "npx sonar-scanner \
-                                -Dsonar.projectKey=bytebattle-judge-worker \
-                                -Dsonar.sources=. \
-                                -Dsonar.host.url=http://sonarqube:9000 \
-                                -Dsonar.token=${SONAR_TOKEN}"
+                            sh '''
+                            npx sonar-scanner \
+                              -Dsonar.host.url=http://sonarqube:9000 \
+                              -Dsonar.token=$SONAR_TOKEN
+                            '''
                         }
                     }
                 }
