@@ -3,6 +3,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { HackathonsService } from './hackathons.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { HackathonAuditService } from './hackathon-audit.service';
+import { NotificationEmitterService } from '../notifications/notification-emitter.service';
 
 // ────────────────────────────────────────────────────────
 // T142 — Unit tests for lifecycle state machine
@@ -42,6 +43,7 @@ describe('HackathonsService — Lifecycle State Machine', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         delete: jest.fn(),
         deleteMany: jest.fn(),
         count: jest.fn().mockResolvedValue(0),
@@ -57,6 +59,7 @@ describe('HackathonsService — Lifecycle State Machine', () => {
         HackathonsService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: HackathonAuditService, useValue: auditMock },
+        { provide: NotificationEmitterService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 

@@ -442,7 +442,9 @@ export class CompaniesService {
         0,
       );
 
-      const { members, ...teamBase } = team;
+      const teamBase = { ...team };
+      delete teamBase.members;
+
       return {
         ...teamBase,
         stats: {

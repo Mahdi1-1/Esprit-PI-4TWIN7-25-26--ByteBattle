@@ -44,7 +44,7 @@ export class RpmAvatarService implements OnModuleInit {
         }
         
         return lastPart;
-    } catch (e) {
+    } catch {
         return 'default_id';
     }
   }
@@ -54,7 +54,7 @@ export class RpmAvatarService implements OnModuleInit {
     if (avatarId.includes('http')) {
         try {
             avatarId = this.extractAvatarId(avatarId);
-        } catch (e) {
+        } catch {
             // Keep as is if extraction fails, might be a valid ID anyway
         }
     }
@@ -298,7 +298,7 @@ export class RpmAvatarService implements OnModuleInit {
       try {
         const filename = path.basename(user.avatar.localImageUrl);
         await fs.unlink(path.join(this.uploadDir, filename)).catch(() => {});
-      } catch (e) {
+      } catch {
         // Ignore file not found
       }
     }
@@ -307,7 +307,7 @@ export class RpmAvatarService implements OnModuleInit {
       try {
         const filename = path.basename(user.avatar.thumbnailUrl);
         await fs.unlink(path.join(this.uploadDir, filename)).catch(() => {});
-      } catch (e) {
+      } catch {
         // Ignore
       }
     }

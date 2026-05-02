@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { HackathonsService } from './hackathons.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { HackathonAuditService } from './hackathon-audit.service';
+import { NotificationEmitterService } from '../notifications/notification-emitter.service';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Unit tests — HackathonsService.getHackathonChallenges()
@@ -107,6 +108,7 @@ describe('HackathonsService — getHackathonChallenges()', () => {
         HackathonsService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: HackathonAuditService, useValue: { log: jest.fn() } },
+        { provide: NotificationEmitterService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
