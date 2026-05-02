@@ -12,6 +12,7 @@ pipeline {
             steps {
                 dir('judge-worker') {
                     sh 'pnpm install --frozen-lockfile'
+                    sh 'pnpm exec prisma generate'
                 }
             }
         }
@@ -27,7 +28,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('judge-worker') {
-                    sh 'pnpm run test -- --passWithNoTests --coverage'
+                    sh 'pnpm exec jest --coverage --passWithNoTests'
                 }
             }
         }

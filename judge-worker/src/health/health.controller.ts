@@ -13,8 +13,16 @@ export class HealthController {
   @Get()
   async check() {
     try {
-      const isRedisReady = await this.executionQueue.client.then(c => c.status === 'ready');
-      const counts = await this.executionQueue.getJobCounts('wait', 'active', 'completed', 'failed', 'delayed');
+      const isRedisReady = await this.executionQueue.client.then(
+        (c) => c.status === 'ready',
+      );
+      const counts = await this.executionQueue.getJobCounts(
+        'wait',
+        'active',
+        'completed',
+        'failed',
+        'delayed',
+      );
 
       return {
         status: 'ok',
@@ -22,12 +30,13 @@ export class HealthController {
         redis: isRedisReady ? 'connected' : 'disconnected',
         queue: counts,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Health check failed', error);
       return {
         status: 'error',
         timestamp: new Date().toISOString(),
-        error: error.message,
+        error: message,
       };
     }
   }
