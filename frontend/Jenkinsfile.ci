@@ -31,6 +31,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         withSonarQubeEnv('My SonarQube Server') {
                             sh '''
+                            echo "SONAR_HOST_URL=$SONAR_HOST_URL"
                             npx sonar-scanner \
                               -Dsonar.projectKey=bytebattle-frontend \
                               -Dsonar.sources=. \
