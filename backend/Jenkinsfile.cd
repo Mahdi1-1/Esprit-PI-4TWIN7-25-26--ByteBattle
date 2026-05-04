@@ -4,6 +4,7 @@ pipeline {
     environment {
         REGISTRY = 'docker.io'
         IMAGE_NAME = 'mahdimasmoudi/bytebattle-backend'
+        DOCKER_HOST = 'tcp://172.17.0.1:2375'
 
         K8S_NAMESPACE = 'bytebattle'
         K8S_DEPLOYMENT = 'backend-deployment'

@@ -5,6 +5,7 @@ pipeline {
         REGISTRY = 'docker.io'
         IMAGE_NAME = 'mahdimasmoudi/bytebattle-frontend'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        DOCKER_HOST = 'tcp://172.17.0.1:2375'
 
         K8S_NAMESPACE = 'bytebattle'
         K8S_DEPLOYMENT = 'frontend-deployment'
