@@ -1,15 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { QueueService } from '../queue/queue.service';
-import Redis from 'ioredis';
-import { ConfigService } from '@nestjs/config';
-import { AiService } from '../ai/ai.service';
-import { DUEL_SCORING } from './duels.constants';
-import { computeDuelStats, computeDuelStatsBatch } from './duel-stats.util';
-import { NotificationEmitterService } from '../notifications/notification-emitter.service';
-import { NotificationsGateway } from '../notifications/notifications.gateway';
-import { NotificationCategory, NotificationPriority, NotificationType } from '../notifications/notification.constants';
-import { BadgeEngineService } from '../badges/badge-engine.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { QueueService } from "../queue/queue.service";
+import Redis from "ioredis";
+import { ConfigService } from "@nestjs/config";
+import { AiService } from "../ai/ai.service";
+import { DUEL_SCORING } from "./duels.constants";
+import { computeDuelStats, computeDuelStatsBatch } from "./duel-stats.util";
+import { NotificationEmitterService } from "../notifications/notification-emitter.service";
+import { NotificationsGateway } from "../notifications/notifications.gateway";
+import {
+  NotificationCategory,
+  NotificationPriority,
+  NotificationType,
+} from "../notifications/notification.constants";
+import { BadgeEngineService } from "../badges/badge-engine.service";
 
 export interface DuelPlayerState {
   id: string;
@@ -40,7 +49,7 @@ export interface DuelState {
     hints?: string[];
     allowedLanguages?: string[];
   };
-  status: 'waiting' | 'ready' | 'active' | 'completed' | 'abandoned';
+  status: "waiting" | "ready" | "active" | "completed" | "abandoned";
   winnerId?: string | null;
   timeLimit: number;
   startedAt?: number;
@@ -62,15 +71,16 @@ export class DuelsService {
     private notificationsGateway: NotificationsGateway,
     private badgeEngine: BadgeEngineService,
   ) {
-    this.redisEnabled = this.configService.get<string>('REDIS_ENABLED', 'true') !== 'false';
+    this.redisEnabled =
+      this.configService.get<string>("REDIS_ENABLED", "true") !== "false";
     if (this.redisEnabled) {
       this.redis = new Redis({
-        host: this.configService.get('REDIS_HOST', 'localhost'),
-        port: this.configService.get('REDIS_PORT', 6379),
-        password: this.configService.get('REDIS_PASSWORD'),
+        host: this.configService.get("REDIS_HOST", "localhost"),
+        port: this.configService.get("REDIS_PORT", 6379),
+        password: this.configService.get("REDIS_PASSWORD"),
       });
     } else {
-      this.logger.warn('Redis is disabled. Duel live state is unavailable.');
+      this.logger.warn("Redis is disabled. Duel live state is unavailable.");
     }
   }
 
@@ -78,7 +88,7 @@ export class DuelsService {
    * 🎯 Matchmaking robuste: 1 duel démarre uniquement avec 2 joueurs en recherche.
    * Évite le cas où 2 requêtes simultanées créent 2 duels distincts en attente.
    */
-  async createOrJoinDuel(userId: string, difficulty: string = 'easy') {
+  async createOrJoinDuel(userId: string, difficulty: string = "easy") {
     const myWaitingDuel = await this.findMyWaitingDuel(userId);
     if (myWaitingDuel) return myWaitingDuel;
 
@@ -92,12 +102,12 @@ export class DuelsService {
     // Si une autre file d'attente plus ancienne existe, on la rejoint et on nettoie celle qu'on vient de créer.
     const olderWaitingDuel = await this.prisma.duel.findFirst({
       where: {
-        status: 'waiting',
+        status: "waiting",
         difficulty: difficulty as any,
         player1Id: { not: userId },
         createdAt: { lt: createdDuel.createdAt },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
       select: { id: true },
     });
 
@@ -124,7 +134,7 @@ export class DuelsService {
       select: { id: true, status: true, player1Id: true },
     });
 
-    if (!duel || duel.player1Id !== userId || duel.status !== 'waiting') {
+    if (!duel || duel.player1Id !== userId || duel.status !== "waiting") {
       return;
     }
 
@@ -139,43 +149,50 @@ export class DuelsService {
    * 🎮 Créer un nouveau duel
    */
   async createDuel(player1Id: string, difficulty: string) {
-    this.logger.log(`🎮 Creating duel for player ${player1Id}, difficulty: ${difficulty}`);
+    this.logger.log(
+      `🎮 Creating duel for player ${player1Id}, difficulty: ${difficulty}`,
+    );
 
     // Sélectionner le dernier challenge (le plus récent)
     let challenge = await this.prisma.challenge.findFirst({
       where: {
         difficulty: difficulty as any,
-        kind: 'CODE',
+        kind: "CODE",
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (!challenge) {
       // Fallback: prendre le dernier challenge de code
       challenge = await this.prisma.challenge.findFirst({
-        where: { kind: 'CODE' },
-        orderBy: { createdAt: 'desc' },
+        where: { kind: "CODE" },
+        orderBy: { createdAt: "desc" },
       });
     }
 
     if (!challenge) {
       // Fallback extreme
       challenge = await this.prisma.challenge.findFirst({
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
     }
 
     if (!challenge) {
-      throw new NotFoundException('No challenges available in the database to create a duel');
+      throw new NotFoundException(
+        "No challenges available in the database to create a duel",
+      );
     }
 
     // Normaliser la limite de temps en secondes.
     // Convention legacy: certaines valeurs seedées sont en minutes (ex: 10, 45, 60).
     // Si <= 300, on considère que c'est en minutes.
     const rawDuelTimeLimit = Number(challenge.duelTimeLimit ?? 1800);
-    const duelTimeLimitSeconds = Number.isFinite(rawDuelTimeLimit) && rawDuelTimeLimit > 0
-      ? (rawDuelTimeLimit <= 300 ? rawDuelTimeLimit * 60 : rawDuelTimeLimit)
-      : 1800;
+    const duelTimeLimitSeconds =
+      Number.isFinite(rawDuelTimeLimit) && rawDuelTimeLimit > 0
+        ? rawDuelTimeLimit <= 300
+          ? rawDuelTimeLimit * 60
+          : rawDuelTimeLimit
+        : 1800;
 
     // Créer le duel dans la DB
     const duel = await this.prisma.duel.create({
@@ -183,12 +200,12 @@ export class DuelsService {
         player1: { connect: { id: player1Id } },
         player2: { connect: { id: player1Id } }, // Temporaire jusqu'à ce qu'un adversaire rejoigne
         challenge: { connect: { id: challenge.id } },
-        status: 'waiting',
+        status: "waiting",
         difficulty: difficulty as any,
         timeLimit: duelTimeLimitSeconds,
         events: [
           {
-            type: 'create',
+            type: "create",
             playerId: player1Id,
             timestamp: new Date(),
             data: { difficulty },
@@ -213,8 +230,8 @@ export class DuelsService {
         score: 0,
       },
       player2: {
-        id: '',
-        username: '',
+        id: "",
+        username: "",
         ready: false,
         testsPassed: 0,
         testsTotal: challenge.tests.length,
@@ -229,7 +246,7 @@ export class DuelsService {
         hints: challenge.hints || [],
         allowedLanguages: challenge.allowedLanguages || [],
       },
-      status: 'waiting',
+      status: "waiting",
       timeLimit: duel.timeLimit,
       events: [],
     };
@@ -253,15 +270,15 @@ export class DuelsService {
     });
 
     if (!duel) {
-      throw new NotFoundException('Duel not found');
+      throw new NotFoundException("Duel not found");
     }
 
-    if (duel.status !== 'waiting') {
-      throw new BadRequestException('Duel is not available');
+    if (duel.status !== "waiting") {
+      throw new BadRequestException("Duel is not available");
     }
 
     if (duel.player1Id === player2Id) {
-      throw new BadRequestException('Cannot duel yourself');
+      throw new BadRequestException("Cannot duel yourself");
     }
 
     const player2 = await this.prisma.user.findUnique({
@@ -274,10 +291,10 @@ export class DuelsService {
       where: { id: duelId },
       data: {
         player2: { connect: { id: player2Id } },
-        status: 'ready',
+        status: "ready",
         events: {
           push: {
-            type: 'join',
+            type: "join",
             playerId: player2Id,
             timestamp: new Date(),
           },
@@ -300,7 +317,7 @@ export class DuelsService {
       testsTotal: state.challenge.tests.length,
       score: 0,
     };
-    state.status = 'ready';
+    state.status = "ready";
 
     await this.setDuelState(duelId, state);
 
@@ -311,11 +328,11 @@ export class DuelsService {
         type: NotificationType.DUEL_MATCHED,
         category: NotificationCategory.DUEL,
         priority: NotificationPriority.HIGH,
-        title: '⚔️ Duel opponent found!',
+        title: "⚔️ Duel opponent found!",
         message: `${player2!.username} has joined your duel. Get ready!`,
         actionUrl: `/duels/${duelId}`,
         entityId: duelId,
-        entityType: 'Duel',
+        entityType: "Duel",
         senderId: player2Id,
         senderName: player2!.username,
       }),
@@ -324,11 +341,11 @@ export class DuelsService {
         type: NotificationType.DUEL_MATCHED,
         category: NotificationCategory.DUEL,
         priority: NotificationPriority.HIGH,
-        title: '⚔️ Duel matched!',
+        title: "⚔️ Duel matched!",
         message: `You joined a duel against ${duel.player1.username}. Get ready!`,
         actionUrl: `/duels/${duelId}`,
         entityId: duelId,
-        entityType: 'Duel',
+        entityType: "Duel",
         senderId: duel.player1Id,
         senderName: duel.player1.username,
       }),
@@ -349,22 +366,22 @@ export class DuelsService {
     } else if (state.player2.id === playerId) {
       state.player2.ready = true;
     } else {
-      throw new BadRequestException('Player not in this duel');
+      throw new BadRequestException("Player not in this duel");
     }
 
     // Si les 2 joueurs sont prêts, démarrer le duel
     if (state.player1.ready && state.player2.ready) {
-      state.status = 'active';
+      state.status = "active";
       state.startedAt = Date.now();
 
       await this.prisma.duel.update({
         where: { id: duelId },
         data: {
-          status: 'active',
+          status: "active",
           startedAt: new Date(),
           events: {
             push: {
-              type: 'start',
+              type: "start",
               playerId,
               timestamp: new Date(),
             },
@@ -382,15 +399,22 @@ export class DuelsService {
   /**
    * 🧪 Tester le code d'un joueur
    */
-  async testCode(duelId: string, playerId: string, code: string, language: string, hintsUsed: number = 0) {
+  async testCode(
+    duelId: string,
+    playerId: string,
+    code: string,
+    language: string,
+    hintsUsed: number = 0,
+  ) {
     const state = await this.getDuelState(duelId);
 
-    if (state.status !== 'active') {
-      throw new BadRequestException('Duel is not active');
+    if (state.status !== "active") {
+      throw new BadRequestException("Duel is not active");
     }
 
-    const player = state.player1.id === playerId ? state.player1 : state.player2;
-    
+    const player =
+      state.player1.id === playerId ? state.player1 : state.player2;
+
     // Incrémenter le nombre de soumissions
     player.submissionsCount = (player.submissionsCount || 0) + 1;
 
@@ -404,40 +428,43 @@ export class DuelsService {
     player.code = code;
     player.language = language;
     player.testsPassed = evaluation.passed;
-    
-    if (evaluation.verdict === 'AC') {
+
+    if (evaluation.verdict === "AC") {
       let finalScore = 100;
-      
+
       // Pénalité par soumission supplémentaire (5 pts par échec précédent)
       const subsPenalty = Math.max(0, (player.submissionsCount - 1) * 5);
-      
+
       // Pénalité pour hints (10 pts/hint)
       const hintsPenalty = hintsUsed * 10;
-      
+
       // Pénalité anticheat
       const focusPenalty = (player.focusLostCount || 0) * 10;
-      
+
       // Pénalité de temps d'implémentation
       let timePenalty = 0;
       if (state.timeLimit && state.startedAt) {
         const timeElapsed = (Date.now() - state.startedAt) / 1000;
-        const timeRatio = Math.min(1, Math.max(0, timeElapsed / state.timeLimit));
+        const timeRatio = Math.min(
+          1,
+          Math.max(0, timeElapsed / state.timeLimit),
+        );
         // Jusqu'à 15 points de perdus si on prend tout le temps limite
         timePenalty = Math.floor(timeRatio * 15);
       }
-      
-      finalScore -= (subsPenalty + hintsPenalty + timePenalty + focusPenalty);
-      
+
+      finalScore -= subsPenalty + hintsPenalty + timePenalty + focusPenalty;
+
       // Assurer un minimum de points pour la victoire technique
       player.score = Math.max(20, finalScore);
     } else {
       // Score partiel très limité si on ne valide pas tous les tests (max 40)
-      const partialRatio = (evaluation.passed / evaluation.total);
+      const partialRatio = evaluation.passed / evaluation.total;
       player.score = Math.round(partialRatio * 40);
     }
 
     // Si le joueur a réussi tous les tests
-    if (evaluation.verdict === 'AC' && !player.finishedAt) {
+    if (evaluation.verdict === "AC" && !player.finishedAt) {
       player.finishedAt = Date.now();
       player.executionTimeMs = evaluation.totalTimeMs;
 
@@ -446,24 +473,27 @@ export class DuelsService {
           code: code,
           language: language,
           challengeTitle: state.challenge.title,
-          challengeDescription: 'Duel Challenge'
+          challengeDescription: "Duel Challenge",
         });
         player.complexityScore = review.score;
-        this.logger.log(`🤖 AI Review for Player ${playerId}: Score ${review.score}`);
+        this.logger.log(
+          `🤖 AI Review for Player ${playerId}: Score ${review.score}`,
+        );
       } catch (err) {
         this.logger.error(`AI Review failed during duel: ${err}`);
         player.complexityScore = 100; // default score if AI fails
       }
 
       // Vérifier si c'est le premier à finir
-      const opponent = state.player1.id === playerId ? state.player2 : state.player1;
+      const opponent =
+        state.player1.id === playerId ? state.player2 : state.player1;
       if (!opponent.finishedAt) {
         this.logger.log(`🏆 Player ${playerId} finished first!`);
       }
     }
 
     state.events.push({
-      type: 'test',
+      type: "test",
       playerId,
       timestamp: Date.now(),
       data: {
@@ -497,9 +527,10 @@ export class DuelsService {
    */
   async applyFocusLost(duelId: string, playerId: string) {
     const state = await this.getDuelState(duelId);
-    if (state.status !== 'active') return state;
+    if (state.status !== "active") return state;
 
-    const player = state.player1.id === playerId ? state.player1 : state.player2;
+    const player =
+      state.player1.id === playerId ? state.player1 : state.player2;
     player.focusLostCount = (player.focusLostCount || 0) + 1;
 
     // Si le joueur a déjà un score positif, on lui enlève 10 points directement pour pénaliser immédiatement
@@ -517,7 +548,7 @@ export class DuelsService {
   async endDuel(duelId: string) {
     const state = await this.getDuelState(duelId);
 
-    if (state.status === 'completed') {
+    if (state.status === "completed") {
       return;
     }
 
@@ -554,7 +585,9 @@ export class DuelsService {
       const p1Performance = p1SpeedScore + p1ComplexityScore - p1ExecPenalty;
       const p2Performance = p2SpeedScore + p2ComplexityScore - p2ExecPenalty;
 
-      this.logger.log(`📊 P1 Perf: ${p1Performance} (Speed: ${p1SpeedScore}, AI: ${p1ComplexityScore}, Exec: -${p1ExecPenalty}) | P2 Perf: ${p2Performance} (Speed: ${p2SpeedScore}, AI: ${p2ComplexityScore}, Exec: -${p2ExecPenalty})`);
+      this.logger.log(
+        `📊 P1 Perf: ${p1Performance} (Speed: ${p1SpeedScore}, AI: ${p1ComplexityScore}, Exec: -${p1ExecPenalty}) | P2 Perf: ${p2Performance} (Speed: ${p2SpeedScore}, AI: ${p2ComplexityScore}, Exec: -${p2ExecPenalty})`,
+      );
 
       if (p1Performance > p2Performance) {
         winnerId = state.player1.id;
@@ -578,13 +611,19 @@ export class DuelsService {
     const duelUpdate = this.prisma.duel.update({
       where: { id: duelId },
       data: {
-        status: 'completed',
+        status: "completed",
         winnerId,
         endedAt: new Date(),
         player1Score: state.player1.score,
         player2Score: state.player2.score,
-        player1Time: state.player1.finishedAt && state.startedAt ? state.player1.finishedAt - state.startedAt : null,
-        player2Time: state.player2.finishedAt && state.startedAt ? state.player2.finishedAt - state.startedAt : null,
+        player1Time:
+          state.player1.finishedAt && state.startedAt
+            ? state.player1.finishedAt - state.startedAt
+            : null,
+        player2Time:
+          state.player2.finishedAt && state.startedAt
+            ? state.player2.finishedAt - state.startedAt
+            : null,
         player1Tests: state.player1.testsPassed,
         player2Tests: state.player2.testsPassed,
         player1Language: state.player1.language || null,
@@ -619,20 +658,33 @@ export class DuelsService {
 
     try {
       if (!this.redisEnabled || !this.redis) {
-        throw new Error('Redis disabled');
+        throw new Error("Redis disabled");
       }
       const pipeline = this.redis.pipeline();
-      if (p1Stats && (p1Stats as any).elo !== undefined) pipeline.zadd('leaderboard:elo', (p1Stats as any).elo, state.player1.id);
-      if (p2Stats && (p2Stats as any).elo !== undefined) pipeline.zadd('leaderboard:elo', (p2Stats as any).elo, state.player2.id);
+      if (p1Stats && (p1Stats as any).elo !== undefined)
+        pipeline.zadd(
+          "leaderboard:elo",
+          (p1Stats as any).elo,
+          state.player1.id,
+        );
+      if (p2Stats && (p2Stats as any).elo !== undefined)
+        pipeline.zadd(
+          "leaderboard:elo",
+          (p2Stats as any).elo,
+          state.player2.id,
+        );
       // Invalidate user stats cache so next request gets fresh dynamic duel stats
       pipeline.del(`user:stats:${state.player1.id}`);
       pipeline.del(`user:stats:${state.player2.id}`);
       await pipeline.exec();
     } catch (err) {
-      this.logger.error('Failed to sync duel ELO changes to Redis leaderboard', err);
+      this.logger.error(
+        "Failed to sync duel ELO changes to Redis leaderboard",
+        err,
+      );
     }
 
-    state.status = 'completed';
+    state.status = "completed";
     state.winnerId = winnerId;
     await this.setDuelState(duelId, state);
 
@@ -649,22 +701,30 @@ export class DuelsService {
         type: NotificationType.DUEL_RESULT,
         category: NotificationCategory.DUEL,
         priority: NotificationPriority.HIGH,
-        title: isDraw ? '🤝 Duel ended in a draw' : p1Won ? '🏆 You won the duel!' : '💔 You lost the duel',
-        message: `vs ${state.player2.username} | ELO: ${p1Elo >= 1200 ? '+' : ''}${DUEL_SCORING.ELO_WIN_GAIN}`,
+        title: isDraw
+          ? "🤝 Duel ended in a draw"
+          : p1Won
+            ? "🏆 You won the duel!"
+            : "💔 You lost the duel",
+        message: `vs ${state.player2.username} | ELO: ${p1Elo >= 1200 ? "+" : ""}${DUEL_SCORING.ELO_WIN_GAIN}`,
         actionUrl: `/duels/${duelId}/result`,
         entityId: duelId,
-        entityType: 'Duel',
+        entityType: "Duel",
       }),
       this.notificationEmitter.emit({
         userId: state.player2.id,
         type: NotificationType.DUEL_RESULT,
         category: NotificationCategory.DUEL,
         priority: NotificationPriority.HIGH,
-        title: isDraw ? '🤝 Duel ended in a draw' : p2Won ? '🏆 You won the duel!' : '💔 You lost the duel',
-        message: `vs ${state.player1.username} | ELO: ${p2Elo >= 1200 ? '+' : ''}${DUEL_SCORING.ELO_WIN_GAIN}`,
+        title: isDraw
+          ? "🤝 Duel ended in a draw"
+          : p2Won
+            ? "🏆 You won the duel!"
+            : "💔 You lost the duel",
+        message: `vs ${state.player1.username} | ELO: ${p2Elo >= 1200 ? "+" : ""}${DUEL_SCORING.ELO_WIN_GAIN}`,
         actionUrl: `/duels/${duelId}/result`,
         entityId: duelId,
-        entityType: 'Duel',
+        entityType: "Duel",
       }),
     ]);
 
@@ -673,7 +733,10 @@ export class DuelsService {
       if (!stats) return;
       const newElo: number = stats.elo ?? 0;
       const milestone = Math.floor(newElo / 100) * 100;
-      if (newElo >= milestone && newElo - DUEL_SCORING.ELO_WIN_GAIN < milestone) {
+      if (
+        newElo >= milestone &&
+        newElo - DUEL_SCORING.ELO_WIN_GAIN < milestone
+      ) {
         await this.notificationEmitter.emit({
           userId,
           type: NotificationType.DUEL_ELO_MILESTONE,
@@ -681,9 +744,9 @@ export class DuelsService {
           priority: NotificationPriority.HIGH,
           title: `🎯 ELO milestone reached: ${milestone}!`,
           message: `You've reached ${newElo} ELO. Keep climbing!`,
-          actionUrl: '/leaderboard',
+          actionUrl: "/leaderboard",
           entityId: userId,
-          entityType: 'User',
+          entityType: "User",
         });
       }
     };
@@ -695,13 +758,17 @@ export class DuelsService {
     // 🏅 Badge triggers — fire-and-forget
     const p1NewElo: number = (p1Stats as any)?.elo ?? 0;
     const p2NewElo: number = (p2Stats as any)?.elo ?? 0;
-    this.badgeEngine.onDuelFinished(state.player1.id, p1Won, p1NewElo).catch(() => { });
-    this.badgeEngine.onDuelFinished(state.player2.id, p2Won, p2NewElo).catch(() => { });
+    this.badgeEngine
+      .onDuelFinished(state.player1.id, p1Won, p1NewElo)
+      .catch(() => {});
+    this.badgeEngine
+      .onDuelFinished(state.player2.id, p2Won, p2NewElo)
+      .catch(() => {});
     // Level/XP badges after duel XP is awarded
-    this.badgeEngine.checkUserLevelBadges(state.player1.id).catch(() => { });
-    this.badgeEngine.checkUserLevelBadges(state.player2.id).catch(() => { });
+    this.badgeEngine.checkUserLevelBadges(state.player1.id).catch(() => {});
+    this.badgeEngine.checkUserLevelBadges(state.player2.id).catch(() => {});
 
-    this.logger.log(`🏁 Duel ${duelId} ended. Winner: ${winnerId || 'draw'}`);
+    this.logger.log(`🏁 Duel ${duelId} ended. Winner: ${winnerId || "draw"}`);
 
     return { winnerId, state };
   }
@@ -734,11 +801,13 @@ export class DuelsService {
    */
   async getDuelState(duelId: string): Promise<DuelState> {
     if (!this.redisEnabled || !this.redis) {
-      throw new BadRequestException('Duels are temporarily unavailable while Redis is disabled');
+      throw new BadRequestException(
+        "Duels are temporarily unavailable while Redis is disabled",
+      );
     }
     const state = await this.redis.get(`duel:${duelId}`);
     if (!state) {
-      throw new NotFoundException('Duel state not found');
+      throw new NotFoundException("Duel state not found");
     }
     return JSON.parse(state);
   }
@@ -748,7 +817,9 @@ export class DuelsService {
    */
   async setDuelState(duelId: string, state: DuelState) {
     if (!this.redisEnabled || !this.redis) {
-      throw new BadRequestException('Duels are temporarily unavailable while Redis is disabled');
+      throw new BadRequestException(
+        "Duels are temporarily unavailable while Redis is disabled",
+      );
     }
     await this.redis.setex(`duel:${duelId}`, 7200, JSON.stringify(state)); // 2h TTL
   }
@@ -759,7 +830,7 @@ export class DuelsService {
   async findAvailableDuel(difficulty: string, excludeUserId: string) {
     return this.prisma.duel.findFirst({
       where: {
-        status: 'waiting',
+        status: "waiting",
         difficulty: difficulty as any,
         player1Id: { not: excludeUserId },
       },
@@ -767,7 +838,7 @@ export class DuelsService {
         player1: { select: { id: true, username: true, elo: true } },
         challenge: { select: { id: true, title: true, difficulty: true } },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
   }
 
@@ -777,7 +848,7 @@ export class DuelsService {
   async findMyWaitingDuel(userId: string) {
     return this.prisma.duel.findFirst({
       where: {
-        status: 'waiting',
+        status: "waiting",
         player1Id: userId,
       },
       include: {
@@ -793,11 +864,17 @@ export class DuelsService {
   async getLeaderboard(limit = 10) {
     // Get users who participated in at least one completed duel
     const participantIds = await this.prisma.duel.findMany({
-      where: { status: 'completed' },
+      where: { status: "completed" },
       select: { player1Id: true, player2Id: true },
     });
 
-    const uniqueIds = [...new Set(participantIds.flatMap(d => [d.player1Id, d.player2Id].filter(Boolean)))];
+    const uniqueIds = [
+      ...new Set(
+        participantIds.flatMap((d) =>
+          [d.player1Id, d.player2Id].filter(Boolean),
+        ),
+      ),
+    ];
     if (uniqueIds.length === 0) return [];
 
     const users = await this.prisma.user.findMany({
@@ -808,17 +885,25 @@ export class DuelsService {
         elo: true,
         level: true,
       },
-      orderBy: { elo: 'desc' },
+      orderBy: { elo: "desc" },
     });
 
-    const statsMap = await computeDuelStatsBatch(this.prisma, users.map(u => u.id));
+    const statsMap = await computeDuelStatsBatch(
+      this.prisma,
+      users.map((u) => u.id),
+    );
 
     return users
-      .map(u => {
-        const s = statsMap.get(u.id) || { duelsWon: 0, duelsLost: 0, duelsTotal: 0, winRate: 0 };
+      .map((u) => {
+        const s = statsMap.get(u.id) || {
+          duelsWon: 0,
+          duelsLost: 0,
+          duelsTotal: 0,
+          winRate: 0,
+        };
         return { ...u, ...s };
       })
-      .filter(u => u.duelsTotal > 0)
+      .filter((u) => u.duelsTotal > 0)
       .slice(0, limit);
   }
 
@@ -831,11 +916,8 @@ export class DuelsService {
     const [duels, total] = await Promise.all([
       this.prisma.duel.findMany({
         where: {
-          OR: [
-            { player1Id: userId },
-            { player2Id: userId },
-          ],
-          status: 'completed',
+          OR: [{ player1Id: userId }, { player2Id: userId }],
+          status: "completed",
         },
         include: {
           player1: { select: { id: true, username: true, profileImage: true } },
@@ -843,17 +925,14 @@ export class DuelsService {
           challenge: { select: { id: true, title: true, difficulty: true } },
           winner: { select: { id: true, username: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
       this.prisma.duel.count({
         where: {
-          OR: [
-            { player1Id: userId },
-            { player2Id: userId },
-          ],
-          status: 'completed',
+          OR: [{ player1Id: userId }, { player2Id: userId }],
+          status: "completed",
         },
       }),
     ]);
@@ -867,10 +946,10 @@ export class DuelsService {
   async getQueueStats() {
     const [waitingDuels, activeDuels] = await Promise.all([
       this.prisma.duel.count({
-        where: { status: 'waiting' },
+        where: { status: "waiting" },
       }),
       this.prisma.duel.count({
-        where: { status: { in: ['active', 'ready'] } },
+        where: { status: { in: ["active", "ready"] } },
       }),
     ]);
 
@@ -878,11 +957,12 @@ export class DuelsService {
     const playersOnline = this.notificationsGateway.getOnlineUserCount();
 
     // Estimated wait time: less players online = longer wait
-    const estimatedWaitSeconds = waitingDuels > 0
-      ? Math.max(5, 30 - waitingDuels * 5)
-      : playersOnline > 1
-        ? 15
-        : 30;
+    const estimatedWaitSeconds =
+      waitingDuels > 0
+        ? Math.max(5, 30 - waitingDuels * 5)
+        : playersOnline > 1
+          ? 15
+          : 30;
 
     return {
       waitingDuels,
@@ -901,7 +981,7 @@ export class DuelsService {
       select: { id: true, username: true, elo: true },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     const stats = await computeDuelStats(this.prisma, userId);
 
@@ -909,23 +989,23 @@ export class DuelsService {
     const recentDuels = await this.prisma.duel.findMany({
       where: {
         OR: [{ player1Id: userId }, { player2Id: userId }],
-        status: 'completed',
+        status: "completed",
       },
       select: { winnerId: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 5,
     });
 
-    const recentForm = recentDuels.map(d =>
-      d.winnerId === userId ? 'W' : d.winnerId ? 'L' : 'D',
+    const recentForm = recentDuels.map((d) =>
+      d.winnerId === userId ? "W" : d.winnerId ? "L" : "D",
     );
 
     // Current streak
     let streak = 0;
-    let streakType: 'W' | 'L' | null = null;
+    let streakType: "W" | "L" | null = null;
     for (const result of recentForm) {
-      if (result === 'D') break;
-      if (!streakType) streakType = result as 'W' | 'L';
+      if (result === "D") break;
+      if (!streakType) streakType = result as "W" | "L";
       if (result === streakType) streak++;
       else break;
     }
@@ -946,14 +1026,18 @@ export class DuelsService {
     const duel = await this.prisma.duel.findUnique({
       where: { id: duelId },
       include: {
-        player1: { select: { id: true, username: true, elo: true, profileImage: true } },
-        player2: { select: { id: true, username: true, elo: true, profileImage: true } },
+        player1: {
+          select: { id: true, username: true, elo: true, profileImage: true },
+        },
+        player2: {
+          select: { id: true, username: true, elo: true, profileImage: true },
+        },
         challenge: { select: { id: true, title: true, difficulty: true } },
         winner: { select: { id: true, username: true } },
       },
     });
 
-    if (!duel) throw new NotFoundException('Duel not found');
+    if (!duel) throw new NotFoundException("Duel not found");
 
     return duel;
   }
