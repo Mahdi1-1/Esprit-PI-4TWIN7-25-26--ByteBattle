@@ -95,6 +95,31 @@
                                     └─────────────────────┘
 ```
 
+### Kubernetes Node Layout
+
+The current Kubernetes deployment is designed around the following node layout:
+
+```text
+mahdi-masmoudi-vivobook-asuslaptop-x515ep-x515ep
+├── Kubernetes Control Plane
+├── Jenkins
+├── Helm
+├── Ingress Controller
+└── kubectl admin
+
+adam-vm
+├── Frontend React
+├── Backend NestJS
+└── WebSocket Gateway
+
+sabri-vm
+├── Judge Worker
+├── MongoDB
+├── Redis
+├── Prometheus
+└── Grafana
+```
+
 ---
 
 ## 🛠 Tech Stack
