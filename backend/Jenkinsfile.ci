@@ -42,7 +42,7 @@ pipeline {
                             pnpm exec sonar-scanner \
                               -Dsonar.projectKey=bytebattle-backend \
                               -Dsonar.sources=. \
-                              -Dsonar.host.url=$SONAR_HOST_URL \
+                              -Dsonar.host.url=http://sonarqube:9000 \
                               -Dsonar.token=$SONAR_TOKEN
                             '''
                         }
