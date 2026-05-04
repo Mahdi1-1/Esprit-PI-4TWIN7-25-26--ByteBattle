@@ -1,16 +1,22 @@
-import { Injectable, NotFoundException, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { ChangeEmailDto } from './dto/change-email.dto';
-import { DeleteAccountDto } from './dto/delete-account.dto';
-import { computeDuelStats } from '../duels/duel-stats.util';
-import * as fs from 'fs';
-import * as path from 'path';
-import sharp from 'sharp';
-import * as bcrypt from 'bcryptjs';
-import { CacheService } from '../cache/cache.service';
-import { IntelligenceService } from '../intelligence/intelligence.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
+import { ChangeEmailDto } from "./dto/change-email.dto";
+import { DeleteAccountDto } from "./dto/delete-account.dto";
+import { computeDuelStats } from "../duels/duel-stats.util";
+import * as fs from "fs";
+import * as path from "path";
+import sharp from "sharp";
+import * as bcrypt from "bcryptjs";
+import { CacheService } from "../cache/cache.service";
+import { IntelligenceService } from "../intelligence/intelligence.service";
 
 @Injectable()
 export class UsersService {
@@ -18,22 +24,30 @@ export class UsersService {
     private prisma: PrismaService,
     private cache: CacheService,
     private intelligenceService: IntelligenceService,
-  ) { }
+  ) {}
+
+  private removePasswordHash<T extends { passwordHash?: unknown }>(
+    user: T,
+  ): Omit<T, "passwordHash"> {
+    const profile = { ...user };
+    delete profile.passwordHash;
+    return profile;
+  }
 
   private mapDifficultyToRating(difficulty: unknown): number {
-    const value = String(difficulty || '').toLowerCase();
-    if (value === 'easy') return 800;
-    if (value === 'medium') return 1300;
-    if (value === 'hard') return 1700;
+    const value = String(difficulty || "").toLowerCase();
+    if (value === "easy") return 800;
+    if (value === "medium") return 1300;
+    if (value === "hard") return 1700;
     const numeric = Number(difficulty);
     if (Number.isFinite(numeric) && numeric > 0) return numeric;
     return 1300;
   }
 
   private normalizeText(value: unknown): string {
-    return String(value || '')
+    return String(value || "")
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/[^a-z0-9]+/g, " ")
       .trim();
   }
 
@@ -45,9 +59,14 @@ export class UsersService {
     return Math.max(0, Math.min(1, value));
   }
 
-  private getTagOverlapScore(challengeTags: string[], weakTags: string[]): number {
+  private getTagOverlapScore(
+    challengeTags: string[],
+    weakTags: string[],
+  ): number {
     if (!challengeTags.length || !weakTags.length) return 0;
-    const challengeSet = new Set(challengeTags.map((tag) => this.normalizeText(tag)));
+    const challengeSet = new Set(
+      challengeTags.map((tag) => this.normalizeText(tag)),
+    );
     const weakSet = new Set(weakTags.map((tag) => this.normalizeText(tag)));
     let overlap = 0;
 
@@ -59,13 +78,18 @@ export class UsersService {
   }
 
   private async mapRecommendedChallengesToExisting(
-    recommendations: Array<{ challenge_id?: string; challenge_name?: string; cf_rating?: number; score?: number }>,
+    recommendations: Array<{
+      challenge_id?: string;
+      challenge_name?: string;
+      cf_rating?: number;
+      score?: number;
+    }>,
     weakTags: string[],
     topK: number,
     fallbackRating = 1300,
   ) {
     const publishedChallenges = await this.prisma.challenge.findMany({
-      where: { status: 'published' },
+      where: { status: "published" },
       select: {
         id: true,
         title: true,
@@ -87,7 +111,9 @@ export class UsersService {
       score: number;
     }> = [];
 
-    const sortedRecommendations = [...recommendations].sort((left, right) => (right.score || 0) - (left.score || 0));
+    const sortedRecommendations = [...recommendations].sort(
+      (left, right) => (right.score || 0) - (left.score || 0),
+    );
 
     for (const recommendation of sortedRecommendations) {
       const requestedTitle = this.normalizeText(recommendation.challenge_name);
@@ -98,14 +124,28 @@ export class UsersService {
         .map((challenge) => {
           const title = this.normalizeText(challenge.title);
           const rating = this.getChallengeRating(challenge);
-          const tagScore = this.getTagOverlapScore(challenge.tags || [], weakTags);
+          const tagScore = this.getTagOverlapScore(
+            challenge.tags || [],
+            weakTags,
+          );
           const titleScore = requestedTitle
-            ? (title === requestedTitle ? 1 : (title.includes(requestedTitle) || requestedTitle.includes(title) ? 0.6 : 0))
+            ? title === requestedTitle
+              ? 1
+              : title.includes(requestedTitle) || requestedTitle.includes(title)
+                ? 0.6
+                : 0
             : 0;
-          const ratingGap = requestedRating > 0 ? Math.abs(rating - requestedRating) : Math.abs(rating - 1300);
+          const ratingGap =
+            requestedRating > 0
+              ? Math.abs(rating - requestedRating)
+              : Math.abs(rating - 1300);
           const ratingScore = 1 / (1 + ratingGap / 100);
-          const localScore = this.clamp01(0.5 * tagScore + 0.3 * ratingScore + 0.2 * titleScore);
-          const blendedScore = this.clamp01(0.8 * localScore + 0.2 * modelScore);
+          const localScore = this.clamp01(
+            0.5 * tagScore + 0.3 * ratingScore + 0.2 * titleScore,
+          );
+          const blendedScore = this.clamp01(
+            0.8 * localScore + 0.2 * modelScore,
+          );
 
           return {
             challenge,
@@ -137,7 +177,10 @@ export class UsersService {
     const localFallback = publishedChallenges
       .map((challenge) => {
         const rating = this.getChallengeRating(challenge);
-        const tagScore = this.getTagOverlapScore(challenge.tags || [], weakTags);
+        const tagScore = this.getTagOverlapScore(
+          challenge.tags || [],
+          weakTags,
+        );
         const ratingGap = Math.abs(rating - fallbackRating);
         const ratingScore = 1 / (1 + ratingGap / 150);
         const combined = tagScore * 0.7 + ratingScore * 0.3;
@@ -166,11 +209,22 @@ export class UsersService {
         skip,
         take: limit,
         select: {
-          id: true, email: true, username: true, firstName: true, lastName: true,
-          profileImage: true, role: true, status: true, level: true, xp: true,
-          elo: true, tokensLeft: true, isPremium: true, createdAt: true,
+          id: true,
+          email: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          profileImage: true,
+          role: true,
+          status: true,
+          level: true,
+          xp: true,
+          elo: true,
+          tokensLeft: true,
+          isPremium: true,
+          createdAt: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.user.count(),
     ]);
@@ -188,34 +242,36 @@ export class UsersService {
         _count: { select: { submissions: true, discussions: true } },
       },
     });
-    if (!user) throw new NotFoundException('User not found');
-    const { passwordHash, ...profile } = user;
-    
+    if (!user) throw new NotFoundException("User not found");
+    const profile = this.removePasswordHash(user);
+
     await this.cache.set(cacheKey, profile, 3600); // 1 hour cache
     return profile;
   }
 
   async update(id: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     const updated = await this.prisma.user.update({
       where: { id },
       data: dto,
     });
-    const { passwordHash, ...profile } = updated;
+    const profile = this.removePasswordHash(updated);
 
     await this.cache.del(`user:profile:${id}`);
-    
+
     return profile;
   }
 
-  private static readonly VALID_ROLES = ['user', 'moderator', 'admin'];
-  private static readonly VALID_STATUSES = ['active', 'suspended', 'banned'];
+  private static readonly VALID_ROLES = ["user", "moderator", "admin"];
+  private static readonly VALID_STATUSES = ["active", "suspended", "banned"];
 
   async updateRole(id: string, role: string) {
     if (!UsersService.VALID_ROLES.includes(role)) {
-      throw new BadRequestException(`Invalid role. Allowed: ${UsersService.VALID_ROLES.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid role. Allowed: ${UsersService.VALID_ROLES.join(", ")}`,
+      );
     }
     return this.prisma.user.update({
       where: { id },
@@ -225,7 +281,9 @@ export class UsersService {
 
   async updateStatus(id: string, status: string) {
     if (!UsersService.VALID_STATUSES.includes(status)) {
-      throw new BadRequestException(`Invalid status. Allowed: ${UsersService.VALID_STATUSES.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid status. Allowed: ${UsersService.VALID_STATUSES.join(", ")}`,
+      );
     }
     return this.prisma.user.update({
       where: { id },
@@ -240,9 +298,11 @@ export class UsersService {
         where: { userId },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
-          challenge: { select: { id: true, title: true, kind: true, difficulty: true } },
+          challenge: {
+            select: { id: true, title: true, kind: true, difficulty: true },
+          },
         },
       }),
       this.prisma.submission.count({ where: { userId } }),
@@ -255,22 +315,28 @@ export class UsersService {
    */
   async uploadProfilePhoto(userId: string, file: Express.Multer.File) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Invalid file type. Only JPG, PNG, and WebP are allowed.');
+      throw new BadRequestException(
+        "Invalid file type. Only JPG, PNG, and WebP are allowed.",
+      );
     }
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      throw new BadRequestException('File is too large. Maximum size is 5MB.');
+      throw new BadRequestException("File is too large. Maximum size is 5MB.");
     }
 
     // Delete old local file if one exists (migration cleanup)
-    if (user.profileImage && !user.profileImage.startsWith('http') && !user.profileImage.startsWith('data:')) {
-      const oldFilePath = path.join('./uploads/avatars', user.profileImage);
+    if (
+      user.profileImage &&
+      !user.profileImage.startsWith("http") &&
+      !user.profileImage.startsWith("data:")
+    ) {
+      const oldFilePath = path.join("./uploads/avatars", user.profileImage);
       if (fs.existsSync(oldFilePath)) {
         fs.unlinkSync(oldFilePath);
       }
@@ -278,12 +344,12 @@ export class UsersService {
 
     // Resize to 200x200, convert to WebP, get as Buffer
     const resizedBuffer = await sharp(file.buffer)
-      .resize(200, 200, { fit: 'cover' })
+      .resize(200, 200, { fit: "cover" })
       .webp({ quality: 80 })
       .toBuffer();
 
     // Convert to Base64 data URI and store in DB
-    const base64 = resizedBuffer.toString('base64');
+    const base64 = resizedBuffer.toString("base64");
     const dataUri = `data:image/webp;base64,${base64}`;
 
     const updated = await this.prisma.user.update({
@@ -291,7 +357,7 @@ export class UsersService {
       data: { profileImage: dataUri },
     });
 
-    const { passwordHash, ...profile } = updated;
+    const profile = this.removePasswordHash(updated);
 
     await this.cache.del(`user:profile:${userId}`);
     return profile;
@@ -302,11 +368,15 @@ export class UsersService {
    */
   async deleteProfilePhoto(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     // Cleanup legacy local file if one still exists on disk
-    if (user.profileImage && !user.profileImage.startsWith('http') && !user.profileImage.startsWith('data:')) {
-      const filePath = path.join('./uploads/avatars', user.profileImage);
+    if (
+      user.profileImage &&
+      !user.profileImage.startsWith("http") &&
+      !user.profileImage.startsWith("data:")
+    ) {
+      const filePath = path.join("./uploads/avatars", user.profileImage);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
@@ -334,17 +404,20 @@ export class UsersService {
    */
   async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     // Check if OAuth user
     if (user.isOAuthUser) {
-      throw new BadRequestException('OAuth users cannot change their password');
+      throw new BadRequestException("OAuth users cannot change their password");
     }
 
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.passwordHash || '');
+    const isPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash || "",
+    );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException("Current password is incorrect");
     }
 
     // Hash new password
@@ -364,23 +437,28 @@ export class UsersService {
    */
   async changeEmail(userId: string, dto: ChangeEmailDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     // Check if OAuth user
     if (user.isOAuthUser) {
-      throw new BadRequestException('OAuth users cannot change their email');
+      throw new BadRequestException("OAuth users cannot change their email");
     }
 
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.passwordHash || '');
+    const isPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash || "",
+    );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException("Current password is incorrect");
     }
 
     // Check if email is already in use
-    const existingUser = await this.prisma.user.findUnique({ where: { email: dto.newEmail } });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.newEmail },
+    });
     if (existingUser && existingUser.id !== userId) {
-      throw new ConflictException('This email is already in use');
+      throw new ConflictException("This email is already in use");
     }
 
     // Update email
@@ -389,7 +467,7 @@ export class UsersService {
       data: { email: dto.newEmail },
     });
 
-    const { passwordHash, ...profile } = updated;
+    const profile = this.removePasswordHash(updated);
     return profile;
   }
 
@@ -402,27 +480,23 @@ export class UsersService {
     if (cached) return cached;
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     // Query stats in parallel
-    const [
-      submissions,
-      discussionsCount,
-      commentsCount,
-      totalUsers,
-    ] = await Promise.all([
-      // Count distinct challenges solved (verdict = 'accepted')
-      this.prisma.submission.groupBy({
-        by: ['challengeId'],
-        where: { userId, verdict: 'AC' },
-      }),
-      // Count discussions
-      this.prisma.discussion.count({ where: { authorId: userId } }),
-      // Count comments
-      this.prisma.comment.count({ where: { authorId: userId } }),
-      // Total users for leaderboard position
-      this.prisma.user.count(),
-    ]);
+    const [submissions, discussionsCount, commentsCount, totalUsers] =
+      await Promise.all([
+        // Count distinct challenges solved (verdict = 'accepted')
+        this.prisma.submission.groupBy({
+          by: ["challengeId"],
+          where: { userId, verdict: "AC" },
+        }),
+        // Count discussions
+        this.prisma.discussion.count({ where: { authorId: userId } }),
+        // Count comments
+        this.prisma.comment.count({ where: { authorId: userId } }),
+        // Total users for leaderboard position
+        this.prisma.user.count(),
+      ]);
 
     const challengesSolved = submissions.length;
 
@@ -430,9 +504,10 @@ export class UsersService {
     const ds = await computeDuelStats(this.prisma, userId);
 
     // Calculate leaderboard position
-    const leaderboardPosition = await this.prisma.user.count({
-      where: { elo: { gt: user.elo } },
-    }) + 1;
+    const leaderboardPosition =
+      (await this.prisma.user.count({
+        where: { elo: { gt: user.elo } },
+      })) + 1;
 
     const stats = {
       elo: user.elo,
@@ -457,11 +532,11 @@ export class UsersService {
 
   async getIntelligenceProfile(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     const latestSubmission = await this.prisma.submission.findFirst({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         challenge: {
           select: { id: true, title: true, difficulty: true, tags: true },
@@ -471,7 +546,10 @@ export class UsersService {
 
     const currentSkills = {
       algo: Math.min(100, user.level * 10 + Math.floor(user.xp / 150)),
-      data_structures: Math.min(100, user.level * 9 + Math.floor(user.xp / 180)),
+      data_structures: Math.min(
+        100,
+        user.level * 9 + Math.floor(user.xp / 180),
+      ),
       dynamic_programming: Math.min(100, user.level * 8),
       graphs: Math.min(100, user.level * 8),
       debugging: Math.min(100, 35 + Math.floor(user.tokensLeft)),
@@ -484,18 +562,37 @@ export class UsersService {
           user_id: userId,
           challenge_id: latestSubmission.challenge.id,
           challenge_name: latestSubmission.challenge.title,
-          difficulty: this.mapDifficultyToRating((latestSubmission.challenge as any).difficulty),
-          cf_rating: this.mapDifficultyToRating((latestSubmission.challenge as any).cfRating || (latestSubmission.challenge as any).cf_rating || (latestSubmission.challenge as any).difficulty),
-          minutes_stuck: Math.max(0, Math.floor(((latestSubmission as any).timeMs || 0) / 60000)),
-          attempts_count: Math.max(1, Number((latestSubmission as any).testsTotal || 1)),
+          difficulty: this.mapDifficultyToRating(
+            (latestSubmission.challenge as any).difficulty,
+          ),
+          cf_rating: this.mapDifficultyToRating(
+            (latestSubmission.challenge as any).cfRating ||
+              (latestSubmission.challenge as any).cf_rating ||
+              (latestSubmission.challenge as any).difficulty,
+          ),
+          minutes_stuck: Math.max(
+            0,
+            Math.floor(((latestSubmission as any).timeMs || 0) / 60000),
+          ),
+          attempts_count: Math.max(
+            1,
+            Number((latestSubmission as any).testsTotal || 1),
+          ),
           last_hint_level: 0,
-          challenge_tags: Array.isArray((latestSubmission.challenge as any).tags) ? (latestSubmission.challenge as any).tags : [],
-          code_lines: Math.max(1, String((latestSubmission as any).code || '').split('\n').length),
+          challenge_tags: Array.isArray(
+            (latestSubmission.challenge as any).tags,
+          )
+            ? (latestSubmission.challenge as any).tags
+            : [],
+          code_lines: Math.max(
+            1,
+            String((latestSubmission as any).code || "").split("\n").length,
+          ),
         }
       : {
           user_id: userId,
-          challenge_id: 'profile-default',
-          challenge_name: 'Profile Context',
+          challenge_id: "profile-default",
+          challenge_name: "Profile Context",
           difficulty: 2,
           cf_rating: 1400,
           minutes_stuck: 0,
@@ -512,20 +609,24 @@ export class UsersService {
         top_k: 5,
       });
 
-      const recommendedChallenges = await this.mapRecommendedChallengesToExisting(
-        Array.isArray(profile?.recommended_challenges) ? profile.recommended_challenges : [],
-        Array.isArray(profile?.weakest_tags) ? profile.weakest_tags : [],
-        5,
-        telemetry.cf_rating,
-      );
+      const recommendedChallenges =
+        await this.mapRecommendedChallengesToExisting(
+          Array.isArray(profile?.recommended_challenges)
+            ? profile.recommended_challenges
+            : [],
+          Array.isArray(profile?.weakest_tags) ? profile.weakest_tags : [],
+          5,
+          telemetry.cf_rating,
+        );
 
       return {
         ...profile,
         current_skills: profile?.current_skills || currentSkills,
-        updated_skills: profile?.updated_skills || profile?.current_skills || currentSkills,
+        updated_skills:
+          profile?.updated_skills || profile?.current_skills || currentSkills,
         recommended_challenges: recommendedChallenges,
       };
-    } catch (error) {
+    } catch {
       return {
         user_id: userId,
         current_skills: currentSkills,
@@ -541,17 +642,20 @@ export class UsersService {
    */
   async deleteAccount(userId: string, dto: DeleteAccountDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.passwordHash || '');
+    const isPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash || "",
+    );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException("Current password is incorrect");
     }
 
     // Delete profile photo if exists
     if (user.profileImage) {
-      const filePath = path.join('./uploads/avatars', user.profileImage);
+      const filePath = path.join("./uploads/avatars", user.profileImage);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
@@ -571,8 +675,8 @@ export class UsersService {
     const [submissions, duels, discussions] = await Promise.all([
       // Last AC submissions
       this.prisma.submission.findMany({
-        where: { userId, verdict: 'AC' },
-        orderBy: { createdAt: 'desc' },
+        where: { userId, verdict: "AC" },
+        orderBy: { createdAt: "desc" },
         take: limit,
         include: {
           challenge: { select: { title: true, difficulty: true } },
@@ -581,10 +685,10 @@ export class UsersService {
       // Last completed duels
       this.prisma.duel.findMany({
         where: {
-          status: 'completed',
+          status: "completed",
           OR: [{ player1Id: userId }, { player2Id: userId }],
         },
-        orderBy: { endedAt: 'desc' },
+        orderBy: { endedAt: "desc" },
         take: limit,
         include: {
           player1: { select: { username: true } },
@@ -594,7 +698,7 @@ export class UsersService {
       // Last discussions created
       this.prisma.discussion.findMany({
         where: { authorId: userId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: limit,
         select: { id: true, title: true, createdAt: true },
       }),
@@ -604,9 +708,9 @@ export class UsersService {
 
     for (const s of submissions) {
       events.push({
-        type: 'solved',
-        problem: s.challenge?.title ?? 'Unknown',
-        difficulty: s.challenge?.difficulty ?? 'unknown',
+        type: "solved",
+        problem: s.challenge?.title ?? "Unknown",
+        difficulty: s.challenge?.difficulty ?? "unknown",
         language: s.language,
         date: s.createdAt.toISOString(),
       });
@@ -617,15 +721,15 @@ export class UsersService {
       const isPlayer1 = d.player1Id === userId;
       const opponent = isPlayer1 ? d.player2?.username : d.player1?.username;
       events.push({
-        type: won ? 'duel_won' : 'duel_lost',
-        opponent: opponent ?? 'Unknown',
+        type: won ? "duel_won" : "duel_lost",
+        opponent: opponent ?? "Unknown",
         date: (d.endedAt ?? d.createdAt).toISOString(),
       });
     }
 
     for (const disc of discussions) {
       events.push({
-        type: 'discussion',
+        type: "discussion",
         title: disc.title,
         id: disc.id,
         date: disc.createdAt.toISOString(),
@@ -633,7 +737,9 @@ export class UsersService {
     }
 
     // Sort by date desc and take top N
-    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    events.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
     return events.slice(0, limit);
   }
 
@@ -644,10 +750,10 @@ export class UsersService {
    */
   private async resolveUsername(username: string): Promise<string> {
     const user = await this.prisma.user.findFirst({
-      where: { username: { equals: username, mode: 'insensitive' } },
+      where: { username: { equals: username, mode: "insensitive" } },
       select: { id: true },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
     return user.id;
   }
 
@@ -660,16 +766,16 @@ export class UsersService {
     if (cached) return cached;
 
     const user = await this.prisma.user.findFirst({
-      where: { username: { equals: username, mode: 'insensitive' } },
+      where: { username: { equals: username, mode: "insensitive" } },
       include: {
         _count: { select: { submissions: true, discussions: true } },
         earnedBadges: {
           include: { badge: true },
-          orderBy: { earnedAt: 'desc' },
+          orderBy: { earnedAt: "desc" },
         },
       },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     const profile = {
       id: user.id,
@@ -724,8 +830,8 @@ export class UsersService {
 
     const users = await this.prisma.user.findMany({
       where: {
-        username: { contains: q, mode: 'insensitive' },
-        status: 'active',
+        username: { contains: q, mode: "insensitive" },
+        status: "active",
       },
       select: {
         id: true,
@@ -734,7 +840,7 @@ export class UsersService {
         level: true,
         elo: true,
       },
-      orderBy: { elo: 'desc' },
+      orderBy: { elo: "desc" },
       take: Math.min(limit, 20),
     });
 
