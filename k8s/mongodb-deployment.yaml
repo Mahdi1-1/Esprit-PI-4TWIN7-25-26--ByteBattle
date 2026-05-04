@@ -16,9 +16,8 @@ spec:
       labels:
         app: mongodb
     spec:
-      # Optional scheduling hint for multi-node clusters:
-      # nodeSelector:
-      #   role: storage
+      nodeSelector:
+        storage: "true"
       containers:
         - name: mongodb
           image: mongo:7

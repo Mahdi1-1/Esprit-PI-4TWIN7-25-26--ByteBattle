@@ -1,12 +1,11 @@
 import api from '../api/axios';
 import { io, Socket } from 'socket.io-client';
+import { getSocketNamespaceUrl } from '../config/runtime';
 import type {
   Notification,
   NotificationPreference,
   PaginatedResponse,
 } from '../types/notification.types';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
 
 export type { Notification };
 
@@ -101,7 +100,7 @@ export const notificationsService = {
   connect(token: string) {
     if (socket?.connected) return;
 
-    socket = io(`${API_URL}/notifications`, {
+    socket = io(getSocketNamespaceUrl('/notifications'), {
       auth: { token },
       transports: ['websocket', 'polling'],
     });

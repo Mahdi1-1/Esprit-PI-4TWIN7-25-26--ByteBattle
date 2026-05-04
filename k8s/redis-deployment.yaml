@@ -15,9 +15,8 @@ spec:
       labels:
         app: redis
     spec:
-      # Optional scheduling hint for multi-node clusters:
-      # nodeSelector:
-      #   role: storage
+      nodeSelector:
+        storage: "true"
       containers:
         - name: redis
           image: redis:7-alpine

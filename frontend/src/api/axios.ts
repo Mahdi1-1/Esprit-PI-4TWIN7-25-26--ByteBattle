@@ -1,10 +1,9 @@
 // src/api/axios.ts
 import axios from 'axios';
-
-const backendUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'http://localhost:4001';
+import { getApiBaseUrl } from '../config/runtime';
 
 const api = axios.create({
-  baseURL: `${backendUrl}/api`, // Ajustez selon votre backend
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

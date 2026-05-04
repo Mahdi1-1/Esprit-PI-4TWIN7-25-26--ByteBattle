@@ -37,14 +37,14 @@ export function S({ children }: { children: React.ReactNode }) {
 
 // ─── Guards ───
 export function PrivateGuard() {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <PageLoader />;
+  const { isAuthenticated, authStatus } = useAuth();
+  if (authStatus === 'checking') return <PageLoader />;
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
 export function AdminGuard() {
-  const { isAuthenticated, user, isLoading } = useAuth();
-  if (isLoading) return <PageLoader />;
+  const { isAuthenticated, user, authStatus } = useAuth();
+  if (authStatus === 'checking') return <PageLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.role?.toLowerCase() !== 'admin') return <Navigate to="/" replace />;
   return <Outlet />;
@@ -55,8 +55,8 @@ export function AdminGuard() {
  * Matches the backend hierarchical RBAC: admin > moderator > user.
  */
 export function ModeratorGuard() {
-  const { isAuthenticated, user, isLoading } = useAuth();
-  if (isLoading) return <PageLoader />;
+  const { isAuthenticated, user, authStatus } = useAuth();
+  if (authStatus === 'checking') return <PageLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   const role = user?.role?.toLowerCase();
   if (role !== 'admin' && role !== 'moderator') return <Navigate to="/" replace />;
@@ -64,8 +64,8 @@ export function ModeratorGuard() {
 }
 
 export function PublicGuard() {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <PageLoader />;
+  const { isAuthenticated, authStatus } = useAuth();
+  if (authStatus === 'checking') return <PageLoader />;
   return !isAuthenticated ? <Outlet /> : <Navigate to="/dashboard" replace />;
 }
 
@@ -78,8 +78,8 @@ export function CompanyRoleGuard({
   children: React.ReactNode;
   fallbackPath?: string;
 }) {
-  const { isAuthenticated, isLoading, user } = useAuth();
-  if (isLoading) return <PageLoader />;
+  const { isAuthenticated, authStatus, user } = useAuth();
+  if (authStatus === 'checking') return <PageLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   const companyRole = user?.companyRole as CompanyRole | undefined;

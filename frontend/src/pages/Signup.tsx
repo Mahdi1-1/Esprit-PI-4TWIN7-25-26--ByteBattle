@@ -7,6 +7,7 @@ import { Code2, Github, CheckCircle2 } from 'lucide-react';
 import { BBLogo } from '../components/BBLogo';
 import { Layout } from '../components/Layout';
 import { useAuth } from '../context/AuthContext';
+import { getBackendOrigin } from '../config/runtime';
 
 export function Signup() {
   const navigate = useNavigate();
@@ -102,7 +103,7 @@ export function Signup() {
   };
 
   const handleGoogleSignUp = () => {
-    const backendUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'http://localhost:4001';
+    const backendUrl = getBackendOrigin();
     window.location.href = `${backendUrl}/api/auth/google`;
   };
 

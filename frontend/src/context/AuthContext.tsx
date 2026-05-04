@@ -5,6 +5,7 @@ import { User } from '../data/models';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
+  authStatus: 'checking' | 'authenticated' | 'anonymous';
   login: (email: string, password: string) => Promise<void>;
   signup: (username: string, email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => void;
@@ -21,8 +22,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
-  // Start as false if no token exists — avoids blocking render for unauthenticated users
-  const [isLoading, setIsLoading] = useState<boolean>(() => !!localStorage.getItem('token'));
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'anonymous'>(() =>
+    localStorage.getItem('token') ? 'checking' : 'anonymous'
+  );
+  const isLoading = authStatus === 'checking';
 
   // Global event listener for profile updates (like avatar creation)
   useEffect(() => {
@@ -46,28 +49,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          // Verify token validity
-          console.log('Checking auth with token:', token.substring(0, 10) + '...');
-          const response = await api.get('/auth/me');
-          console.log('Auth check success:', response.data);
-          setUser(response.data);
-          setIsAuthenticated(true);
-        } catch (error: any) {
-          console.error('Auth check failed:', error);
-          // Only remove token if it's an auth error (401), not network error
-          if (error.response && error.response.status === 401) {
-            localStorage.removeItem('token');
-            setIsAuthenticated(false);
-            setUser(null);
-          }
-        }
-      } else {
+      if (!token) {
         setIsAuthenticated(false);
         setUser(null);
+        setAuthStatus('anonymous');
+        return;
       }
-      setIsLoading(false);
+
+      try {
+        const response = await api.get('/auth/me');
+        setUser(response.data);
+        setIsAuthenticated(true);
+        setAuthStatus('authenticated');
+      } catch (error: any) {
+        console.error('Auth check failed:', error);
+        // Keep auth state deterministic in production.
+        // Invalid/expired token is cleared, network errors fall back to anonymous.
+        if (error?.response?.status === 401) {
+          localStorage.removeItem('token');
+        }
+        setIsAuthenticated(false);
+        setUser(null);
+        setAuthStatus('anonymous');
+      }
     };
 
     checkAuth();
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       localStorage.setItem('token', token);
       setIsAuthenticated(true);
+      setAuthStatus('authenticated');
       // Always fetch full profile so profileImage and all fields are present
       const profile = await api.get('/auth/me');
       setUser(profile.data);
@@ -96,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('token');
       setIsAuthenticated(false);
       setUser(null);
+      setAuthStatus('anonymous');
     } catch (error: any) {
       console.error('Signup failed:', error);
       throw error;
@@ -107,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
     setUser(null);
+    setAuthStatus('anonymous');
   };
 
   const updateUser = (data: Partial<User>) => {
@@ -138,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout, updateUser, isLoading, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, authStatus, login, signup, logout, updateUser, isLoading, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

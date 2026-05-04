@@ -124,7 +124,9 @@ export class EmailService {
       return explicitLogoUrl;
     }
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const frontendUrl = this.configService.get<string>('PUBLIC_FRONTEND_URL')
+      || this.configService.get<string>('FRONTEND_URL')
+      || 'http://bytebattle.local';
     return `${frontendUrl}/images/logo.png`;
   }
 }

@@ -4,12 +4,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { BBLogo } from '../components/BBLogo';
 import { useAuth } from '../context/AuthContext';
+import { getBackendOrigin } from '../config/runtime';
 
 export function UnifiedLogin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
-  const metaEnv = (import.meta as ImportMeta & { env?: Record<string, string | boolean | undefined> }).env;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -84,7 +84,7 @@ export function UnifiedLogin() {
     setError('');
 
     // Récupérer l'URL du backend depuis les variables d'environnement
-    const backendUrl = (metaEnv?.VITE_API_URL as string) || 'http://localhost:4001';
+    const backendUrl = getBackendOrigin();
 
     // Rediriger vers l'endpoint OAuth du backend
     window.location.href = `${backendUrl}/api/auth/google`;
@@ -244,7 +244,7 @@ export function UnifiedLogin() {
         </div>
 
         {/* Demo Accounts Info (development only) */}
-        {Boolean(metaEnv?.DEV) && (
+        {Boolean(import.meta.env.DEV) && (
           <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-4">
             <p className="text-xs text-[var(--text-muted)] mb-2 font-medium">
               🔧 Test accounts (development)

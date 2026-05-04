@@ -5,7 +5,11 @@ metadata:
   namespace: bytebattle
 data:
   PORT: "4001"
+  HOST: "0.0.0.0"
   NODE_ENV: "production"
+  FRONTEND_URL: "http://bytebattle.local"
+  PUBLIC_FRONTEND_URL: "http://bytebattle.local"
+  PUBLIC_API_URL: "http://backend-service:4001"
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
   MONGO_URI: "mongodb://mongodb-service:27017/bytebattle?directConnection=true"

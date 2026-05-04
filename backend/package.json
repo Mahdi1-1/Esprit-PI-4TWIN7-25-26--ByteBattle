@@ -21,7 +21,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:seed": "TS_NODE_TRANSPILE_ONLY=1 TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' node -r ts-node/register/transpile-only prisma/seed.ts",
+    "prisma:seed:extra": "TS_NODE_TRANSPILE_ONLY=1 TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' node -r ts-node/register/transpile-only prisma/seed-extra.ts",
     "prisma:rollback-i18n": "ts-node prisma/rollback-i18n.ts"
   },
   "dependencies": {

@@ -317,7 +317,9 @@ export class AuthService {
 
   private buildFrontendUrl(path: string) {
     const publicFrontendUrl = this.configService.get<string>('PUBLIC_FRONTEND_URL');
-    const frontendUrl = publicFrontendUrl || this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const frontendUrl = publicFrontendUrl
+      || this.configService.get<string>('FRONTEND_URL')
+      || 'http://bytebattle.local';
     const normalizedBaseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 

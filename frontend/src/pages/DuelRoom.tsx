@@ -10,6 +10,7 @@ import Editor from '@monaco-editor/react';
 import { toast } from 'react-hot-toast';
 import { GameTheme, GameResult } from '../types/game.types';
 import { useAnticheat } from '../hooks/useAnticheat';
+import { getSocketNamespaceUrl } from '../config/runtime';
 
 type Tab = 'statement' | 'status';
 
@@ -99,7 +100,7 @@ export function DuelRoom() {
       return;
     }
 
-    const newSocket = io('http://localhost:4001/duels', {
+    const newSocket = io(getSocketNamespaceUrl('/duels'), {
       auth: { token: `Bearer ${existingToken}` },
       transports: ['websocket'],
     });

@@ -1,5 +1,6 @@
 import api from '../api/axios';
 import { AvatarResponse, RPMExpression, RPMScene } from '../types/avatar.types';
+import { getBackendOrigin } from '../config/runtime';
 
 export const avatarService = {
   saveAvatar: async (glbUrl: string, scene?: string, expression?: string) => {
@@ -41,7 +42,7 @@ export const avatarService = {
   getFullUrl: (path?: string) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4001';
+    const baseUrl = getBackendOrigin();
     return `${baseUrl.replace(/\/$/, '')}${path}`;
   }
 };

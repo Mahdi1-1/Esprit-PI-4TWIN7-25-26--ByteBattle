@@ -1,10 +1,10 @@
 // frontend/src/components/GoogleSignInButton.tsx
 import { FcGoogle } from 'react-icons/fc';
+import { getBackendOrigin } from '../config/runtime';
 
 export function GoogleSignInButton() {
   const handleGoogleSignIn = () => {
-    // Rediriger vers le backend
-    window.location.href = 'http://localhost:4001/api/auth/google';
+    window.location.href = `${getBackendOrigin()}/api/auth/google`;
   };
 
   return (

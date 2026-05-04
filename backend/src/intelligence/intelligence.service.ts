@@ -49,7 +49,9 @@ export interface IntelligenceProfileRequest {
 @Injectable()
 export class IntelligenceService {
   private readonly logger = new Logger(IntelligenceService.name);
-  private readonly engineUrl = process.env.INTELLIGENCE_ENGINE_URL || process.env.ML_SERVICE_URL || 'http://127.0.0.1:8001';
+  private readonly engineUrl = process.env.INTELLIGENCE_ENGINE_URL
+    || process.env.ML_SERVICE_URL
+    || 'http://intelligence-engine:8001';
 
   private buildUrl(path: string): string {
     return `${this.engineUrl.replace(/\/$/, '')}${path}`;

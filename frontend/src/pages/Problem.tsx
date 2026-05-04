@@ -26,6 +26,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getSocketNamespaceUrl } from '../config/runtime';
 import { hintsService } from '../services/hintsService';
 
 const LANGUAGES = [
@@ -560,8 +561,7 @@ export function Problem() {
   useEffect(() => {
     if (!user) return;
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4001';
-    const newSocket = io(`${apiUrl}/submissions`, {
+    const newSocket = io(getSocketNamespaceUrl('/submissions'), {
       transports: ['websocket', 'polling'],
       withCredentials: true 
     });

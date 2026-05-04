@@ -25,14 +25,15 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+RUN pnpm exec prisma generate
 
 # ❌ SUPPRIMER cette ligne
 # RUN pnpm exec prisma generate
 
 EXPOSE 4001
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]

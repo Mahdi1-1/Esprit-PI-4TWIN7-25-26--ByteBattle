@@ -36,10 +36,13 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT || 4001;
-  await app.listen(port);
-  console.log(`🚀 ByteBattle API running on http://localhost:${port}`);
-  console.log(`📄 Swagger docs at http://localhost:${port}/api/docs`);
+  const port = Number(process.env.PORT) || 4001;
+  const host = process.env.HOST || '0.0.0.0';
+  await app.listen(port, host);
+
+  const publicApiUrl = process.env.PUBLIC_API_URL || `http://${host}:${port}`;
+  console.log(`🚀 ByteBattle API running on ${publicApiUrl}`);
+  console.log(`📄 Swagger docs at ${publicApiUrl}/api/docs`);
 
   // Seed badge catalogue on every startup (idempotent)
   try {

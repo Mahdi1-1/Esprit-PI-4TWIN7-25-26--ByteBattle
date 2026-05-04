@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketNamespaceUrl } from '../config/runtime';
 
-const WS_URL = 'http://localhost:4001/hackathons';
+const WS_URL = getSocketNamespaceUrl('/hackathons');
 
 interface UseHackathonSocketOptions {
   hackathonId: string;

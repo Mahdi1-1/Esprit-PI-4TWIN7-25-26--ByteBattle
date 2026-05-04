@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { duelsService } from '../services/duelsService';
 import { io, Socket } from 'socket.io-client';
 import { profileService } from '../services/profileService';
+import { getSocketNamespaceUrl } from '../config/runtime';
  
 import { Swords, Target, Users, Zap, Trophy, TrendingUp, Flame } from 'lucide-react';
 
@@ -77,7 +78,7 @@ export function DuelMatchmaking() {
       setDuelId(duel.id);
 
       // Connect socket
-      const newSocket = io('http://localhost:4001/duels', {
+      const newSocket = io(getSocketNamespaceUrl('/duels'), {
         auth: { token: `Bearer ${existingToken}` },
         transports: ['websocket'],
       });

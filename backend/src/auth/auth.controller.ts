@@ -92,7 +92,9 @@ export class AuthController {
     const user = req.user;
 
     if (!user) {
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+      const frontendUrl = this.configService.get<string>('PUBLIC_FRONTEND_URL')
+        || this.configService.get<string>('FRONTEND_URL')
+        || 'http://bytebattle.local';
       return res.redirect(`${frontendUrl}/login?error=authentication_failed`);
     }
 
@@ -102,7 +104,9 @@ export class AuthController {
     this.logger.log(`✅ Google login successful: ${user.email}`);
 
     // Rediriger vers le frontend avec le token
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const frontendUrl = this.configService.get<string>('PUBLIC_FRONTEND_URL')
+      || this.configService.get<string>('FRONTEND_URL')
+      || 'http://bytebattle.local';
     return res.redirect(`${frontendUrl}/auth/callback?token=${tokens.access_token}`);
   }
 

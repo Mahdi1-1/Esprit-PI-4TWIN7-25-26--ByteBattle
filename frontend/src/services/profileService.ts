@@ -1,8 +1,8 @@
 // Profile Service - User Profile & Settings API
 import api from '../api/axios';
+import { getBackendOrigin } from '../config/runtime';
 
-// Derive the backend origin from axios baseURL  → "http://localhost:4001"
-const BACKEND_ORIGIN = (api.defaults.baseURL ?? 'http://localhost:4001/api').replace(/\/api\/?$/, '');
+const BACKEND_ORIGIN = getBackendOrigin();
 
 // Types
 export interface UpdateProfileData {
