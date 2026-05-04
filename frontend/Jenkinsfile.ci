@@ -25,22 +25,23 @@ pipeline {
             }
         }
 
-    stage('SonarQube Analysis') {
-    steps {
-        dir('frontend') {
-            // "sonar-token" est l'ID que je vois sur ta capture d'écran
-            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                withSonarQubeEnv('My SonarQube Server') {
-                    sh "npx sonar-scanner \
-                        -Dsonar.projectKey=bytebattle-frontend \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://sonarqube:9000 \
-                        -Dsonar.token=${SONAR_TOKEN}"
+        stage('SonarQube Analysis') {
+            steps {
+                dir('frontend') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('My SonarQube Server') {
+                            sh '''
+                            npx sonar-scanner \
+                              -Dsonar.projectKey=bytebattle-frontend \
+                              -Dsonar.sources=. \
+                              -Dsonar.host.url=$SONAR_HOST_URL \
+                              -Dsonar.token=$SONAR_TOKEN
+                            '''
+                        }
+                    }
                 }
             }
         }
-    }
-}
 
         stage('Quality Gate') {
             steps {
