@@ -48,37 +48,39 @@ pipeline {
             }
         }
 
-        sstage('Deploy to Kubernetes') {
-    when {
-        branch 'mahdi'
-    }
-    steps {
-        withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
-            sh """
-                echo "🔎 Testing cluster DNS..."
-                kubectl run net-test --rm -i --restart=Never \
-                  --image=busybox:1.36 \
-                  -n ${K8S_NAMESPACE} \
-                  -- nslookup kubernetes.default.svc.cluster.local || exit 1
+        stage('Deploy to Kubernetes') {
+            when {
+                branch 'mahdi'
+            }
+            steps {
+                withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
+                    sh """
+                        echo "🔎 Testing cluster DNS..."
+                        kubectl run net-test --rm -i --restart=Never \
+                          --image=busybox:1.36 \
+                          -n ${K8S_NAMESPACE} \
+                          -- nslookup kubernetes.default.svc.cluster.local || exit 1
 
-                echo "🚀 Updating frontend image..."
-                kubectl set image deployment/${K8S_DEPLOYMENT} \
-                    ${K8S_CONTAINER}=${IMAGE_NAME}:${IMAGE_TAG} \
-                    -n ${K8S_NAMESPACE}
+                        echo "🚀 Updating frontend image..."
+                        kubectl set image deployment/${K8S_DEPLOYMENT} \
+                            ${K8S_CONTAINER}=${IMAGE_NAME}:${IMAGE_TAG} \
+                            -n ${K8S_NAMESPACE}
 
-                echo "🔁 Forcing rollout..."
-                kubectl rollout restart deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
+                        echo "🔁 Forcing rollout..."
+                        kubectl rollout restart deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
 
-                echo "⏳ Waiting for rollout..."
-                kubectl rollout status deployment/${K8S_DEPLOYMENT} \
-                    -n ${K8S_NAMESPACE} --timeout=300s
+                        echo "⏳ Waiting for rollout..."
+                        kubectl rollout status deployment/${K8S_DEPLOYMENT} \
+                            -n ${K8S_NAMESPACE} --timeout=300s
 
-                echo "📦 Pods status:"
-                kubectl get pods -n ${K8S_NAMESPACE} -o wide
-            """
+                        echo "📦 Pods status:"
+                        kubectl get pods -n ${K8S_NAMESPACE} -o wide
+                    """
+                }
+            }
         }
     }
-}
+
     post {
         always {
             sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
