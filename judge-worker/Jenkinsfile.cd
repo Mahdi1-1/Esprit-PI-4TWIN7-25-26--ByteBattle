@@ -38,11 +38,13 @@ pipeline {
                         usernameVariable: 'DOCKER_USER',
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
-                        sh '''
-                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                            docker push ${IMAGE_NAME}:latest || echo "Skipping latest push after registry rejection"
-                        '''
+                        retry(2) {
+                            sh '''
+                                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                                docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                                docker push ${IMAGE_NAME}:latest || echo "Skipping latest push after registry rejection"
+                            '''
+                        }
                     }
                 }
             }
@@ -70,10 +72,16 @@ pipeline {
 
     post {
         always {
-            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
-            sh "docker rmi ${IMAGE_NAME}:latest || true"
-            sh 'docker logout || true'
-            cleanWs()
+            script {
+                if (getContext(hudson.FilePath)) {
+                    sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+                    sh "docker rmi ${IMAGE_NAME}:latest || true"
+                    sh 'docker logout || true'
+                    cleanWs()
+                } else {
+                    echo 'Workspace context unavailable after Jenkins restart, skipping cleanup.'
+                }
+            }
         }
         success { echo '✅ Judge Worker CD pipeline completed successfully!' }
         failure  { echo '❌ Judge Worker CD pipeline failed!' }

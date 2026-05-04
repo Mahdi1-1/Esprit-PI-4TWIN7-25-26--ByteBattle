@@ -25,7 +25,9 @@
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
 - [Environment Variables](#-environment-variables)
+- [Gemini AI Prompts](#-gemini-ai-prompts)
 - [API Documentation](#-api-documentation)
+- [Accessibility](#-accessibility)
 - [Screenshots](#-screenshots)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -603,6 +605,40 @@ generationConfig: {
 | Dashboard | Duel Arena | Hackathon |
 |-----------|-----------|-----------|
 | ![Dashboard](docs/screenshots/dashboard.png) | ![Duel](docs/screenshots/duel.png) | ![Hackathon](docs/screenshots/hackathon.png) |
+
+---
+
+## ♿ Accessibility
+
+ByteBattle is committed to being an **inclusive platform** for all users. We follow **WCAG 2.1 Level AA** guidelines to ensure accessibility.
+
+### Current Status
+- ✅ Keyboard navigation support
+- ✅ Screen reader compatible (ARIA labels, semantic HTML)
+- ✅ WCAG AA color contrast compliance
+- ✅ Responsive design for all devices
+- 🟡 Animations with `prefers-reduced-motion` support (80% coverage)
+- 🟡 Text alternatives for complex visualizations (in progress)
+
+### Accessibility Features
+- Full keyboard navigation (Tab, Shift+Tab, Arrow keys, Esc)
+- ARIA landmarks and live regions for screen readers
+- Visible focus indicators
+- Semantic HTML structure
+- Alt text for all images
+- Proper form labels and error messages
+- Support for high contrast mode
+
+### Known Issues & Roadmap
+See the **[Accessibility Report](./ACCESSIBILITY.md)** for:
+- Complete accessibility audit
+- Known limitations and workarounds
+- Improvement roadmap (Q2-Q4 2026)
+- Testing procedures
+- Contributing accessibility improvements
+
+### Report Issues
+Found an accessibility problem? File an issue on GitHub with the `[A11Y]` label.
 
 ---
 
