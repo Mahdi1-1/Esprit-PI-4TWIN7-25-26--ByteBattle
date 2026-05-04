@@ -370,6 +370,7 @@ export class CompaniesService {
 
   async regenerateJoinCode(companyId: string, userId: string): Promise<{ joinCode: string; expiresAt: string }> {
     const company = await this.requireCompanyAdmin(companyId, userId);
+    await this.requireCompanyAdmin(companyId, userId);
     const { joinCode, expiresAt } = this.generateTimedJoinCode();
 
     await this.prisma.company.update({
@@ -455,6 +456,7 @@ export class CompaniesService {
       where: { companyId_userId: { companyId, userId: memberUserId } },
     });
     
+
     if (!membership || membership.status !== 'active') {
       throw new NotFoundException('Active company member not found');
     }
@@ -491,6 +493,7 @@ export class CompaniesService {
   }
 
   async updateMemberRole(companyId: string, targetUserId: string, role: string, actorId: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const company = await this.requireCompanyAdmin(companyId, actorId);
 
     if (company.ownerId === targetUserId) {
@@ -528,6 +531,7 @@ export class CompaniesService {
   }
 
   async removeMember(companyId: string, targetUserId: string, actorId: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const company = await this.requireCompanyAdmin(companyId, actorId);
 
     if (company.ownerId === targetUserId) {
@@ -563,6 +567,7 @@ export class CompaniesService {
   }
 
   async inviteMember(companyId: string, email: string, actorId: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const company = await this.requireCompanyAdmin(companyId, actorId);
 
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -604,6 +609,7 @@ export class CompaniesService {
     action: 'approve' | 'reject',
     adminId: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const company = await this.requireCompanyAdmin(companyId, adminId);
 
     const membership = await this.prisma.companyMembership.findUnique({
@@ -1074,12 +1080,13 @@ export class CompaniesService {
     };
   }
 
-  async getPublicJobs(userId: string) {
-    const memberships = await this.prisma.companyMembership.findMany({
-      where: { userId, status: 'active' },
-      select: { companyId: true },
-    });
-    const memberCompanyIds = memberships.map((membership) => membership.companyId);
+  async getPublicJobs(userId?: string) {
+    const memberCompanyIds = userId
+      ? (await this.prisma.companyMembership.findMany({
+          where: { userId, status: 'active' },
+          select: { companyId: true },
+        })).map((membership) => membership.companyId)
+      : [];
 
     return this.prisma.companyJobPosting.findMany({
       where: {

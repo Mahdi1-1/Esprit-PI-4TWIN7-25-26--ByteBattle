@@ -7,7 +7,7 @@ export type CompanyRoadmapVisibility = 'public' | 'employees_only';
 export type CourseVisibility = 'public' | 'employees_only';
 export type JobType = 'full_time' | 'part_time' | 'contract' | 'internship';
 export type JobStatus = 'active' | 'closed';
-export type CompanyNotificationType = 'join_request' | 'roadmap_assigned' | 'course_enrolled' | 'application_received' | 'badge_earned';
+export type CompanyNotificationType = 'join_request' | 'roadmap_assigned' | 'course_enrolled' | 'application_received' | 'badge_earned' | 'member_role_changed';
 
 export interface Company {
   id: string;

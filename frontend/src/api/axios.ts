@@ -25,10 +25,26 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       const { status } = error.response;
-      console.log('API error:', status, error.config?.url);
+      const requestUrl: string = error.config?.url || '';
+      
+      console.log('API error:', status, requestUrl);
 
       if (status === 401) {
-        // Token expired or invalid — clear and redirect to login
+        // Check if it's a public auth endpoint
+        const isAuthPublicEndpoint =
+          requestUrl.includes('/auth/login') ||
+          requestUrl.includes('/auth/register') ||
+          requestUrl.includes('/auth/verify-email') ||
+          requestUrl.includes('/auth/resend-verification') ||
+          requestUrl.includes('/auth/forgot-password') ||
+          requestUrl.includes('/auth/reset-password');
+
+        // Do not hijack expected auth errors (e.g., invalid login credentials).
+        if (isAuthPublicEndpoint) {
+          return Promise.reject(error);
+        }
+
+        // Token expired or invalid — clear and redirect to login.
         localStorage.removeItem('token');
         console.log('401 error - redirecting to login');
         if (window.location.pathname !== '/login') {
@@ -38,7 +54,6 @@ api.interceptors.response.use(
 
       if (status === 403) {
         // Forbidden — user doesn't have the right role
-        const requestUrl = error.config?.url || '';
         if (requestUrl.includes('/challenges/generate')) {
           return Promise.reject(error);
         }

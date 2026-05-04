@@ -151,4 +151,34 @@ export class AdminController {
       action,
     });
   }
+
+  // ─── Advanced Analytics ──────────────────────────────────────────
+  @Get('analytics/timeseries')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Time-series data for charts (registrations, submissions, duels) over last N days' })
+  @ApiQuery({ name: 'days', required: false, description: 'Number of days (default 30)' })
+  getTimeSeries(@Query('days') days?: number) {
+    return this.adminService.getTimeSeries(days ? +days : 30);
+  }
+
+  @Get('analytics/retention')
+  @Roles('admin')
+  @ApiOperation({ summary: 'User retention & engagement metrics' })
+  getRetention() {
+    return this.adminService.getRetentionMetrics();
+  }
+
+  @Get('analytics/performance')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Platform performance: top challenges, difficulty distribution, hourly activity heatmap' })
+  getPerformanceMetrics() {
+    return this.adminService.getPerformanceMetrics();
+  }
+
+  @Get('analytics/modules')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Module usage: sessions, unique users, engagement rate, avg time per module (last 7d)' })
+  getModuleUsage() {
+    return this.adminService.getModuleUsage();
+  }
 }

@@ -73,3 +73,4 @@ export function getVisibleCompanyNavLinks(role?: CompanyRole | null): CompanyNav
   const effectiveRole = getEffectiveCompanyRole(role);
   return COMPANY_NAV_LINKS.filter((link) => link.visibleFor.includes(effectiveRole));
 }
+

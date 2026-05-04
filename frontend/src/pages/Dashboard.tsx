@@ -5,54 +5,88 @@ import { ProblemCard } from '../components/ProblemCard';
 import { MatchCard } from '../components/MatchCard';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Swords, Play, Users, TrendingUp, Loader } from 'lucide-react';
+import { Swords, Play, Users, TrendingUp, Loader, Code2, PenTool, LayoutGrid } from 'lucide-react';
 import { Layout } from '../components/Layout';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { profileService } from '../services/profileService';
 import { BadgeGrid, BadgeData } from '../components/BadgeCard';
-import { useLocation, useNavigate } from 'react-router-dom';
+
+// ─── Skill labels (display names) ────────────────────────────────────────────
+const SKILL_LABELS: Record<string, string> = {
+  Algorithm: 'Algorithm',
+  CleanCode: 'Clean Code',
+  DataStructures: 'Data Structures',
+  DynamicProgramming: 'Dynamic Programming',
+  Graph: 'Graph / Trees',
+  Debug: 'Debugging',
+  Speed: 'Speed',
+};
+
+// ─── Default (empty) skills shown while loading ────────────────────────────
+const DEFAULT_SKILLS: Record<string, number> = {
+  Algorithm: 0,
+  CleanCode: 0,
+  DataStructures: 0,
+  DynamicProgramming: 0,
+  Graph: 0,
+  Debug: 0,
+  Speed: 0,
+};
+
+const INTELLIGENCE_SKILL_KEYS: Record<string, keyof typeof DEFAULT_SKILLS> = {
+  algo: 'Algorithm',
+  clean_code: 'CleanCode',
+  data_structures: 'DataStructures',
+  dynamic_programming: 'DynamicProgramming',
+  graphs: 'Graph',
+  debugging: 'Debug',
+  speed: 'Speed',
+};
+
+const mapIntelligenceSkillsToDashboard = (currentSkills: Record<string, number>): Record<string, number> => {
+  const mappedSkills: Record<string, number> = { ...DEFAULT_SKILLS };
+
+  Object.entries(INTELLIGENCE_SKILL_KEYS).forEach(([sourceKey, targetKey]) => {
+    const rawValue = currentSkills?.[sourceKey];
+    const normalizedValue = typeof rawValue === 'number' ? rawValue : Number(rawValue);
+    mappedSkills[targetKey] = Number.isFinite(normalizedValue) ? Math.round(Math.max(0, Math.min(100, normalizedValue))) : 0;
+  });
+
+  return mappedSkills;
+};
 
 export function Dashboard() {
   const { user } = useAuth();
   const { t } = useLanguage();
 
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const interviewModal = useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    const viewHumanInterview = params.get('viewHumanInterview');
-    const scheduledAt = params.get('scheduledAt');
-
-    if (viewHumanInterview) {
-      return {
-        type: 'human' as const,
-        id: viewHumanInterview,
-        scheduledAt: scheduledAt || null,
-      };
-    }
-
-    return null;
-  }, [location.search]);
-
-  const closeInterviewModal = () => {
-    navigate(location.pathname, { replace: true });
-  };
-
   const [recommendedProblems, setRecommendedProblems] = useState<any[]>([]);
+  const [allProblems, setAllProblems] = useState<any[]>([]);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
   const [badges, setBadges] = useState<BadgeData[]>([]);
+  const [skills, setSkills] = useState<Record<string, number>>(DEFAULT_SKILLS);
+  const [loadingSkills, setLoadingSkills] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'code' | 'canvas'>('all');
 
   useEffect(() => {
+    const formatDurationMinutes = (startedAt?: string, endedAt?: string): number => {
+      if (!startedAt || !endedAt) return 0;
+      const start = new Date(startedAt).getTime();
+      const end = new Date(endedAt).getTime();
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
+      return Math.max(0, (end - start) / 60000);
+    };
+
     const fetchDashboardData = async () => {
       try {
         // En attendant que ces routes backend soient créées conformément aux spécifications
         // On effectue des requêtes réelles. Si elles échouent (404), on set des tableaux vides
         const [problemsRes, matchesRes, badgesRes] = await Promise.allSettled([
           api.get('/challenges/recommended'), // Route for upcoming FR-07
-          api.get('/users/me/history'), // Route for upcoming E2 - User Profile history
+          api.get('/duels/history?limit=5'),
           api.get('/badges/user/me'),
         ]);
 
@@ -66,7 +100,34 @@ export function Dashboard() {
         if (matchesRes.status === 'fulfilled') {
           const data = matchesRes.value.data;
           const arr = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
-          setRecentMatches(arr.slice(0, 3));
+          const mapped = arr.map((duel: any) => {
+            const isPlayer1 = duel.player1Id === user?.id;
+            const meScore = isPlayer1 ? Number(duel.player1Score || 0) : Number(duel.player2Score || 0);
+            const opponentScore = isPlayer1 ? Number(duel.player2Score || 0) : Number(duel.player1Score || 0);
+            const meTests = isPlayer1 ? Number(duel.player1Tests || 0) : Number(duel.player2Tests || 0);
+            const opponentTests = isPlayer1 ? Number(duel.player2Tests || 0) : Number(duel.player1Tests || 0);
+            const opponent = isPlayer1 ? duel.player2 : duel.player1;
+            const result = duel.winnerId
+              ? (duel.winnerId === user?.id ? 'win' : 'loss')
+              : 'draw';
+
+            return {
+              id: duel.id,
+              opponent: opponent?.username || 'Opponent',
+              opponentAvatar: profileService.getPhotoUrl(opponent?.profileImage, opponent?.username || 'opponent'),
+              result,
+              problem: duel.challenge?.title || 'Unknown challenge',
+              difficulty: duel.challenge?.difficulty || duel.difficulty || 'medium',
+              score: `${meScore} - ${opponentScore}`,
+              tests: `${meTests} tests • Opp ${opponentTests}`,
+              duration: formatDurationMinutes(duel.startedAt, duel.endedAt),
+              date: new Date(duel.createdAt).toLocaleString(undefined, {
+                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+              }),
+            };
+          });
+
+          setRecentMatches(mapped.slice(0, 3));
         }
 
         if (badgesRes.status === 'fulfilled') {
@@ -76,60 +137,95 @@ export function Dashboard() {
         }
 
       } catch (error) {
-        console.error('Error while loading data:', error);
+        console.error('Erreur lors du chargement des données:', error);
       } finally {
         setLoading(false);
       }
     };
 
+    const fetchSkills = async () => {
+      try {
+        // Try the intelligence engine first so the dashboard reflects M3 scores.
+        let skillsData: Record<string, number> | null = null;
+        try {
+          const intelligenceProfile = await profileService.getIntelligenceProfile();
+          if (intelligenceProfile?.updated_skills) {
+            skillsData = mapIntelligenceSkillsToDashboard(intelligenceProfile.updated_skills);
+          } else if (intelligenceProfile?.current_skills) {
+            skillsData = mapIntelligenceSkillsToDashboard(intelligenceProfile.current_skills);
+          }
+        } catch {
+          // Intelligence engine unavailable — silent fallback
+        }
+
+        // Fallback: old dashboard endpoints
+        if (!skillsData) {
+          try {
+            const mlRes = await api.get('/ml/skills');
+            if (mlRes.data && mlRes.data.source === 'ml') {
+              const { source, ...scores } = mlRes.data;
+              skillsData = scores;
+            }
+          } catch {
+            // ML service unavailable — silent fallback
+          }
+        }
+
+        if (!skillsData) {
+          try {
+            const res = await api.get('/users/me/skills');
+            if (res.data && typeof res.data === 'object') {
+              skillsData = res.data;
+            }
+          } catch {
+            // Heuristic endpoint unavailable — keep default skills at 0
+          }
+        }
+
+        if (skillsData) {
+          setSkills(skillsData);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des skills:', error);
+      } finally {
+        setLoadingSkills(false);
+      }
+    };
+
     fetchDashboardData();
+    fetchSkills();
   }, []);
+
+  const handleViewAll = async () => {
+    if (showAll) {
+      setShowAll(false);
+      setTypeFilter('all');
+      return;
+    }
+    setShowAll(true);
+    if (allProblems.length > 0) return; // déjà chargé
+    setLoadingAll(true);
+    try {
+      const res = await api.get('/challenges?limit=100');
+      const data = res.data;
+      const arr = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      setAllProblems(arr);
+    } catch {
+      // fallback: utiliser les recommandés comme base
+      setAllProblems(recommendedProblems);
+    } finally {
+      setLoadingAll(false);
+    }
+  };
+
+  const displayedProblems = showAll ? allProblems : recommendedProblems;
+  const filteredProblems = typeFilter === 'all'
+    ? displayedProblems
+    : displayedProblems.filter(p => (p.kind ?? p.type ?? '').toLowerCase() === typeFilter);
 
   return (
     <Layout>
-      {interviewModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-          <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                <h3 className="text-xl font-semibold text-[var(--text-primary)]">
-                  {interviewModal.type === 'ai' ? 'AI Interview Details' : 'Interview Details'}
-                </h3>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">
-                  {interviewModal.type === 'ai'
-                    ? 'You have been assigned an AI interview. Good luck!'
-                    : 'Your interview has been scheduled. Check the details below.'}
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={closeInterviewModal}>
-                Close
-              </Button>
-            </div>
 
-            <div className="space-y-3">
-              <div className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] p-4">
-                <div className="text-xs text-[var(--text-muted)] mb-1">Interview ID</div>
-                <div className="text-[var(--text-primary)] font-medium break-all">
-                  {interviewModal.id}
-                </div>
-              </div>
-
-              {interviewModal.type === 'human' && interviewModal.scheduledAt && (
-                <div className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-2)] p-4">
-                  <div className="text-xs text-[var(--text-muted)] mb-1">Scheduled At</div>
-                  <div className="text-[var(--text-primary)] font-medium">
-                    {new Date(interviewModal.scheduledAt).toLocaleString()}
-                  </div>
-                </div>
-              )}
-
-              <div className="text-sm text-[var(--text-secondary)]">
-                Use the in-app interviews area to view or start the interview (mock UI).
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -174,18 +270,48 @@ export function Dashboard() {
             {/* Recommended Problems */}
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2>{t('dashboard.recommended')}</h2>
-                <Link to="/problems">
-                  <Button variant="ghost" size="sm">
-                    {t('dashboard.viewall')}
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-3">
+                  <h2>{showAll ? 'Tous les problèmes' : t('dashboard.recommended')}</h2>
+                  {showAll && (
+                    <div className="flex items-center gap-1 p-1 bg-[var(--surface-2)] rounded-[var(--radius-md)]">
+                      <button
+                        onClick={() => setTypeFilter('all')}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium transition-all ${typeFilter === 'all' ? 'bg-[var(--brand-primary)] text-white shadow' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        Tous ({allProblems.length})
+                      </button>
+                      <button
+                        onClick={() => setTypeFilter('code')}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium transition-all ${typeFilter === 'code' ? 'bg-[var(--brand-primary)] text-white shadow' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                      >
+                        <Code2 className="w-3.5 h-3.5" />
+                        Code ({allProblems.filter(p => (p.kind ?? p.type ?? '').toLowerCase() === 'code').length})
+                      </button>
+                      <button
+                        onClick={() => setTypeFilter('canvas')}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-[var(--radius-sm)] text-xs font-medium transition-all ${typeFilter === 'canvas' ? 'bg-purple-500 text-white shadow' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                      >
+                        <PenTool className="w-3.5 h-3.5" />
+                        Canvas ({allProblems.filter(p => (p.kind ?? p.type ?? '').toLowerCase() === 'canvas').length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleViewAll}>
+                  {showAll ? '← Réduire' : t('dashboard.viewall')}
+                </Button>
               </div>
               <div className="space-y-3">
                 {loading ? (
                   <div className="flex justify-center p-8"><Loader className="animate-spin text-[var(--brand-primary)]" /></div>
-                ) : recommendedProblems.length > 0 ? (
-                  recommendedProblems.map((problem) => (
+                ) : loadingAll ? (
+                  <div className="flex items-center justify-center gap-2 p-8 text-[var(--text-muted)]">
+                    <Loader className="animate-spin w-5 h-5 text-[var(--brand-primary)]" />
+                    <span className="text-sm">Chargement des problèmes…</span>
+                  </div>
+                ) : filteredProblems.length > 0 ? (
+                  filteredProblems.map((problem) => (
                     <ProblemCard
                       key={problem._id || problem.id}
                       id={problem._id || problem.id}
@@ -195,11 +321,14 @@ export function Dashboard() {
                       solveRate={problem.solveRate || 0}
                       avgTime={problem.avgTime || 0}
                       status={problem.status || 'new'}
+                      type={problem.kind ?? problem.type}
                     />
                   ))
                 ) : (
                   <div className="text-center p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)] text-[var(--text-muted)]">
-                    Aucun problème recommandé pour le moment.
+                    {showAll && typeFilter !== 'all'
+                      ? `Aucun problème de type ${typeFilter === 'code' ? 'Code' : 'Canvas'} disponible.`
+                      : 'Aucun problème recommandé pour le moment.'}
                   </div>
                 )}
               </div>
@@ -218,13 +347,14 @@ export function Dashboard() {
               <div className="space-y-3">
                 {recentMatches.map((match) => (
                   <MatchCard
-                    // @ts-ignore
                     key={match.id}
                     opponent={match.opponent}
                     opponentAvatar={match.opponentAvatar}
                     result={match.result as any}
-                    eloDelta={match.eloDelta}
                     problem={match.problem}
+                    difficulty={match.difficulty}
+                    score={match.score}
+                    tests={match.tests}
                     duration={match.duration}
                     date={match.date}
                   />
@@ -273,26 +403,32 @@ export function Dashboard() {
             {/* Skills Radar */}
             <div className="p-6 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
               <h3 className="mb-4">{t('dashboard.skills')}</h3>
-              <div className="space-y-3">
-                {Object.entries({ Algorithm: 75, DataStructures: 60, DynamicProgramming: 45, Graph: 55, Debug: 80, CleanCode: 65 } as Record<string, number>).map(([skill, value]) => (
-                  <div key={skill}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-caption text-[var(--text-secondary)]">
-                        {skill.replace(/([A-Z])/g, ' $1').trim()}
-                      </span>
-                      <span className="text-caption font-medium text-[var(--text-primary)]">
-                        {value}%
-                      </span>
+              {loadingSkills ? (
+                <div className="flex justify-center py-6">
+                  <Loader className="animate-spin text-[var(--brand-primary)]" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {Object.entries(skills).map(([key, value]) => (
+                    <div key={key}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-caption text-[var(--text-secondary)]">
+                          {SKILL_LABELS[key] ?? key.replace(/([A-Z])/g, ' $1').trim()}
+                        </span>
+                        <span className="text-caption font-medium text-[var(--text-primary)]">
+                          {Math.round(value)}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] transition-all duration-700"
+                          style={{ width: `${value}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"
-                        style={{ width: `${value}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Badges */}

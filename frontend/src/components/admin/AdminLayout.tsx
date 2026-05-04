@@ -52,20 +52,9 @@ const navItems: NavItem[] = [
   { id: 'users', label: 'Users', icon: Users, href: '/admin/users', divider: true },
   { id: 'problems', label: 'Problems', icon: Code2, href: '/admin/problems' },
   { id: 'canvas', label: 'Canvas Challenges', icon: PenTool, href: '/admin/canvas-challenges' },
-  { id: 'testcases', label: 'Testcases & Assets', icon: Upload, href: '/admin/testcases', divider: true },
   { id: 'submissions', label: 'Submissions', icon: ListChecks, href: '/admin/submissions' },
-  { id: 'duels', label: 'Duels / Rooms', icon: Swords, href: '/admin/duels' },
   { id: 'hackathons', label: 'Hackathons', icon: Trophy, href: '/admin/hackathons' },
-  { id: 'leaderboard', label: 'Leaderboards', icon: Award, href: '/admin/leaderboards', divider: true },
-  { id: 'reports', label: 'Reports', icon: Flag, href: '/admin/reports', badge: 3 },
   { id: 'companies', label: 'Companies', icon: Building2, href: '/admin/companies', divider: true },
-  { id: 'anticheat', label: 'Anti-cheat', icon: Shield, href: '/admin/anticheat' },
-  { id: 'monitoring', label: 'Monitoring', icon: Activity, href: '/admin/monitoring' },
-  { id: 'ai', label: 'AI Settings', icon: Brain, href: '/admin/ai-settings' },
-  { id: 'features', label: 'Feature Flags', icon: ToggleLeft, href: '/admin/feature-flags' },
-  { id: 'billing', label: 'Billing', icon: CreditCard, href: '/admin/billing', divider: true },
-  { id: 'audit', label: 'Audit Logs', icon: FileCheck, href: '/admin/audit-logs' },
-  { id: 'settings', label: 'Settings', icon: Settings, href: '/admin/settings' }
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {

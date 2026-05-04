@@ -38,7 +38,7 @@ export function AdminProblem() {
     if (id && id !== 'new') {
       const fetchProblem = async () => {
         try {
-          const problem = await challengesService.getById(id);
+          const problem = await challengesService.getByIdAdmin(id);
           if (problem) {
             setFormData({
               title: problem.title || '',

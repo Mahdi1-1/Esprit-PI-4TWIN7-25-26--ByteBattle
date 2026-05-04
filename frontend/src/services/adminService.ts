@@ -6,6 +6,26 @@ export const adminService = {
     return data;
   },
 
+  async getTimeSeries(days: number = 30) {
+    const { data } = await api.get('/admin/analytics/timeseries', { params: { days } });
+    return data;
+  },
+
+  async getRetentionMetrics() {
+    const { data } = await api.get('/admin/analytics/retention');
+    return data;
+  },
+
+  async getPerformanceMetrics() {
+    const { data } = await api.get('/admin/analytics/performance');
+    return data;
+  },
+
+  async getModuleUsage() {
+    const { data } = await api.get('/admin/analytics/modules');
+    return data;
+  },
+
   async getSystemMetrics() {
     const { data } = await api.get('/admin/monitoring/services');
     return data;

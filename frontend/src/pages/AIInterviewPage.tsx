@@ -69,7 +69,7 @@ export function AIInterviewPage() {
         const mappedSession: InterviewSession = {
           ...res,
           // Ensure fields required by the UI exist.
-          duration: res.duration ?? 30,
+          status: (res.status || 'active') as 'active' | 'completed' | 'abandoned',
           messages: (res.messages || []).map((m: any, idx: number) => ({
             id: m.id || `${res.id}-${idx}`,
             role: m.role,
@@ -243,7 +243,17 @@ export function AIInterviewPage() {
       try {
         const res = await interviewsService.endInterview(session.id);
         if (res?.feedback) {
-          setSession({ ...session, status: 'completed', feedback: res.feedback, verdict: res.verdict });
+          const scaledFeedback = {
+            ...res.feedback,
+            overallScore: typeof res.feedback.overallScore === 'number' ? Math.round(res.feedback.overallScore * 10) : res.feedback.overallScore,
+            technicalScore: typeof res.feedback.technicalScore === 'number' ? Math.round(res.feedback.technicalScore * 10) : res.feedback.technicalScore,
+            communicationScore: typeof res.feedback.communicationScore === 'number' ? Math.round(res.feedback.communicationScore * 10) : res.feedback.communicationScore,
+            problemSolvingScore: typeof res.feedback.problemSolvingScore === 'number' ? Math.round(res.feedback.problemSolvingScore * 10) : res.feedback.problemSolvingScore,
+            competencyScores: Array.isArray(res.feedback.competencyScores)
+              ? res.feedback.competencyScores.map((c: any) => ({ ...c, score: typeof c.score === 'number' ? Math.round(c.score * 10) : c.score }))
+              : res.feedback.competencyScores,
+          };
+          setSession({ ...session, status: 'completed', feedback: scaledFeedback, verdict: res.verdict });
         } else {
           setSession({ ...session, status: 'completed' });
         }

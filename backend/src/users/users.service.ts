@@ -7,13 +7,157 @@ import { DeleteAccountDto } from './dto/delete-account.dto';
 import { computeDuelStats } from '../duels/duel-stats.util';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import * as bcrypt from 'bcryptjs';
 import { CacheService } from '../cache/cache.service';
+import { IntelligenceService } from '../intelligence/intelligence.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService, private cache: CacheService) { }
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+    private intelligenceService: IntelligenceService,
+  ) { }
+
+  private mapDifficultyToRating(difficulty: unknown): number {
+    const value = String(difficulty || '').toLowerCase();
+    if (value === 'easy') return 800;
+    if (value === 'medium') return 1300;
+    if (value === 'hard') return 1700;
+    const numeric = Number(difficulty);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
+    return 1300;
+  }
+
+  private normalizeText(value: unknown): string {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  private getChallengeRating(challenge: { difficulty: unknown }): number {
+    return this.mapDifficultyToRating(challenge.difficulty);
+  }
+
+  private clamp01(value: number): number {
+    return Math.max(0, Math.min(1, value));
+  }
+
+  private getTagOverlapScore(challengeTags: string[], weakTags: string[]): number {
+    if (!challengeTags.length || !weakTags.length) return 0;
+    const challengeSet = new Set(challengeTags.map((tag) => this.normalizeText(tag)));
+    const weakSet = new Set(weakTags.map((tag) => this.normalizeText(tag)));
+    let overlap = 0;
+
+    challengeSet.forEach((tag) => {
+      if (weakSet.has(tag)) overlap += 1;
+    });
+
+    return overlap / Math.max(challengeSet.size, weakSet.size, 1);
+  }
+
+  private async mapRecommendedChallengesToExisting(
+    recommendations: Array<{ challenge_id?: string; challenge_name?: string; cf_rating?: number; score?: number }>,
+    weakTags: string[],
+    topK: number,
+    fallbackRating = 1300,
+  ) {
+    const publishedChallenges = await this.prisma.challenge.findMany({
+      where: { status: 'published' },
+      select: {
+        id: true,
+        title: true,
+        difficulty: true,
+        tags: true,
+        kind: true,
+        category: true,
+        createdAt: true,
+      },
+    });
+
+    if (publishedChallenges.length === 0) return [];
+
+    const usedChallengeIds = new Set<string>();
+    const mappedRecommendations: Array<{
+      challenge_id: string;
+      challenge_name: string;
+      cf_rating: number;
+      score: number;
+    }> = [];
+
+    const sortedRecommendations = [...recommendations].sort((left, right) => (right.score || 0) - (left.score || 0));
+
+    for (const recommendation of sortedRecommendations) {
+      const requestedTitle = this.normalizeText(recommendation.challenge_name);
+      const requestedRating = Number(recommendation.cf_rating || 0);
+      const modelScore = this.clamp01(Number(recommendation.score || 0));
+
+      const candidates = publishedChallenges
+        .map((challenge) => {
+          const title = this.normalizeText(challenge.title);
+          const rating = this.getChallengeRating(challenge);
+          const tagScore = this.getTagOverlapScore(challenge.tags || [], weakTags);
+          const titleScore = requestedTitle
+            ? (title === requestedTitle ? 1 : (title.includes(requestedTitle) || requestedTitle.includes(title) ? 0.6 : 0))
+            : 0;
+          const ratingGap = requestedRating > 0 ? Math.abs(rating - requestedRating) : Math.abs(rating - 1300);
+          const ratingScore = 1 / (1 + ratingGap / 100);
+          const localScore = this.clamp01(0.5 * tagScore + 0.3 * ratingScore + 0.2 * titleScore);
+          const blendedScore = this.clamp01(0.8 * localScore + 0.2 * modelScore);
+
+          return {
+            challenge,
+            score: blendedScore,
+          };
+        })
+        .filter(({ challenge }) => !usedChallengeIds.has(challenge.id))
+        .sort((left, right) => right.score - left.score);
+
+      const bestCandidate = candidates[0];
+      if (!bestCandidate) continue;
+
+      usedChallengeIds.add(bestCandidate.challenge.id);
+      mappedRecommendations.push({
+        challenge_id: bestCandidate.challenge.id,
+        challenge_name: bestCandidate.challenge.title,
+        cf_rating: this.getChallengeRating(bestCandidate.challenge),
+        score: bestCandidate.score,
+      });
+
+      if (mappedRecommendations.length >= topK) break;
+    }
+
+    if (mappedRecommendations.length > 0) {
+      return mappedRecommendations;
+    }
+
+    // Fallback: recommend from local published challenges only.
+    const localFallback = publishedChallenges
+      .map((challenge) => {
+        const rating = this.getChallengeRating(challenge);
+        const tagScore = this.getTagOverlapScore(challenge.tags || [], weakTags);
+        const ratingGap = Math.abs(rating - fallbackRating);
+        const ratingScore = 1 / (1 + ratingGap / 150);
+        const combined = tagScore * 0.7 + ratingScore * 0.3;
+
+        return {
+          challenge,
+          score: combined,
+        };
+      })
+      .sort((left, right) => right.score - left.score)
+      .slice(0, topK)
+      .map(({ challenge, score }) => ({
+        challenge_id: challenge.id,
+        challenge_name: challenge.title,
+        cf_rating: this.getChallengeRating(challenge),
+        score,
+      }));
+
+    return localFallback;
+  }
 
   async findAll(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
@@ -309,6 +453,87 @@ export class UsersService {
 
     await this.cache.set(cacheKey, stats, 120); // Cache stats for 2 minutes (stats are computed dynamically now)
     return stats;
+  }
+
+  async getIntelligenceProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const latestSubmission = await this.prisma.submission.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        challenge: {
+          select: { id: true, title: true, difficulty: true, tags: true },
+        },
+      },
+    });
+
+    const currentSkills = {
+      algo: Math.min(100, user.level * 10 + Math.floor(user.xp / 150)),
+      data_structures: Math.min(100, user.level * 9 + Math.floor(user.xp / 180)),
+      dynamic_programming: Math.min(100, user.level * 8),
+      graphs: Math.min(100, user.level * 8),
+      debugging: Math.min(100, 35 + Math.floor(user.tokensLeft)),
+      clean_code: Math.min(100, 40 + Math.floor(user.level * 4)),
+      speed: Math.min(100, 45 + Math.floor(user.elo / 80)),
+    };
+
+    const telemetry = latestSubmission?.challenge
+      ? {
+          user_id: userId,
+          challenge_id: latestSubmission.challenge.id,
+          challenge_name: latestSubmission.challenge.title,
+          difficulty: this.mapDifficultyToRating((latestSubmission.challenge as any).difficulty),
+          cf_rating: this.mapDifficultyToRating((latestSubmission.challenge as any).cfRating || (latestSubmission.challenge as any).cf_rating || (latestSubmission.challenge as any).difficulty),
+          minutes_stuck: Math.max(0, Math.floor(((latestSubmission as any).timeMs || 0) / 60000)),
+          attempts_count: Math.max(1, Number((latestSubmission as any).testsTotal || 1)),
+          last_hint_level: 0,
+          challenge_tags: Array.isArray((latestSubmission.challenge as any).tags) ? (latestSubmission.challenge as any).tags : [],
+          code_lines: Math.max(1, String((latestSubmission as any).code || '').split('\n').length),
+        }
+      : {
+          user_id: userId,
+          challenge_id: 'profile-default',
+          challenge_name: 'Profile Context',
+          difficulty: 2,
+          cf_rating: 1400,
+          minutes_stuck: 0,
+          attempts_count: 0,
+          last_hint_level: 0,
+          challenge_tags: [],
+          code_lines: 40,
+        };
+
+    try {
+      const profile = await this.intelligenceService.getProfile({
+        ...telemetry,
+        current_skills: currentSkills,
+        top_k: 5,
+      });
+
+      const recommendedChallenges = await this.mapRecommendedChallengesToExisting(
+        Array.isArray(profile?.recommended_challenges) ? profile.recommended_challenges : [],
+        Array.isArray(profile?.weakest_tags) ? profile.weakest_tags : [],
+        5,
+        telemetry.cf_rating,
+      );
+
+      return {
+        ...profile,
+        current_skills: profile?.current_skills || currentSkills,
+        updated_skills: profile?.updated_skills || profile?.current_skills || currentSkills,
+        recommended_challenges: recommendedChallenges,
+      };
+    } catch (error) {
+      return {
+        user_id: userId,
+        current_skills: currentSkills,
+        weakest_tags: [],
+        recommended_challenges: [],
+        fallback: true,
+      };
+    }
   }
 
   /**

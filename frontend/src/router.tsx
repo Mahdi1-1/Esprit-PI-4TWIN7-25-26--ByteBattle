@@ -12,6 +12,8 @@ const Signup               = lazy(() => import('./pages/Signup').then(m => ({ de
 const VerifyEmail          = lazy(() => import('./pages/VerifyEmail').then(m => ({ default: m.VerifyEmail })));
 const ForgotPassword       = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const ResetPassword        = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
+
+import { AuthCallback } from './pages/AuthCallback';
 const Dashboard            = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Problems             = lazy(() => import('./pages/Problems').then(m => ({ default: m.Problems })));
 const Problem              = lazy(() => import('./pages/Problem').then(m => ({ default: m.Problem })));
@@ -82,6 +84,7 @@ export const router = createBrowserRouter([
       { index: true,         element: <S><Landing /></S> },
       { path: 'leaderboard', element: <S><Leaderboard /></S> },
       { path: 'u/:username', element: <S><PublicProfile /></S> },
+      { path: 'auth/callback', element: <S><AuthCallback /></S> },
 
       // ─── Public only ───
       {
@@ -112,7 +115,7 @@ export const router = createBrowserRouter([
           { path: 'canvas/:id/result',   element: <S><CanvasResult /></S> },
 
           // Duel
-          { path: 'duel',                element: <S><DuelMatchmaking /></S> },
+          { path: 'duel/matchmaking',                element: <S><DuelMatchmaking /></S> },
           { path: 'duel/room/:id',       element: <S><DuelRoom /></S> },
           { path: 'duel/:id/result',     element: <S><DuelResult /></S> },
 

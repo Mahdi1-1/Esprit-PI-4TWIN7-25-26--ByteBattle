@@ -233,6 +233,14 @@ export class UsersController {
     return this.usersService.getProfileStats(userId);
   }
 
+  @Get('me/intelligence')
+  @Roles('user')
+  @ApiOperation({ summary: 'Get AI skill update and challenge recommendations' })
+  @ApiResponse({ status: 200, description: 'Intelligence profile' })
+  getIntelligenceProfile(@CurrentUser('id') userId: string) {
+    return this.usersService.getIntelligenceProfile(userId);
+  }
+
   // ─── Delete Account Endpoint ─────────────────────────────────
 
   @Delete('me')

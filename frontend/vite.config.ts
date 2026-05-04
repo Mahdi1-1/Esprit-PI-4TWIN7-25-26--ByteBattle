@@ -71,5 +71,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    watch: {
+      // Avoid ENOSPC on Linux when inotify watcher limits are reached.
+      usePolling: true,
+      interval: 300,
+    },
   },
 });

@@ -41,6 +41,11 @@ export class CompaniesController {
     return this.companiesService.getPublicCompanies();
   }
 
+  @Get('jobs')
+  async getPublicJobs() {
+    return this.companiesService.getPublicJobs();
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   async createCompany(

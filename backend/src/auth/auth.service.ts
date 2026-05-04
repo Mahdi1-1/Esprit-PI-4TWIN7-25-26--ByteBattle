@@ -40,6 +40,7 @@ export class AuthService {
       throw new ConflictException('Email or username already taken');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const rawVerificationToken = crypto.randomBytes(32).toString('hex');
     const hashedVerificationToken = crypto.createHash('sha256').update(rawVerificationToken).digest('hex');
@@ -184,6 +185,7 @@ export class AuthService {
       include: { company: { select: { id: true, name: true, slug: true, verified: true } } },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...profile } = user;
     return {
       ...profile,

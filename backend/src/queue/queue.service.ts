@@ -42,10 +42,11 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
     this.queueEvents.on('completed', async ({ jobId, returnvalue }) => {
       const job = await this.codeExecutionQueue.getJob(jobId);
       if (job && job.name === 'execute-code') {
+        const parsedResult = typeof returnvalue === 'string' ? JSON.parse(returnvalue) : returnvalue;
         this.submissionsGateway.emitSubmissionStatus(job.data.userId, {
           submissionId: job.data.submissionId,
           status: 'completed',
-          result: returnvalue,
+          result: parsedResult,
         });
 
         // Trigger badge evaluation for AC submissions (fire-and-forget)

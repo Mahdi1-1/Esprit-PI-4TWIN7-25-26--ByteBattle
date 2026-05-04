@@ -1,17 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { io, Socket } from 'socket.io-client';
 import { Button } from '../components/Button';
 import { DifficultyBadge } from '../components/Badge';
 import { useEditorTheme, defineMonacoThemes } from '../context/EditorThemeContext';
-import { Clock, Play, Send, ChevronLeft, Loader, AlertTriangle } from 'lucide-react';
+import { Clock, Send, Loader, AlertTriangle, Lightbulb } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { toast } from 'react-hot-toast';
-import { GameTheme, GameResult, EndGameData } from '../types/game.types';
+import { GameTheme, GameResult } from '../types/game.types';
 import { useAnticheat } from '../hooks/useAnticheat';
 
 type Tab = 'statement' | 'status';
+
+const LANGUAGES = [
+  { value: 'python', label: 'Python 3' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'c', label: 'C' },
+  { value: 'java', label: 'Java' },
+  { value: 'go', label: 'Go' },
+  { value: 'rust', label: 'Rust' },
+];
+
+const CODE_TEMPLATES: Record<string, string> = {
+  python: `import sys\n\ndef solution(lines):\n    # Parse input lines and print output\n    pass\n\nif __name__ == "__main__":\n    data = sys.stdin.read().splitlines()\n    solution(data)\n`,
+  javascript: `const lines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\\n');\n\nfunction solution(lines) {\n  // Parse input lines and print output\n}\n\nsolution(lines);\n`,
+  typescript: `import * as fs from 'fs';\n\nconst lines: string[] = fs.readFileSync('/dev/stdin', 'utf8').trim().split('\\n');\n\nfunction solution(lines: string[]): void {\n  // Parse input lines and print output\n}\n\nsolution(lines);\n`,
+  cpp: `#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n\n    string line;\n    vector<string> lines;\n    while (getline(cin, line)) lines.push_back(line);\n\n    // Parse input lines and print output\n    return 0;\n}\n`,
+  c: `#include <stdio.h>\n\nint main() {\n    // Parse stdin and print output\n    return 0;\n}\n`,
+  java: `import java.io.*;\nimport java.util.*;\n\npublic class Solution {\n    public static void main(String[] args) throws Exception {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> lines = new ArrayList<>();\n        String line;\n        while ((line = br.readLine()) != null) lines.add(line);\n\n        // Parse input lines and print output\n    }\n}\n`,
+  go: `package main\n\nimport (\n\t"bufio"\n\t"fmt"\n\t"os"\n)\n\nfunc main() {\n\tscanner := bufio.NewScanner(os.Stdin)\n\tvar lines []string\n\tfor scanner.Scan() {\n\t\tlines = append(lines, scanner.Text())\n\t}\n\n\t_ = lines\n\tfmt.Println()\n}\n`,
+  rust: `use std::io::{self, BufRead};\n\nfn main() {\n    let stdin = io::stdin();\n    let lines: Vec<String> = stdin.lock().lines()\n        .map(|l| l.expect("Could not read line"))\n        .collect();\n\n    let _ = lines;\n}\n`,
+};
 
 export function DuelRoom() {
   const { id } = useParams();
@@ -28,9 +50,34 @@ export function DuelRoom() {
   const [activeTab, setActiveTab] = useState<Tab>('statement');
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const initializedEditorRef = useRef(false);
+
+  const normalizeTimeLimitSeconds = (raw: any): number => {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) return 1800;
+    // Legacy convention: values like 10/45/60 are minutes.
+    return n <= 300 ? n * 60 : n;
+  };
+
+  const computeTimeRemaining = (state: any): number => {
+    const timeLimitSec = normalizeTimeLimitSeconds(state?.timeLimit);
+    const startedAtRaw = state?.startedAt;
+
+    if (!startedAtRaw) return timeLimitSec;
+
+    const startedAtMs = typeof startedAtRaw === 'number'
+      ? startedAtRaw
+      : new Date(startedAtRaw).getTime();
+
+    if (!Number.isFinite(startedAtMs) || startedAtMs <= 0) return timeLimitSec;
+
+    const elapsed = Math.floor((Date.now() - startedAtMs) / 1000);
+    return Math.max(0, timeLimitSec - Math.max(0, elapsed));
+  };
 
   // ── Anticheat (same as solo) ─────────────────────────────────────────────
-  const { focusLostCount, totalFocusLostTime } = useAnticheat({
+  const { focusLostCount, totalFocusLostTime, isFullScreen } = useAnticheat({
     autoFullscreen: true,
     blockCopyPaste: true,
     onFocusLost: (count) => {
@@ -63,9 +110,18 @@ export function DuelRoom() {
 
     newSocket.on('duel_state_update', (state) => {
       setDuelState(state);
-      if (state.status === 'active' && state.startedAt && state.timeLimit) {
-        const elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
-        setTimeRemaining(Math.max(0, state.timeLimit - elapsed));
+
+      if (!initializedEditorRef.current) {
+        const firstAllowedLanguage = state?.challenge?.allowedLanguages?.[0] || 'javascript';
+        setLanguage(firstAllowedLanguage);
+        setCode(CODE_TEMPLATES[firstAllowedLanguage] || '// Write your solution here');
+        initializedEditorRef.current = true;
+      }
+
+      if (state.status === 'active') {
+        setTimeRemaining(computeTimeRemaining(state));
+      } else if (state.status === 'ready' || state.status === 'waiting') {
+        setTimeRemaining(normalizeTimeLimitSeconds(state?.timeLimit));
       }
     });
 
@@ -75,7 +131,20 @@ export function DuelRoom() {
     });
 
     newSocket.on('test_result', (result) => {
-      setTestResult(result);
+      const firstFailedTest = Array.isArray(result?.results)
+        ? result.results.find((t: any) => !t.passed)
+        : null;
+
+      setTestResult({
+        verdict: result?.verdict || 'N/A',
+        testsPassed: result?.testsPassed || result?.passed || 0,
+        testsTotal: result?.testsTotal || result?.total || 0,
+        timeMs: result?.timeMs || result?.totalTimeMs || 0,
+        memMb: result?.memMb || result?.maxMemMb || 0,
+        stdout: result?.stdout || result?.results?.[0]?.actualOutput || '',
+        stderr: result?.stderr || firstFailedTest?.stderr || '',
+        firstFailedTest,
+      });
       setIsRunning(false);
       if (result.verdict === 'AC') {
         toast.success('All tests passed! AI analysis in progress...');
@@ -95,7 +164,7 @@ export function DuelRoom() {
 
       const isWinner = data.winnerId === user?.id;
 
-      navigate('/duel/${duel.id}/result', {
+      navigate(`/duel/${id}/result`, {
         state: {
           endGameData: {
             result: isWinner ? GameResult.VICTORY : GameResult.DEFEAT,
@@ -156,6 +225,11 @@ export function DuelRoom() {
   }, [duelState?.status, timeRemaining]);
 
   const handleTestCode = () => {
+    if (timeRemaining <= 0) {
+      toast.error('Time is over for this duel');
+      return;
+    }
+
     if (socket) {
       setIsRunning(true);
       setTestResult(null);
@@ -180,6 +254,10 @@ export function DuelRoom() {
   const isPlayer2 = duelState?.player2?.id === user?.id;
   const opponent = isPlayer1 ? duelState.player2 : (isPlayer2 ? duelState.player1 : null);
   const me = isPlayer1 ? duelState.player1 : (isPlayer2 ? duelState.player2 : null);
+  const allowedLanguages = duelState?.challenge?.allowedLanguages?.length
+    ? duelState.challenge.allowedLanguages
+    : ['javascript', 'python', 'cpp'];
+  const totalHints = duelState?.challenge?.hints?.length || 0;
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -335,7 +413,59 @@ export function DuelRoom() {
                           <span className="text-[var(--text-muted)]">Vitesse:</span>
                           <span>{testResult.timeMs}ms</span>
                         </div>
+                        {testResult.memMb ? (
+                          <div className="flex justify-between">
+                            <span className="text-[var(--text-muted)]">Memory:</span>
+                            <span>{Math.round(testResult.memMb)}MB</span>
+                          </div>
+                        ) : null}
                       </div>
+
+                      {testResult.stdout && (
+                        <div className="mt-3">
+                          <span className="text-[var(--text-muted)] text-xs mb-1 block">stdout:</span>
+                          <pre className="p-2 bg-[var(--surface-2)] rounded font-code text-xs text-[var(--text-primary)] whitespace-pre-wrap">
+                            {testResult.stdout}
+                          </pre>
+                        </div>
+                      )}
+
+                      {testResult.stderr && (
+                        <div className="mt-3">
+                          <span className="text-[var(--text-muted)] text-xs mb-1 block">stderr:</span>
+                          <pre className="p-2 bg-[var(--state-error)]/10 border border-[var(--state-error)]/30 rounded font-code text-xs text-[var(--state-error)] whitespace-pre-wrap">
+                            {testResult.stderr}
+                          </pre>
+                        </div>
+                      )}
+
+                      {testResult.firstFailedTest && (
+                        <div className="mt-3 p-3 bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-md)]">
+                          <div className="text-xs font-medium text-[var(--text-primary)] mb-2">
+                            First failing test
+                          </div>
+                          <div className="font-code text-xs space-y-1">
+                            <div>
+                              <span className="text-[var(--text-muted)]">Input:</span>
+                              <span className="ml-2 text-[var(--text-primary)] whitespace-pre-wrap">
+                                {testResult.firstFailedTest.input}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[var(--text-muted)]">Expected:</span>
+                              <span className="ml-2 text-[var(--text-primary)] whitespace-pre-wrap">
+                                {testResult.firstFailedTest.expectedOutput}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[var(--text-muted)]">Actual:</span>
+                              <span className="ml-2 text-[var(--text-primary)] whitespace-pre-wrap">
+                                {testResult.firstFailedTest.actualOutput}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -351,25 +481,76 @@ export function DuelRoom() {
                 <select
                   className="bg-[var(--surface-1)] text-[var(--text-primary)] px-2 py-1 rounded-[var(--radius-sm)] border border-[var(--border-default)] text-sm focus:outline-none focus:border-[var(--brand-primary)]"
                   value={language}
-                  onChange={e => setLanguage(e.target.value)}
+                  onChange={e => {
+                    const newLanguage = e.target.value;
+                    setLanguage(newLanguage);
+                    setCode(CODE_TEMPLATES[newLanguage] || '// Write your solution here');
+                  }}
                   disabled={duelState.status !== 'active'}
                 >
-                  <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
-                  <option value="cpp">C++</option>
+                  {allowedLanguages.map((lang: string) => {
+                    const def = LANGUAGES.find((item) => item.value === lang);
+                    return (
+                      <option key={lang} value={lang}>
+                        {def?.label || lang}
+                      </option>
+                    );
+                  })}
                 </select>
+                {totalHints > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (hintsUsed < totalHints) {
+                        toast(duelState.challenge.hints[hintsUsed], {
+                          icon: '💡',
+                          duration: 5000,
+                          style: {
+                            background: 'var(--surface-2)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-default)',
+                          },
+                        });
+                        setHintsUsed((prev) => prev + 1);
+                      } else {
+                        toast.error('No more hints available');
+                      }
+                    }}
+                    disabled={hintsUsed >= totalHints || duelState.status !== 'active'}
+                  >
+                    <Lightbulb className="w-4 h-4" />
+                    Hint ({hintsUsed}/{totalHints})
+                  </Button>
+                )}
               </div>
               <Button
                 variant="primary"
                 size="sm"
                 onClick={handleTestCode}
                 loading={isRunning}
-                disabled={duelState.status !== 'active' || me?.finishedAt}>
+                disabled={duelState.status !== 'active' || me?.finishedAt || timeRemaining <= 0}>
                 <Send className="w-4 h-4" />
                 Soumettre
               </Button>
             </div>
             <div className="flex-1 relative">
+              {!isFullScreen && (
+                <div className="absolute inset-0 z-[60] bg-[var(--surface-1)]/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6">
+                  <AlertTriangle className="w-10 h-10 text-yellow-500 mb-3" />
+                  <h3 className="text-lg font-bold mb-2 text-[var(--text-primary)]">Full Screen Mode Required</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-5 max-w-md">
+                    To keep duel conditions fair, the editor is locked until full screen is enabled.
+                  </p>
+                  <Button
+                    size="md"
+                    variant="primary"
+                    onClick={() => document.documentElement.requestFullscreen()}
+                  >
+                    Enable Full Screen
+                  </Button>
+                </div>
+              )}
               {duelState.status !== 'active' && (
                 <div className="absolute inset-0 z-50 bg-[var(--surface-1)]/80 backdrop-blur-sm flex items-center justify-center">
                   <div className="bg-[var(--surface-2)] p-6 rounded-lg text-center shadow-lg border border-[var(--border-default)] text-[var(--text-primary)]">

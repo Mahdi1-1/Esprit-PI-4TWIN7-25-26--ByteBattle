@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HackathonScoreboardService, ScoreboardRow, Scoreboard } from './hackathon-scoreboard.service';
+import { HackathonScoreboardService, Scoreboard } from './hackathon-scoreboard.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -265,6 +265,7 @@ describe('HackathonScoreboardService', () => {
 
   it('should exclude disqualified teams', async () => {
     const team = makeTeam('t1', 'Team1');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const disqualified = { ...makeTeam('t2', 'BadTeam'), isDisqualified: true };
 
     // The service filters by isDisqualified: false in the query,

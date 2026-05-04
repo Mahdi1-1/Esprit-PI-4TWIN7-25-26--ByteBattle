@@ -266,7 +266,73 @@ export function AdminUsers() {
                 {filteredUsers.length} users total
               </p>
             </div>
-            <button className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:opacity-90 transition-opacity">
+            <button
+              onClick={async () => {
+                try {
+                  // Try to fetch all users (large limit)
+                  const resp = await api.get('/admin/users', { params: { page: 1, limit: 10000 } });
+                  const all = Array.isArray(resp.data) ? resp.data : resp.data?.data || [];
+                  const rows = all.map((u: any) => ({
+                    id: u.id,
+                    username: u.username,
+                    email: u.email,
+                    role: u.role,
+                    status: u.status || 'active',
+                    level: u.level ?? '',
+                    elo: u.elo ?? '',
+                    joinedAt: u.createdAt || u.joinedAt || '',
+                  }));
+
+                  if (rows.length === 0) {
+                    // fallback to current filtered users
+                    console.warn('No users returned from export endpoint, exporting visible users');
+                  }
+
+                  const csvHeader = ['id','username','email','role','status','level','elo','joinedAt'].join(',') + '\n';
+                  const csvBody = (rows.length ? rows : filteredUsers).map((r: any) => (
+                    [r.id, r.username, r.email, r.role, r.status, r.level, r.elo, r.joinedAt]
+                      .map((v) => `"${String(v ?? '')}"`).join(',')
+                  )).join('\n');
+
+                  const csv = csvHeader + csvBody;
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  const date = new Date().toISOString().slice(0,10);
+                  a.download = `users-${date}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  URL.revokeObjectURL(url);
+                } catch (err) {
+                  console.error('Failed to export users CSV:', err);
+                  // fallback: export filteredUsers
+                  try {
+                    const rows = filteredUsers;
+                    const csvHeader = ['id','username','email','role','status','level','elo','joinedAt'].join(',') + '\n';
+                    const csvBody = rows.map((r: any) => (
+                      [r.id, r.username, r.email, r.role, r.status, r.level, r.elo, r.joinedAt]
+                        .map((v) => `"${String(v ?? '')}"`).join(',')
+                    )).join('\n');
+                    const csv = csvHeader + csvBody;
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const date = new Date().toISOString().slice(0,10);
+                    a.download = `users-${date}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                  } catch (err2) {
+                    console.error('CSV fallback failed:', err2);
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:opacity-90 transition-opacity"
+            >
               Export CSV
             </button>
           </div>

@@ -217,7 +217,7 @@ export function CompanyNotifications() {
 
         <div className="space-y-2">
           {notifications.map((notification) => {
-            const Icon = notificationTypeIcons[notification.type];
+            const Icon = notificationTypeIcons[notification.type as keyof typeof notificationTypeIcons] || Bell;
             return (
               <div
                 key={notification.id}
@@ -235,14 +235,14 @@ export function CompanyNotifications() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant="default" className="text-xs">
-                      {notificationTypeLabels[notification.type]}
+                      {notificationTypeLabels[notification.type as keyof typeof notificationTypeLabels] || 'Notification'}
                     </Badge>
                     {!notification.read && (
                       <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)]" />
                     )}
                   </div>
                   <p className="text-[var(--text-primary)]">
-                    {notification.message}
+                    {(notification as any).message || 'Notification'}
                   </p>
                   <div className="flex items-center gap-2 mt-2 text-xs text-[var(--text-muted)]">
                     <Clock className="w-3 h-3" />

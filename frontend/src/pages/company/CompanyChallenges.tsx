@@ -151,7 +151,7 @@ export function CompanyRoadmaps() {
                 />
                 <select
                   value={newRoadmap.visibility}
-                  onChange={(e) => setNewRoadmap({ ...newRoadmap, visibility: e.target.value as 'public' | 'employees_only' })}
+                  onChange={(e) => setNewRoadmap({ ...newRoadmap, visibility: e.target.value as any })}
                   className="w-full px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)]"
                 >
                   <option value="employees_only">Employees Only</option>
@@ -185,7 +185,7 @@ export function CompanyRoadmaps() {
                       <p className="text-sm text-[var(--text-secondary)]">{roadmap.challengeIds.length} challenges</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={roadmap.visibility === 'public' ? 'default' : 'secondary'}>
+                      <Badge variant={roadmap.visibility === 'public' ? 'default' : 'outline' as any}>
                         {roadmap.visibility === 'public' ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                       </Badge>
                       {canManage && (

@@ -91,3 +91,14 @@ dist/
 *.mp3
 *.wav
 *.tmp
+
+# ─── Python virtualenv and caches ───
+ml-service/venv/
+**/__pycache__/
+*.pyc
+
+
+
+# ML artifacts
+ml-service/data/*.parquet
+ml-service/models/**/*.pkl

@@ -440,6 +440,98 @@ Format markdown avec sections claires.`;
         }
     }
 
+    async generateProgressiveHint(params: {
+        challengeTitle: string;
+        challengeDescription: string;
+        challengeTags?: string[];
+        language: string;
+        targetLevel: number;
+        staticHints?: string[];
+        hintStyle?: 'concept' | 'strategy' | 'pseudocode' | 'partial_snippet' | 'near_solution';
+        hintIntensity?: 'low' | 'medium' | 'high';
+        hintTiming?: 'now' | 'wait';
+    }): Promise<string> {
+        if (!this.model) {
+            throw new ServiceUnavailableException('Gemini AI is not configured. Please set GEMINI_API_KEY to enable progressive hints.');
+        }
+
+        const safeLevel = Math.min(5, Math.max(1, params.targetLevel));
+        const hints = params.staticHints || [];
+        const style = params.hintStyle || 'strategy';
+        const intensity = params.hintIntensity || 'medium';
+        const timing = params.hintTiming || 'now';
+
+        const levelInstruction =
+            safeLevel === 1
+                ? 'Niveau 1: donne uniquement un indice conceptuel sans pseudo-code et sans code.'
+                : safeLevel === 2
+                ? 'Niveau 2: donne uniquement une stratégie algorithmique en étapes, sans code exécutable.'
+                : safeLevel === 3
+                ? 'Niveau 3: donne un pseudo-code lisible, sans code complet d\'un langage précis.'
+                : safeLevel === 4
+                ? 'Niveau 4: donne un snippet partiel (20-40% max), pas la solution complète.'
+                : 'Niveau 5: solution quasi complète autorisée.';
+
+        const request = `Tu es un assistant pédagogique pour programmation compétitive.
+
+Problème: ${params.challengeTitle}
+Langage cible: ${params.language}
+Tags: ${(params.challengeTags || []).join(', ') || 'N/A'}
+
+Description:
+${params.challengeDescription || 'N/A'}
+
+Hints statiques disponibles:
+${hints.length ? hints.map((h, i) => `${i + 1}. ${h}`).join('\n') : 'Aucun'}
+
+Instruction de niveau:
+${levelInstruction}
+
+Policy pédagogique décidée par le modèle:
+- hint_style: ${style}
+- hint_intensity: ${intensity}
+- hint_timing: ${timing}
+
+Réponds UNIQUEMENT au format JSON valide:
+{
+  "hint_text": "..."
+}
+
+Contraintes:
+- Réponse concise et utile.
+- Aucune divulgation de solution complète pour les niveaux 1 à 4.
+- Respecte hint_style, hint_intensity et hint_timing.
+- Pas de markdown, pas de texte hors JSON.`;
+
+        try {
+            const text = await this.generateWithRetry(request);
+            let cleanText = text.trim();
+            cleanText = cleanText.replace(/```json\n?/gi, '');
+            cleanText = cleanText.replace(/```\n?/g, '');
+
+            const jsonStart = cleanText.indexOf('{');
+            const jsonEnd = cleanText.lastIndexOf('}');
+            if (jsonStart !== -1 && jsonEnd !== -1) {
+                cleanText = cleanText.substring(jsonStart, jsonEnd + 1);
+            }
+
+            const parsed = JSON.parse(cleanText);
+            const hintText = String(parsed?.hint_text || '').trim();
+            if (!hintText) {
+                throw new Error('Gemini returned empty hint_text');
+            }
+
+            return hintText;
+        } catch (error) {
+            this.logger.error('Failed to generate progressive hint with Gemini:', error);
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            const msg = error instanceof Error ? error.message : String(error);
+            throw new ServiceUnavailableException(`Failed to generate progressive hint: ${msg}`);
+        }
+    }
+
     // Helper methods
     private clamp(value: any, min: number, max: number): number {
         const num = Number(value);

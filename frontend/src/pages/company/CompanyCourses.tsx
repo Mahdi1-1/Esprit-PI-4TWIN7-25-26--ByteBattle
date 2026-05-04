@@ -155,7 +155,7 @@ export function CompanyCourses() {
                 />
                 <select
                   value={newCourse.visibility}
-                  onChange={(e) => setNewCourse({ ...newCourse, visibility: e.target.value as 'public' | 'employees_only' })}
+                  onChange={(e) => setNewCourse({ ...newCourse, visibility: e.target.value as any })}
                   className="w-full px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)]"
                 >
                   <option value="employees_only">Employees Only</option>
@@ -173,7 +173,7 @@ export function CompanyCourses() {
                     <div className="flex gap-2">
                       <select
                         value={newSection.type}
-                        onChange={(e) => setNewSection({ ...newSection, type: e.target.value as 'text' | 'video' | 'challenge' })}
+                        onChange={(e) => setNewSection({ ...newSection, type: e.target.value as any })}
                         className="px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-default)] rounded-[var(--radius-md)] text-[var(--text-primary)]"
                       >
                         <option value="text">Text</option>
@@ -226,7 +226,7 @@ export function CompanyCourses() {
                       <p className="text-sm text-[var(--text-secondary)]">{course.content?.length || 0} sections</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={course.visibility === 'public' ? 'default' : 'secondary'}>
+                      <Badge variant={course.visibility === 'public' ? 'default' : 'outline' as any}>
                         {course.visibility === 'public' ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                       </Badge>
                       {canManage && (

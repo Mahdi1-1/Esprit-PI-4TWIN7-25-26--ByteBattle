@@ -80,8 +80,8 @@ export const DuelResult: React.FC = () => {
     return null;
   }
 
-  // Si c'est un ancien format avec endGameData
-  if (duelData.isVisible !== undefined) {
+  // Si c'est le format EndGameData
+  if (duelData.isVisible !== undefined || duelData.result !== undefined || duelData.player !== undefined) {
     return (
       <div className="w-screen h-screen bg-black">
         <EndGameScreen
@@ -95,8 +95,8 @@ export const DuelResult: React.FC = () => {
   }
 
   // Nouveau format avec données réelles
-  const winner = duelData.player1.isWinner ? duelData.player1 : duelData.player2;
-  const loser = duelData.player1.isWinner ? duelData.player2 : duelData.player1;
+  const winner = duelData.player1?.isWinner ? duelData.player1 : duelData.player2;
+  const loser = duelData.player1?.isWinner ? duelData.player2 : duelData.player1;
 
   return (
     <Layout>

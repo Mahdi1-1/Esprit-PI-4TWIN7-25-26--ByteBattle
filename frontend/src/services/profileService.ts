@@ -46,6 +46,22 @@ export interface ProfileStats {
     lastLogin: string | null;
 }
 
+export interface IntelligenceRecommendation {
+    challenge_id: string;
+    challenge_name: string;
+    cf_rating: number;
+    score: number;
+}
+
+export interface IntelligenceProfileResponse {
+    user_id: string;
+    updated_skills: Record<string, number>;
+    current_skills?: Record<string, number>;
+    weakest_tags: string[];
+    recommended_challenges: IntelligenceRecommendation[];
+    fallback?: boolean;
+}
+
 class ProfileService {
     /**
      * Upload profile photo
@@ -110,6 +126,14 @@ class ProfileService {
      */
     async getProfileStats(): Promise<ProfileStats> {
         const response = await api.get('/users/me/stats');
+        return response.data;
+    }
+
+    /**
+     * Get AI-generated profile insights, updated skills, and challenge recommendations.
+     */
+    async getIntelligenceProfile(): Promise<IntelligenceProfileResponse> {
+        const response = await api.get('/users/me/intelligence');
         return response.data;
     }
 

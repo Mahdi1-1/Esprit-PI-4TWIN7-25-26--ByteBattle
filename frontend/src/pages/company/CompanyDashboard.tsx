@@ -146,7 +146,7 @@ export function CompanyDashboard() {
             <AlertCircle className="w-12 h-12 text-[var(--state-error)] mx-auto mb-4" />
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Failed to load dashboard</h2>
             <p className="text-[var(--text-secondary)] mb-4">{error || 'Unknown error'}</p>
-            <Button onClick={fetchDashboardData}>Retry</Button>
+            <Button onClick={() => fetchDashboardData(companyId!)}>Retry</Button>
           </div>
         </div>
       </Layout>
@@ -190,7 +190,7 @@ export function CompanyDashboard() {
             <div className="lg:col-span-2 theme-card bg-[var(--surface-1)] border-[var(--border-default)] p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-[var(--text-primary)]">Pending Join Requests</h2>
-                <Badge variant="warning">{pendingRequests.length} pending</Badge>
+                <Badge variant="common">{pendingRequests.length} pending</Badge>
               </div>
               <div className="space-y-3">
                 {pendingRequests.slice(0, 5).map((request) => (

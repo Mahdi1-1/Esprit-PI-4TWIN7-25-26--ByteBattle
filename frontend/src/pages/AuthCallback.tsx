@@ -10,12 +10,12 @@ export function AuthCallback() {
     const token = searchParams.get('token');
     if (token) {
       localStorage.setItem('token', token);
-      // Optionnel : fetch /auth/me pour stocker l'utilisateur
-      navigate('/dashboard');
+      // Force full reload so AuthProvider re-runs token bootstrap (/auth/me).
+      window.location.replace('/dashboard');
     } else {
       navigate('/login?error=authentication_failed');
     }
   }, [searchParams, navigate]);
 
-  return <div>Signing in...</div>;
+  return <div className="p-6 text-center">Signing in with Google...</div>;
 }

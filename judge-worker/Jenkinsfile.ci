@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('judge-worker') {
+                    sh 'pnpm install --frozen-lockfile'
+                    sh 'pnpm exec prisma generate'
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                dir('judge-worker') {
+                    sh 'pnpm run lint || true'
+                }
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                dir('judge-worker') {
+                    sh 'pnpm exec jest --coverage --passWithNoTests'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                dir('judge-worker') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        withSonarQubeEnv('My SonarQube Server') {
+                            sh '''
+                            npx sonar-scanner \
+                              -Dsonar.host.url=http://sonarqube:9000 \
+                              -Dsonar.token=$SONAR_TOKEN
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+
+    post {
+        always { cleanWs() }
+        success { echo '✅ Judge Worker CI pipeline completed successfully!' }
+        failure  { echo '❌ Judge Worker CI pipeline failed!' }
+    }
+}

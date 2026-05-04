@@ -1,23 +1,28 @@
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
 import React, { Suspense, lazy } from 'react';
 import { useAuth } from './context/AuthContext';
+import { CompanyRole } from './services/companyService';
 import { PageLoader } from './App';
 import { ThemeEffects } from './components/ThemeEffects';
 import { NotificationToastContainer } from './components/NotificationToastContainer';
 import { Toaster } from 'react-hot-toast';
-import { CompanyRole } from './services/companyService';
 
 // Lazy-load Navbar — 130 kB, not needed before first paint
 const Navbar = lazy(() => import('./components/Navbar').then(m => ({ default: m.Navbar })));
 
 // ─── Shell global ───
 export function AppShell() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   return (
     <div className="relative min-h-screen bg-[var(--bg)] text-[var(--text-1)]">
       <ThemeEffects />
-      <Suspense fallback={<div className="h-16" aria-hidden="true" />}>
-        <Navbar />
-      </Suspense>
+      {!isAdminRoute && (
+        <Suspense fallback={<div className="h-16" aria-hidden="true" />}>
+          <Navbar />
+        </Suspense>
+      )}
       <Outlet />
       <NotificationToastContainer />
       <Toaster position="bottom-right" />
@@ -77,7 +82,7 @@ export function CompanyRoleGuard({
   if (isLoading) return <PageLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  const companyRole = user?.companyRole;
+  const companyRole = user?.companyRole as CompanyRole | undefined;
   if (!companyRole || !allowedRoles.includes(companyRole)) {
     return <Navigate to={fallbackPath} replace />;
   }

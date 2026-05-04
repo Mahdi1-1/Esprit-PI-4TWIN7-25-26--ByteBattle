@@ -247,7 +247,7 @@ export function CompanyJobs() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={job.status === 'active' ? 'success' : 'secondary'}>
+                      <Badge variant={job.status === 'active' ? 'default' : 'common'}>
                         {job.status}
                       </Badge>
                     </div>
@@ -274,7 +274,7 @@ export function CompanyJobs() {
                       {selectedJob.salaryRange && <span className="flex items-center gap-1"><DollarSign className="w-4 h-4" />{selectedJob.salaryRange}</span>}
                     </div>
                   </div>
-                  <Badge variant={selectedJob.status === 'active' ? 'success' : 'secondary'} className="text-sm">
+                  <Badge variant={selectedJob.status === 'active' ? 'default' : 'common'} className="text-sm">
                     {selectedJob.status}
                   </Badge>
                 </div>

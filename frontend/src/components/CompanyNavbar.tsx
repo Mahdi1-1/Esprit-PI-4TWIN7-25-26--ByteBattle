@@ -158,7 +158,6 @@ export function CompanyNavbar({ companyName: initialName, companyId: initialComp
               Add Member
             </button>
           )}
-
           {/* Search */}
           <button className="w-10 h-10 flex items-center justify-center rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--brand-primary)] transition-colors">
             <Search className="w-5 h-5" />

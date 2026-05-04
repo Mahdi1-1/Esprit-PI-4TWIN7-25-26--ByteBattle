@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
 import { NotificationPreferenceService } from './notification-preference.service';
+import { NotificationEmitterService } from './notification-emitter.service';
 
 const mockNotificationsService = {
   getAll: jest.fn(),
@@ -30,6 +31,7 @@ describe('NotificationsController', () => {
       providers: [
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: NotificationPreferenceService, useValue: mockPreferenceService },
+        { provide: NotificationEmitterService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 

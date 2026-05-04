@@ -4,12 +4,14 @@ import { memoryStorage } from 'multer';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { IntelligenceModule } from '../intelligence/intelligence.module';
 
 @Module({
   imports: [
     MulterModule.register({
       storage: memoryStorage(), // keep file in memory so Sharp can read buffer
     }),
+    IntelligenceModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',

@@ -20,12 +20,16 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { CacheModule } from './cache/cache.module';
 import { CompaniesModule } from './companies/companies.module';
 import { RoadmapsModule } from './roadmaps/roadmaps.module';
+import { HintsModule } from './hints/hints.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: path.resolve(process.cwd(), '.env'),
+      envFilePath: [
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(__dirname, '../.env'),
+      ],
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -56,6 +60,7 @@ import { RoadmapsModule } from './roadmaps/roadmaps.module';
     NotificationsModule,
     CompaniesModule,
     RoadmapsModule,
+    HintsModule,
   ],
 })
 export class AppModule {}

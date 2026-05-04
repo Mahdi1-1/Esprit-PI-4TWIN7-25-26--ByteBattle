@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('frontend') {
+                    // Plus besoin de npm install -g pnpm, on l'a fait en bash
+                    sh 'pnpm install --frozen-lockfile'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('frontend') {
+                    sh 'pnpm run build'
+                }
+            }
+        }
+
+    stage('SonarQube Analysis') {
+    steps {
+        dir('frontend') {
+            // "sonar-token" est l'ID que je vois sur ta capture d'écran
+            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                withSonarQubeEnv('My SonarQube Server') {
+                    sh "npx sonar-scanner \
+                        -Dsonar.projectKey=bytebattle-frontend \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://sonarqube:9000 \
+                        -Dsonar.token=${SONAR_TOKEN}"
+                }
+            }
+        }
+    }
+}
+
+        stage('Quality Gate') {
+            steps {
+                // Cette étape attend le retour de SonarQube pour valider le pipeline
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo '✅ Frontend CI pipeline completed successfully!'
+            // Optionnel : déclencher le CD automatiquement
+            // build job: 'BB-Frontend-CD', wait: false
+        }
+        failure {
+            echo '❌ Frontend CI pipeline failed!'
+        }
+    }
+}

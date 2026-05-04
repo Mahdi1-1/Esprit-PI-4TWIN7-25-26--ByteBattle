@@ -26,6 +26,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { hintsService } from '../services/hintsService';
 
 const LANGUAGES = [
   { value: 'python', label: 'Python 3' },
@@ -370,7 +371,7 @@ const LANG_COMPLETIONS: Record<string, { label: string; kind: string; insertText
   ],
 };
 
-type Tab = 'statement' | 'tests' | 'submissions' | 'editorial';
+type Tab = 'statement' | 'tests' | 'submissions' | 'hints' | 'editorial';
 
 export function Problem() {
   const { id } = useParams();
@@ -385,11 +386,130 @@ export function Problem() {
   const [isRunning, setIsRunning] = useState(false);
   const [aiReview, setAiReview] = useState<any>(null);
   const [loadingAiReview, setLoadingAiReview] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(120);
+  const [timeRemainingSec, setTimeRemainingSec] = useState(120 * 60);
 
   const [hintsUsed, setHintsUsed] = useState(0);
   const { user } = useAuth();
   const { editorTheme } = useEditorTheme();
+
+  // ML Progressive Hints
+  const [servedHint, setServedHint] = useState<{ level: number; text: string } | null>(null);
+  const [loadingHint, setLoadingHint] = useState(false);
+  const [pendingConfirmL5, setPendingConfirmL5] = useState(false);
+  const [wrongAttemptsCount, setWrongAttemptsCount] = useState(0);
+  const openedAtRef = useRef<number>(Date.now());
+  const lastAutoHintAtMsRef = useRef<number>(0);
+  const lastAutoHintAttemptRef = useRef<number>(0);
+
+  const AUTO_HINT_ATTEMPT_STEP = 2;
+  const AUTO_HINT_COOLDOWN_MS = 90 * 1000;
+
+  const recommendAndFetchHint = async (opts?: { automatic?: boolean; maxLevel?: number; reason?: string }) => {
+    if (!problem) return;
+    setLoadingHint(true);
+    try {
+      const rec = await hintsService.recommendLevel({
+        challengeId: problem.id,
+        language: language,
+        codeLength: code.length,
+        wrongAnswerCount: wrongAttemptsCount,
+      });
+      const level = Math.max(1, Math.min(opts?.maxLevel ?? 5, rec.level));
+      await fetchHint(level, false, {
+        automatic: opts?.automatic,
+        reason: opts?.reason,
+        modelUsed: rec.modelUsed,
+        confidence: rec.confidence,
+        hintStyle: rec.hintStyle,
+        hintIntensity: rec.hintIntensity,
+        hintTiming: rec.hintTiming,
+      });
+    } catch (e) {
+      toast.error('Erreur de recommandation (est-ce que le service ML tourne ?)');
+    } finally {
+      setLoadingHint(false);
+    }
+  };
+
+  const fetchHint = async (
+    level: number,
+    confirmL5 = false,
+    meta?: {
+      automatic?: boolean;
+      reason?: string;
+      modelUsed?: string;
+      confidence?: number | null;
+      hintStyle?: 'concept' | 'strategy' | 'pseudocode' | 'partial_snippet' | 'near_solution';
+      hintIntensity?: 'low' | 'medium' | 'high';
+      hintTiming?: 'now' | 'wait';
+    }
+  ) => {
+    if (!problem) return;
+    let requestedLevel = level;
+
+    // Auto-hints should never reveal near-complete solutions.
+    if (meta?.automatic && requestedLevel >= 5) {
+      requestedLevel = 4;
+    }
+
+    if (requestedLevel === 5 && !confirmL5) {
+      setPendingConfirmL5(true);
+      return;
+    }
+    setLoadingHint(true);
+    setPendingConfirmL5(false);
+    try {
+      const res = await hintsService.getHint({
+        challengeId: problem.id,
+        language: language,
+        targetLevel: requestedLevel,
+        confirmLevel5: confirmL5,
+        codeLength: code.length,
+        wrongAnswerCount: wrongAttemptsCount,
+        previousHintLevel: servedHint?.level,
+        minutesStuck: Math.floor((Date.now() - openedAtRef.current) / 60000),
+        decisionModel: meta?.modelUsed,
+        decisionConfidence: meta?.confidence ?? undefined,
+        hintStyle: meta?.hintStyle,
+        hintIntensity: meta?.hintIntensity,
+        hintTiming: meta?.hintTiming,
+      });
+      setServedHint({ level: res.level, text: res.hintText });
+
+      if (meta?.automatic) {
+        setActiveTab('hints');
+        toast.success(`Indice auto niveau ${res.level} (${res.source})`);
+      } else {
+        toast.success(`Indice de niveau ${res.level} chargé (${res.source})`);
+      }
+    } catch (e) {
+      toast.error("Impossible de récupérer l'indice.");
+    } finally {
+      setLoadingHint(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!problem || wrongAttemptsCount <= 0) return;
+
+    const shouldTriggerByAttempts = wrongAttemptsCount % AUTO_HINT_ATTEMPT_STEP === 0;
+    if (!shouldTriggerByAttempts) return;
+
+    if (wrongAttemptsCount <= lastAutoHintAttemptRef.current) return;
+
+    const now = Date.now();
+    if (now - lastAutoHintAtMsRef.current < AUTO_HINT_COOLDOWN_MS) return;
+
+    lastAutoHintAttemptRef.current = wrongAttemptsCount;
+    lastAutoHintAtMsRef.current = now;
+
+    recommendAndFetchHint({
+      automatic: true,
+      maxLevel: 4,
+      reason: 'wrong-attempts-threshold',
+    });
+  }, [wrongAttemptsCount, problem, language, code]);
+
 
   // ── Anticheat ────────────────────────────────────────────────────────────
   const { focusLostCount, totalFocusLostTime, isFullScreen } = useAnticheat({
@@ -403,6 +523,21 @@ export function Problem() {
       try {
         const data = await challengesService.getById(id as string);
         setProblem(data);
+
+        const constraints = data?.constraints || {};
+        const candidateSeconds = Number(constraints.timeLimitSeconds);
+        const candidateMinutes = Number(constraints.timeLimitMinutes ?? constraints.timeLimit);
+        let initialTimeSec = 120 * 60;
+
+        if (Number.isFinite(candidateSeconds) && candidateSeconds > 0) {
+          initialTimeSec = candidateSeconds;
+        } else if (Number.isFinite(candidateMinutes) && candidateMinutes > 0) {
+          initialTimeSec = candidateMinutes <= 300
+            ? candidateMinutes * 60
+            : candidateMinutes;
+        }
+
+        setTimeRemainingSec(initialTimeSec);
 
         // Set default code template based on selected language
         if (data.allowedLanguages?.length > 0) {
@@ -427,7 +562,7 @@ export function Problem() {
 
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4001';
     const newSocket = io(`${apiUrl}/submissions`, {
-      transports: ['polling'],
+      transports: ['websocket', 'polling'],
       withCredentials: true 
     });
 
@@ -441,12 +576,13 @@ export function Problem() {
       } else if (data.status === 'completed') {
         setIsRunning(false);
         const result = data.result || {};
+        const verdict = result.verdict || 'OK';
         const firstFailedTest = Array.isArray(result.results)
           ? result.results.find((t: any) => !t.passed)
           : null;
         setSubmissionResult({
           id: data.submissionId,
-          verdict: result.verdict || 'OK',
+          verdict,
           testsPassed: result.passed || 0,
           testsTotal: result.total || 0,
           timeMs: result.totalTimeMs || result.timeMs || 0,
@@ -455,14 +591,22 @@ export function Problem() {
           stderr: result.stderr || firstFailedTest?.stderr || '',
           firstFailedTest,
         });
+
+        if (verdict !== 'AC' && verdict !== 'OK') {
+          setWrongAttemptsCount(prev => prev + 1);
+          toast.error(`Tentative non acceptée (${verdict})`, { id: 'submission-toast' });
+        } else {
+          toast.success('Exécution terminée !', { id: 'submission-toast' });
+        }
+
         setShowResults(true);
-        toast.success('Exécution terminée !', { id: 'submission-toast' });
       } else if (data.status === 'error') {
         setIsRunning(false);
         setSubmissionResult({
           verdict: 'RE',
           stderr: data.error || 'Unknown execution error',
         });
+        setWrongAttemptsCount(prev => prev + 1);
         setShowResults(true);
         toast.error('Erreur: ' + data.error, { id: 'submission-toast' });
       } else if (data.status === 'queued') {
@@ -475,24 +619,58 @@ export function Problem() {
     };
   }, [user]);
 
-  // Timer logic
+  // Fallback Polling in case WebSocket is blocked or slow
   useEffect(() => {
-    let timer: ReturnType<typeof setInterval>;
-    if (isRunning && timeRemaining > 0) {
-      timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
+    let interval: ReturnType<typeof setInterval>;
+    if (isRunning && submissionIdRef.current) {
+      interval = setInterval(async () => {
+        try {
+          const res = await submissionsService.getById(submissionIdRef.current!);
+          if (res && res.verdict && res.verdict !== 'queued') {
+            setIsRunning(false);
+            setSubmissionResult({
+              id: res.id,
+              verdict: res.verdict,
+              testsPassed: res.testsPassed || 0,
+              testsTotal: res.testsTotal || 0,
+              timeMs: res.timeMs || 0,
+              memMb: res.memMb || 0,
+            });
+            setShowResults(true);
+            toast.success('Exécution terminée !', { id: 'submission-toast' });
+            clearInterval(interval);
           }
-          return prev - 1;
-        });
-      }, 60000);
+        } catch (err) {
+          // Ignore errors during polling
+        }
+      }, 2000); // Poll every 2 seconds
     }
     return () => {
-      if (timer) clearInterval(timer);
+      if (interval) clearInterval(interval);
     };
-  }, [isRunning, timeRemaining]);
+  }, [isRunning]);
+
+  // Real countdown timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeRemainingSec((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatCountdown = (seconds: number) => {
+    const safeSeconds = Math.max(0, seconds);
+    const h = Math.floor(safeSeconds / 3600);
+    const m = Math.floor((safeSeconds % 3600) / 60);
+    const s = safeSeconds % 60;
+
+    if (h > 0) {
+      return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
 
   if (loading) {
     return (
@@ -536,7 +714,12 @@ export function Problem() {
         firstFailedTest,
       });
       setShowResults(true);
-      toast.success('Exécution terminée');
+      if (result.verdict && result.verdict !== 'AC' && result.verdict !== 'OK') {
+        setWrongAttemptsCount(prev => prev + 1);
+        toast.error(`Tentative non acceptée (${result.verdict})`);
+      } else {
+        toast.success('Exécution terminée');
+      }
     } catch (err) {
       toast.error("Erreur lors de l'exécution");
     } finally {
@@ -558,9 +741,24 @@ export function Problem() {
         context: 'solo'
       });
 
-      submissionIdRef.current = submission?.id;
-      setAiReview(null);
-      toast.success('Code soumis ! En attente des résultats...');
+      if (submission.verdict && submission.verdict !== 'queued') {
+        setSubmissionResult({
+          id: submission.id,
+          verdict: submission.verdict,
+          testsPassed: submission.testsPassed || 0,
+          testsTotal: submission.testsTotal || 0,
+          timeMs: submission.timeMs || 0,
+          memMb: submission.memMb || 0,
+        });
+        setShowResults(true);
+        setIsRunning(false);
+        toast.success('Code soumis ! Exécution rapide terminée.');
+      } else {
+        submissionIdRef.current = submission?.id;
+        setAiReview(null);
+        if (submission.verdict !== 'AC') setWrongAttemptsCount(prev => prev + 1);
+        toast.success('Code soumis ! En attente des résultats...');
+      }
     } catch (err) {
       toast.error('Erreur lors de la soumission');
       setIsRunning(false);
@@ -636,7 +834,7 @@ export function Problem() {
 
             {/* Tabs */}
             <div className="flex gap-2 mb-4 border-b border-[var(--border-default)]">
-              {(['statement', 'tests', 'submissions', 'editorial'] as Tab[]).map((tab) => (
+              {(['statement', 'tests', 'submissions', 'hints', 'editorial'] as Tab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -652,6 +850,7 @@ export function Problem() {
                   {tab === 'statement' ? 'Statement' :
                     tab === 'tests' ? 'Tests' :
                       tab === 'submissions' ? 'Submissions' :
+                        tab === 'hints' ? 'Hints AI' :
                         'Editorial'}
                 </button>
               ))}
@@ -727,6 +926,48 @@ export function Problem() {
                 </div>
               )}
 
+              {activeTab === 'hints' && (
+                <div className="space-y-4 text-[var(--text-primary)]">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-[var(--brand-primary)]" /> Hints Progressifs (ML Offline)
+                  </h3>
+                  <p className="text-sm text-[var(--text-secondary)]">Demandez l'aide de notre modèle ML pour analyser vos tentatives et vous donner l'indice parfait.</p>
+                  
+                  {servedHint && (
+                    <div className="p-4 bg-[var(--surface-2)] border border-[var(--brand-primary)] rounded-[var(--radius-md)] shadow shadow-[var(--brand-primary)]/10">
+                      <h4 className="font-bold text-[var(--brand-primary)] mb-3 text-sm">💡 Indice Servi (Niveau {servedHint.level})</h4>
+                      <pre className="whitespace-pre-wrap font-sans text-[0.875rem] text-[var(--text-primary)] leading-relaxed">
+                        {servedHint.text}
+                      </pre>
+                    </div>
+                  )}
+                  
+                  {pendingConfirmL5 && (
+                    <div className="p-4 bg-[var(--state-error)]/10 border border-[var(--state-error)]/30 rounded-[var(--radius-md)] flex flex-col gap-3">
+                      <p className="text-[var(--state-error)] font-bold text-sm w-full flex items-center gap-2"><AlertTriangle className="w-4 h-4"/> Attention ! Niveau Maximal Atteint.</p>
+                      <p className="text-sm text-[var(--text-secondary)]">Le Niveau 5 révèle la solution complète officielle générée par Code Contests. Êtes-vous sûr de vouloir abandonner l'exercice par vous-même ?</p>
+                      <div className="flex gap-2 mt-1">
+                        <Button variant="primary" onClick={() => fetchHint(5, true)}>Oui, m'afficher la solution</Button>
+                        <Button variant="ghost" onClick={() => setPendingConfirmL5(false)}>Annuler</Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3 pt-4 border-t border-[var(--border-default)]">
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Les indices sont envoyés automatiquement après plusieurs tentatives non acceptées. Le niveau 5 reste protégé par confirmation explicite.
+                    </p>
+                    <Button 
+                      loading={loadingHint} 
+                      onClick={() => recommendAndFetchHint({ automatic: false, maxLevel: 4, reason: 'manual-request' })}
+                      className="w-full sm:w-auto self-start bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30 hover:bg-[var(--brand-primary)]/20"
+                    >
+                      <Lightbulb className="w-4 h-4 mr-2" /> Demander un indice maintenant
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'submissions' && (
                 <div className="text-center py-8 text-[var(--text-muted)]">
                   Aucune soumission pour le moment
@@ -783,13 +1024,13 @@ export function Problem() {
                 )}
                 <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)] bg-[var(--surface-2)] px-2 py-1 rounded">
                   <Clock size={14} />
-                  <span>{timeRemaining}m restant</span>
+                  <span>{formatCountdown(timeRemainingSec)} restant</span>
                 </div>
-                <Button variant="secondary" size="sm" onClick={handleRun} loading={isRunning}>
+                <Button variant="secondary" size="sm" onClick={handleRun} loading={isRunning} disabled={timeRemainingSec <= 0}>
                   <Play className="w-4 h-4" />
                   Run
                 </Button>
-                <Button variant="primary" size="sm" onClick={handleSubmit} loading={isRunning}>
+                <Button variant="primary" size="sm" onClick={handleSubmit} loading={isRunning} disabled={timeRemainingSec <= 0}>
                   <Send className="w-4 h-4" />
                   Submit
                 </Button>
@@ -848,7 +1089,7 @@ export function Problem() {
                   };
                   Object.entries(LANG_COMPLETIONS).forEach(([lang, completions]) => {
                     monaco.languages.registerCompletionItemProvider(lang, {
-                      provideCompletionItems: (model, position) => {
+                      provideCompletionItems: (model: any, position: any) => {
                         const word = model.getWordUntilPosition(position);
                         const range = {
                           startLineNumber: position.lineNumber,
@@ -970,9 +1211,15 @@ export function Problem() {
                   </div>
                 </div>
 
-                {submissionResult.id && submissionResult.verdict === 'AC' && (
+                {submissionResult.verdict === 'AC' && (
                   <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
-                    {!aiReview && (
+                    {!submissionResult.id && (
+                      <div className="text-sm text-[var(--state-warning)] bg-[var(--state-warning)]/10 border border-[var(--state-warning)]/20 p-3 rounded-lg flex items-start gap-2">
+                        <Lightbulb className="w-5 h-5 flex-shrink-0" /> 
+                        <p>Ton exécution est réussie ! <br/><span className="font-semibold cursor-pointer underline text-[var(--brand-primary)]" onClick={handleSubmit}>Soumets ton code (Submit)</span> pour l'enregistrer et débloquer le bouton d'analyse IA de ta solution.</p>
+                      </div>
+                    )}
+                    {submissionResult.id && !aiReview && (
                       <Button
                         variant="secondary"
                         className="w-full flex items-center justify-center gap-2 text-[var(--brand-primary)] border-[var(--brand-primary)]/30 hover:bg-[var(--brand-primary)]/10"

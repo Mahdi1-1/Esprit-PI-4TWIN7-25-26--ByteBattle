@@ -74,7 +74,7 @@ export const submissionsService = {
   },
 
   async getAiReview(submissionId: string) {
-    const { data } = await api.get(`/submissions/${submissionId}/ai-review`);
+    const { data } = await api.post(`/submissions/${submissionId}/ai-review`);
     return data;
   },
 

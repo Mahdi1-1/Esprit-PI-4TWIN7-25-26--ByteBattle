@@ -14,6 +14,9 @@ export function Profile() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [badges, setBadges] = useState<BadgeData[]>([]);
+  const [intelligenceProfile, setIntelligenceProfile] = useState<any>(null);
+  const [intelligenceLoading, setIntelligenceLoading] = useState(true);
+  const [intelligenceError, setIntelligenceError] = useState<string | null>(null);
 
   // Fetch profile stats from backend
   useEffect(() => {
@@ -39,8 +42,22 @@ export function Profile() {
       }
     };
 
+    const fetchIntelligenceProfile = async () => {
+      try {
+        setIntelligenceLoading(true);
+        const data = await profileService.getIntelligenceProfile();
+        setIntelligenceProfile(data);
+      } catch (error) {
+        console.error('Failed to fetch intelligence profile:', error);
+        setIntelligenceError('Failed to load AI recommendations');
+      } finally {
+        setIntelligenceLoading(false);
+      }
+    };
+
     fetchStats();
     fetchBadges();
+    fetchIntelligenceProfile();
   }, []);
 
   // Real user data fallback with default safe values
@@ -346,6 +363,58 @@ export function Profile() {
                   <div>
                     <div className="text-xs text-[var(--text-muted)] mb-1">Comments</div>
                     <div className="text-2xl font-bold text-[var(--text-primary)]">{user.stats.commentsCount}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Intelligence Insights */}
+            <div className="bg-[var(--surface-1)] border border-[var(--border-default)] rounded-lg p-6">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">AI Insights</h2>
+                {intelligenceProfile?.fallback ? (
+                  <span className="text-xs px-2 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Fallback mode</span>
+                ) : null}
+              </div>
+
+              {intelligenceLoading ? (
+                <div className="flex items-center gap-2 py-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-[var(--text-muted)]" />
+                  <span className="text-sm text-[var(--text-muted)]">Loading AI profile...</span>
+                </div>
+              ) : intelligenceError ? (
+                <div className="text-sm text-[var(--text-muted)]">{intelligenceError}</div>
+              ) : (
+                <div className="space-y-5">
+                  <div>
+                    <div className="text-sm text-[var(--text-secondary)] mb-2">Weakest tags detected</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(intelligenceProfile?.weakest_tags || []).map((tag: string) => (
+                        <span key={tag} className="px-3 py-1 rounded-full text-xs bg-[var(--surface-2)] text-[var(--text-primary)] border border-[var(--border-default)]">
+                          {tag}
+                        </span>
+                      ))}
+                      {(!intelligenceProfile?.weakest_tags || intelligenceProfile.weakest_tags.length === 0) && (
+                        <span className="text-sm text-[var(--text-muted)]">No weak tags identified yet.</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-[var(--text-secondary)] mb-2">Recommended challenges</div>
+                    <div className="space-y-3">
+                      {(intelligenceProfile?.recommended_challenges || []).slice(0, 5).map((item: any) => (
+                        <div key={item.challenge_id} className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-2)]">
+                          <div className="min-w-0">
+                            <div className="font-medium text-[var(--text-primary)] truncate">{item.challenge_name}</div>
+                            <div className="text-xs text-[var(--text-muted)]">Rating {item.cf_rating}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!intelligenceProfile?.recommended_challenges || intelligenceProfile.recommended_challenges.length === 0) && (
+                        <div className="text-sm text-[var(--text-muted)]">No AI recommendations available yet.</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

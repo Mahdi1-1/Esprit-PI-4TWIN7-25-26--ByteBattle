@@ -92,7 +92,7 @@ export class DuelsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('test_code')
-  async handleTestCode(@MessageBody() data: { duelId: string; code: string; language: string }, @ConnectedSocket() client: Socket) {
+  async handleTestCode(@MessageBody() data: { duelId: string; code: string; language: string; hintsUsed?: number }, @ConnectedSocket() client: Socket) {
     const userId = this.clientMaps.get(client.id);
     if (!userId) {
        this.logger.log(`Unauthorized test code request from socket ${client.id}`);
@@ -100,7 +100,7 @@ export class DuelsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      const result = await this.duelsService.testCode(data.duelId, userId, data.code, data.language);
+      const result = await this.duelsService.testCode(data.duelId, userId, data.code, data.language, data.hintsUsed || 0);
       
       // Notify both players of the progress
       const state = await this.duelsService.getDuelState(data.duelId);
@@ -120,6 +120,27 @@ export class DuelsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     } catch (err) {
       client.emit('error', { message: err.message });
+    }
+  }
+
+  @SubscribeMessage('anticheat_event')
+  async handleAnticheatEvent(@MessageBody() data: { duelId: string; type: string; count: number }, @ConnectedSocket() client: Socket) {
+    const userId = this.clientMaps.get(client.id);
+    if (!userId) return;
+
+    try {
+       if (data.type === 'focus_lost') {
+         const state = await this.duelsService.applyFocusLost(data.duelId, userId);
+         this.server.to(data.duelId).emit('duel_state_update', state);
+         
+         const player = state.player1.id === userId ? state.player1 : state.player2;
+         this.server.to(data.duelId).emit('chat_message', { 
+            sender: 'System 🛡️', 
+            text: `⚠️ L'anti-cheat a détecté que ${player.username} a quitté la page ! (-10 pts)`
+         });
+       }
+    } catch (err) {
+       this.logger.error(`Anticheat error: ${err.message}`);
     }
   }
 }
