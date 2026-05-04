@@ -15,9 +15,8 @@ spec:
       labels:
         app: frontend
     spec:
-      # Optional scheduling hint for multi-node clusters:
-      # nodeSelector:
-      #   role: web
+      nodeSelector:
+        kubernetes.io/hostname: adam-vm
       containers:
         - name: frontend
           image: mahdimasmoudi/bytebattle-frontend:latest

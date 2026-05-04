@@ -16,7 +16,7 @@ spec:
         app: prometheus
     spec:
       nodeSelector:
-        storage: "true"
+        kubernetes.io/hostname: sabri-vm
       serviceAccountName: prometheus
       containers:
         - name: prometheus

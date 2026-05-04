@@ -17,7 +17,7 @@ spec:
         app: mongodb
     spec:
       nodeSelector:
-        storage: "true"
+        kubernetes.io/hostname: sabri-vm
       containers:
         - name: mongodb
           image: mongo:7

@@ -20,15 +20,10 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       nodeSelector:
-        role: compute
-      tolerations:
-        - key: "compute"
-          operator: "Equal"
-          value: "true"
-          effect: "NoSchedule"
+        kubernetes.io/hostname: sabri-vm
       containers:
         - name: judge-worker
-          image: mahdimasmoudi/bytebattle-judge:latest
+          image: mahdimasmoudi/bytebattle-judge-worker:latest
           ports:
             - containerPort: 3000
           env:

@@ -48,9 +48,8 @@ spec:
         prometheus.io/port: "4001"
         prometheus.io/path: "/metrics"
     spec:
-      # Optional scheduling hint for multi-node clusters:
-      # nodeSelector:
-      #   role: web
+      nodeSelector:
+        kubernetes.io/hostname: adam-vm
       containers:
         - name: backend
           image: mahdimasmoudi/bytebattle-backend:latest
