@@ -94,7 +94,6 @@
                                     │  Python/JS/C++/Java  │
                                     └─────────────────────┘
 ```
-
 ### Kubernetes Node Layout
 
 The current Kubernetes deployment is designed around the following node layout:
