@@ -59,9 +59,6 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
-            when {
-                branch 'mahdi'
-            }
             steps {
                 withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
                     sh """
