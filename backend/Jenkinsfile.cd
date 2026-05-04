@@ -11,7 +11,6 @@ pipeline {
         K8S_CONTAINER = 'backend'
 
         DOCKER_CREDENTIALS_ID = 'dbd1711b-3842-486e-b5a9-c14f84df9324'
-        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
     }
 
     stages {
@@ -60,27 +59,17 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
+                withEnv(['KUBECONFIG=/var/jenkins_home/kubeconfig']) {
                     sh """
-                        echo "🔎 Testing cluster DNS..."
-                        kubectl run net-test --rm -i --restart=Never \
-                          --image=busybox:1.36 \
-                          -n ${K8S_NAMESPACE} \
-                          -- nslookup kubernetes.default.svc.cluster.local || exit 1
+                        kubectl get nodes
 
-                        echo "🚀 Updating image..."
                         kubectl set image deployment/${K8S_DEPLOYMENT} \
                             ${K8S_CONTAINER}=${IMAGE_NAME}:${IMAGE_TAG} \
                             -n ${K8S_NAMESPACE}
 
-                        echo "🔁 Forcing rollout..."
-                        kubectl rollout restart deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE}
-
-                        echo "⏳ Waiting for rollout..."
                         kubectl rollout status deployment/${K8S_DEPLOYMENT} \
                             -n ${K8S_NAMESPACE} --timeout=300s
 
-                        echo "📦 Pods status:"
                         kubectl get pods -n ${K8S_NAMESPACE} -o wide
                     """
                 }
