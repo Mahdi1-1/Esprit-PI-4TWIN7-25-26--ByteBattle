@@ -15,7 +15,7 @@ export class MetricsController {
   async getMetrics(): Promise<string> {
     const memory = process.memoryUsage();
     const now = Date.now();
-    let counts = {
+    let counts: Record<string, number> = {
       wait: 0,
       active: 0,
       completed: 0,
