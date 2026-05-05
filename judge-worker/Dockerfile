@@ -4,6 +4,7 @@ FROM node:20-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
@@ -23,6 +24,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN apk add --no-cache docker-cli
 
 WORKDIR /app
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
