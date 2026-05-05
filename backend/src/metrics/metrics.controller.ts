@@ -1,8 +1,10 @@
 import { Controller, Get, Header } from "@nestjs/common";
+import { Public } from "../auth/decorators/public.decorator";
 
 @Controller("metrics")
 export class MetricsController {
   @Get()
+  @Public()
   @Header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
   getMetrics(): string {
     const memory = process.memoryUsage();

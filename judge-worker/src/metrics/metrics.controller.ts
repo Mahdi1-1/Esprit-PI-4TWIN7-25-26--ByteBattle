@@ -1,9 +1,11 @@
-import { Controller, Get, Header } from '@nestjs/common';
+import { Controller, Get, Header, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
 @Controller('metrics')
 export class MetricsController {
+  private readonly logger = new Logger(MetricsController.name);
+
   constructor(
     @InjectQueue('code-execution') private readonly executionQueue: Queue,
   ) {}
@@ -13,13 +15,26 @@ export class MetricsController {
   async getMetrics(): Promise<string> {
     const memory = process.memoryUsage();
     const now = Date.now();
-    const counts = await this.executionQueue.getJobCounts(
-      'wait',
-      'active',
-      'completed',
-      'failed',
-      'delayed',
-    );
+    let counts = {
+      wait: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      delayed: 0,
+    };
+
+    try {
+      counts = await this.executionQueue.getJobCounts(
+        'wait',
+        'active',
+        'completed',
+        'failed',
+        'delayed',
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.warn(`Unable to read BullMQ metrics: ${message}`);
+    }
 
     return [
       '# HELP bytebattle_judge_up Judge worker process availability',
