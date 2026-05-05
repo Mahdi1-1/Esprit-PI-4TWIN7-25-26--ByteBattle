@@ -7,6 +7,8 @@ metadata:
     app: prometheus
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: prometheus
@@ -59,7 +61,7 @@ spec:
         - name: prometheus-data
           persistentVolumeClaim:
             claimName: prometheus-pvc
-
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
