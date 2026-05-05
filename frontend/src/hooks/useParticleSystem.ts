@@ -114,5 +114,5 @@ export const useParticleSystem = (
     }
   }, active || particles.length > 0);
 
-  return { start, stop, burst };
+  return { active, particles, start, stop, burst };
 };
