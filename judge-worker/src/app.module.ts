@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { JudgeModule } from './judge/judge.module';
 import { HealthModule } from './health/health.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { HealthModule } from './health/health.module';
     }),
     JudgeModule,
     HealthModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
