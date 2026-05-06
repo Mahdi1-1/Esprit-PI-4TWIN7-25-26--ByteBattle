@@ -126,7 +126,12 @@ describe("UsersService", () => {
       expect(mockPrisma.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 5, take: 5 }),
       );
-      expect(result).toEqual({ data: [{ id: "user-1" }], total: 1, page: 2, limit: 5 });
+      expect(result).toEqual({
+        data: [{ id: "user-1" }],
+        total: 1,
+        page: 2,
+        limit: 5,
+      });
     });
   });
 
@@ -149,7 +154,10 @@ describe("UsersService", () => {
     });
 
     it("returns profile without passwordHash and caches it", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, _count: { submissions: 1, discussions: 2 } });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        _count: { submissions: 1, discussions: 2 },
+      });
 
       const result = await service.findOne("user-1");
 
@@ -166,16 +174,21 @@ describe("UsersService", () => {
     it("throws when user is missing", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.update("user-1", { firstName: "X" } as any)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        service.update("user-1", { firstName: "X" } as any),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("updates and clears cache", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(baseUser);
-      mockPrisma.user.update.mockResolvedValue({ ...baseUser, firstName: "New" });
+      mockPrisma.user.update.mockResolvedValue({
+        ...baseUser,
+        firstName: "New",
+      });
 
-      const result = await service.update("user-1", { firstName: "New" } as any);
+      const result = await service.update("user-1", {
+        firstName: "New",
+      } as any);
 
       expect(result.firstName).toBe("New");
       expect(result).not.toHaveProperty("passwordHash");
@@ -185,9 +198,9 @@ describe("UsersService", () => {
 
   describe("updateRole", () => {
     it("rejects invalid role", async () => {
-      await expect(service.updateRole("user-1", "owner")).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.updateRole("user-1", "owner"),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it("updates role when valid", async () => {
@@ -203,13 +216,16 @@ describe("UsersService", () => {
 
   describe("updateStatus", () => {
     it("rejects invalid status", async () => {
-      await expect(service.updateStatus("user-1", "paused")).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.updateStatus("user-1", "paused"),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it("updates status when valid", async () => {
-      mockPrisma.user.update.mockResolvedValue({ id: "user-1", status: "banned" });
+      mockPrisma.user.update.mockResolvedValue({
+        id: "user-1",
+        status: "banned",
+      });
 
       await service.updateStatus("user-1", "banned");
 
@@ -255,9 +271,15 @@ describe("UsersService", () => {
     });
 
     it("stores resized profile photo", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, profileImage: "old.webp" });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        profileImage: "old.webp",
+      });
       jest.spyOn(fs, "existsSync").mockReturnValue(false);
-      mockPrisma.user.update.mockResolvedValue({ ...baseUser, profileImage: "data:image/webp;base64,image" });
+      mockPrisma.user.update.mockResolvedValue({
+        ...baseUser,
+        profileImage: "data:image/webp;base64,image",
+      });
 
       const result = await service.uploadProfilePhoto("user-1", {
         mimetype: "image/png",
@@ -281,9 +303,14 @@ describe("UsersService", () => {
     });
 
     it("removes local file and clears profile", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, profileImage: "avatar.webp" });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        profileImage: "avatar.webp",
+      });
       jest.spyOn(fs, "existsSync").mockReturnValue(true);
-      const unlinkSpy = jest.spyOn(fs, "unlinkSync").mockImplementation(() => undefined);
+      const unlinkSpy = jest
+        .spyOn(fs, "unlinkSync")
+        .mockImplementation(() => undefined);
 
       await service.deleteProfilePhoto("user-1");
 
@@ -296,10 +323,16 @@ describe("UsersService", () => {
 
   describe("changePassword", () => {
     it("rejects OAuth users", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, isOAuthUser: true });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        isOAuthUser: true,
+      });
 
       await expect(
-        service.changePassword("user-1", { currentPassword: "a", newPassword: "b" } as any),
+        service.changePassword("user-1", {
+          currentPassword: "a",
+          newPassword: "b",
+        } as any),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
@@ -308,7 +341,10 @@ describe("UsersService", () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
-        service.changePassword("user-1", { currentPassword: "a", newPassword: "b" } as any),
+        service.changePassword("user-1", {
+          currentPassword: "a",
+          newPassword: "b",
+        } as any),
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
@@ -317,7 +353,10 @@ describe("UsersService", () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       (bcrypt.hash as jest.Mock).mockResolvedValue("new-hash");
 
-      await service.changePassword("user-1", { currentPassword: "a", newPassword: "b" } as any);
+      await service.changePassword("user-1", {
+        currentPassword: "a",
+        newPassword: "b",
+      } as any);
 
       expect(mockPrisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: { passwordHash: "new-hash" } }),
@@ -327,10 +366,16 @@ describe("UsersService", () => {
 
   describe("changeEmail", () => {
     it("rejects OAuth users", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, isOAuthUser: true });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        isOAuthUser: true,
+      });
 
       await expect(
-        service.changeEmail("user-1", { currentPassword: "a", newEmail: "new@example.com" } as any),
+        service.changeEmail("user-1", {
+          currentPassword: "a",
+          newEmail: "new@example.com",
+        } as any),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
@@ -339,27 +384,43 @@ describe("UsersService", () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
-        service.changeEmail("user-1", { currentPassword: "a", newEmail: "new@example.com" } as any),
+        service.changeEmail("user-1", {
+          currentPassword: "a",
+          newEmail: "new@example.com",
+        } as any),
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it("rejects email conflicts", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(baseUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.user.findUnique.mockResolvedValueOnce(baseUser).mockResolvedValueOnce({ id: "other" });
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce(baseUser)
+        .mockResolvedValueOnce({ id: "other" });
 
       await expect(
-        service.changeEmail("user-1", { currentPassword: "a", newEmail: "new@example.com" } as any),
+        service.changeEmail("user-1", {
+          currentPassword: "a",
+          newEmail: "new@example.com",
+        } as any),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it("updates email on success", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(baseUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.user.findUnique.mockResolvedValueOnce(baseUser).mockResolvedValueOnce(null);
-      mockPrisma.user.update.mockResolvedValue({ ...baseUser, email: "new@example.com" });
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce(baseUser)
+        .mockResolvedValueOnce(null);
+      mockPrisma.user.update.mockResolvedValue({
+        ...baseUser,
+        email: "new@example.com",
+      });
 
-      const result = await service.changeEmail("user-1", { currentPassword: "a", newEmail: "new@example.com" } as any);
+      const result = await service.changeEmail("user-1", {
+        currentPassword: "a",
+        newEmail: "new@example.com",
+      } as any);
 
       expect(result.email).toBe("new@example.com");
       expect(result).not.toHaveProperty("passwordHash");
@@ -415,13 +476,19 @@ describe("UsersService", () => {
         code: "print('hi')",
       });
       mockPrisma.challenge.findMany.mockResolvedValue([
-        { id: "c1", title: "Two Sum", difficulty: "easy", tags: ["array"], kind: "CODE", category: "general", createdAt: new Date() },
+        {
+          id: "c1",
+          title: "Two Sum",
+          difficulty: "easy",
+          tags: ["array"],
+          kind: "CODE",
+          category: "general",
+          createdAt: new Date(),
+        },
       ]);
       mockIntelligence.getProfile.mockResolvedValue({
         weakest_tags: ["array"],
-        recommended_challenges: [
-          { challenge_name: "Two Sum", score: 0.9 },
-        ],
+        recommended_challenges: [{ challenge_name: "Two Sum", score: 0.9 }],
       });
 
       const result = await service.getIntelligenceProfile("user-1");
@@ -452,15 +519,24 @@ describe("UsersService", () => {
     });
 
     it("deletes user and profile image", async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ ...baseUser, profileImage: "avatar.webp" });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        profileImage: "avatar.webp",
+      });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       jest.spyOn(fs, "existsSync").mockReturnValue(true);
-      const unlinkSpy = jest.spyOn(fs, "unlinkSync").mockImplementation(() => undefined);
+      const unlinkSpy = jest
+        .spyOn(fs, "unlinkSync")
+        .mockImplementation(() => undefined);
 
-      const result = await service.deleteAccount("user-1", { currentPassword: "ok" } as any);
+      const result = await service.deleteAccount("user-1", {
+        currentPassword: "ok",
+      } as any);
 
       expect(unlinkSpy).toHaveBeenCalled();
-      expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: "user-1" } });
+      expect(mockPrisma.user.delete).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+      });
       expect(result).toEqual({ success: true });
     });
   });
@@ -485,7 +561,11 @@ describe("UsersService", () => {
         },
       ]);
       mockPrisma.discussion.findMany.mockResolvedValue([
-        { id: "d1", title: "Post", createdAt: new Date("2024-01-08T00:00:00Z") },
+        {
+          id: "d1",
+          title: "Post",
+          createdAt: new Date("2024-01-08T00:00:00Z"),
+        },
       ]);
 
       const events = await service.getRecentActivity("user-1", 5);

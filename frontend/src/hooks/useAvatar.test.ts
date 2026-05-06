@@ -28,11 +28,15 @@ describe('useAvatar()', () => {
     expect(result.current.avatar).toBeNull(); expect(result.current.error).toBeNull();
   });
   it('should set error on unexpected failure', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     const {avatarService}=await import('../services/avatarService');
     avatarService.getMyAvatar.mockRejectedValue(new Error('boom'));
     const {result}=renderHook(()=>useAvatar());
     await waitFor(()=>expect(result.current.loading).toBe(false));
     expect(result.current.error).toBe('Unable to load avatar');
+    consoleErrorSpy.mockRestore();
   });
   it('handleAvatarCreated() saves avatar and updates state', async () => {
     const {avatarService}=await import('../services/avatarService');

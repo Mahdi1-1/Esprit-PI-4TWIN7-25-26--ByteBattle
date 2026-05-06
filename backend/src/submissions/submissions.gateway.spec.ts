@@ -23,6 +23,8 @@ describe("SubmissionsGateway", () => {
     gateway.emitSubmissionStatus("user-1", { status: "queued" });
 
     expect(to).toHaveBeenCalledWith("user:user-1");
-    expect(emit).toHaveBeenCalledWith("submission_status", { status: "queued" });
+    expect(emit).toHaveBeenCalledWith("submission_status", {
+      status: "queued",
+    });
   });
 });

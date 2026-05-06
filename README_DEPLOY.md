@@ -93,3 +93,6 @@ kubectl label node <node-name> role=web
 kubectl label node <node-name> role=compute
 kubectl label node <node-name> role=storage
 ```
+
+kubectl port-forward svc/prometheus-service 9090:9090 -n bytebattle
+kubectl port-forward svc/grafana-service 3000:3000 -n bytebattle

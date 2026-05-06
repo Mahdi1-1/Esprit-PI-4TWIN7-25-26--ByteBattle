@@ -44,15 +44,15 @@ describe("VoiceService", () => {
     } as any;
     (service as any).ttsClient = ttsClient;
 
-    const writeFileSpy = jest
-      .spyOn(fs, "writeFile")
-      .mockImplementation(((...args: any[]) => {
-        const maybeCallback = args[args.length - 1];
-        if (typeof maybeCallback === "function") {
-          maybeCallback(null);
-        }
-        return undefined as any;
-      }) as unknown as typeof fs.writeFile);
+    const writeFileSpy = jest.spyOn(fs, "writeFile").mockImplementation(((
+      ...args: any[]
+    ) => {
+      const maybeCallback = args[args.length - 1];
+      if (typeof maybeCallback === "function") {
+        maybeCallback(null);
+      }
+      return undefined as any;
+    }) as unknown as typeof fs.writeFile);
 
     const result = await service.textToSpeech({
       text: "hello",

@@ -90,7 +90,10 @@ describe("CompaniesService", () => {
       providers: [
         CompaniesService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: NotificationEmitterService, useValue: mockNotificationEmitter },
+        {
+          provide: NotificationEmitterService,
+          useValue: mockNotificationEmitter,
+        },
       ],
     }).compile();
 
@@ -175,8 +178,18 @@ describe("CompaniesService", () => {
   describe("getPublicCompanies", () => {
     it("should return list of active companies", async () => {
       const companies = [
-        { id: "company-1", name: "Company A", slug: "company-a", status: "active" },
-        { id: "company-2", name: "Company B", slug: "company-b", status: "active" },
+        {
+          id: "company-1",
+          name: "Company A",
+          slug: "company-a",
+          status: "active",
+        },
+        {
+          id: "company-2",
+          name: "Company B",
+          slug: "company-b",
+          status: "active",
+        },
       ];
 
       mockPrisma.company.findMany.mockResolvedValue(companies);
@@ -237,9 +250,9 @@ describe("CompaniesService", () => {
     it("should throw NotFoundException when company not found", async () => {
       mockPrisma.company.findUnique.mockResolvedValue(null);
 
-      await expect(service.getCompanyById("non-existent")).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        service.getCompanyById("non-existent"),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
@@ -297,7 +310,10 @@ describe("CompaniesService", () => {
     });
 
     it("should throw ForbiddenException when user is not admin", async () => {
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-1" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-1",
+      });
       mockPrisma.companyMembership.findUnique.mockResolvedValue({
         companyId: "company-1",
         userId: "user-1",
@@ -332,7 +348,10 @@ describe("CompaniesService", () => {
     });
 
     it("should throw ForbiddenException when user is not admin", async () => {
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-1" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-1",
+      });
       mockPrisma.companyMembership.findUnique.mockResolvedValue({
         companyId: "company-1",
         userId: "user-1",
@@ -442,13 +461,17 @@ describe("CompaniesService", () => {
     });
 
     it("should throw ForbiddenException for invite-only company", async () => {
-      const company = { id: "company-1", joinPolicy: "invite_only", status: "active" };
+      const company = {
+        id: "company-1",
+        joinPolicy: "invite_only",
+        status: "active",
+      };
 
       mockPrisma.company.findUnique.mockResolvedValue(company);
 
-      await expect(service.joinCompany("user-1", "company-1")).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
+      await expect(
+        service.joinCompany("user-1", "company-1"),
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it("should throw BadRequestException when already a member", async () => {
@@ -460,11 +483,13 @@ describe("CompaniesService", () => {
       };
 
       mockPrisma.company.findUnique.mockResolvedValue(company);
-      mockPrisma.companyMembership.findUnique.mockResolvedValue(existingMembership);
-
-      await expect(service.joinCompany("user-1", "company-1")).rejects.toBeInstanceOf(
-        BadRequestException,
+      mockPrisma.companyMembership.findUnique.mockResolvedValue(
+        existingMembership,
       );
+
+      await expect(
+        service.joinCompany("user-1", "company-1"),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
@@ -472,25 +497,33 @@ describe("CompaniesService", () => {
     it("should throw NotFoundException for invalid code", async () => {
       mockPrisma.company.findUnique.mockResolvedValue(null);
 
-      await expect(service.joinByCode("user-1", "INVALID")).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        service.joinByCode("user-1", "INVALID"),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("should throw BadRequestException for inactive company", async () => {
-      const company = { id: "company-1", joinCode: "VALIDCODE", status: "inactive" };
+      const company = {
+        id: "company-1",
+        joinCode: "VALIDCODE",
+        status: "inactive",
+      };
 
       mockPrisma.company.findUnique.mockResolvedValue(company);
 
-      await expect(service.joinByCode("user-1", "VALIDCODE")).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.joinByCode("user-1", "VALIDCODE"),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
   describe("removeMember", () => {
     it("should remove member and notify", async () => {
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-2", name: "Test" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-2",
+        name: "Test",
+      });
       mockPrisma.companyMembership.findUnique
         .mockResolvedValueOnce({
           companyId: "company-1",
@@ -507,7 +540,11 @@ describe("CompaniesService", () => {
       mockPrisma.user.update.mockResolvedValue({});
       mockNotificationEmitter.emit.mockResolvedValue({});
 
-      const result = await service.removeMember("company-1", "member-1", "owner-1");
+      const result = await service.removeMember(
+        "company-1",
+        "member-1",
+        "owner-1",
+      );
 
       expect(result.success).toBe(true);
       expect(mockPrisma.companyMembership.delete).toHaveBeenCalled();
@@ -515,7 +552,10 @@ describe("CompaniesService", () => {
     });
 
     it("should throw BadRequestException when removing owner", async () => {
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-1" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-1",
+      });
 
       await expect(
         service.removeMember("company-1", "owner-1", "owner-1"),
@@ -523,7 +563,10 @@ describe("CompaniesService", () => {
     });
 
     it("should throw NotFoundException when member not found", async () => {
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-2" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-2",
+      });
       mockPrisma.companyMembership.findUnique
         .mockResolvedValueOnce({
           companyId: "company-1",
@@ -550,7 +593,11 @@ describe("CompaniesService", () => {
         status: "pending",
       };
 
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-2", name: "Test" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-2",
+        name: "Test",
+      });
       mockPrisma.companyMembership.findUnique
         .mockResolvedValueOnce({
           companyId: "company-1",
@@ -600,7 +647,11 @@ describe("CompaniesService", () => {
       };
       const updatedMembership = { ...membership, status: "active" };
 
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-2", name: "Test" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-2",
+        name: "Test",
+      });
       mockPrisma.companyMembership.findUnique
         .mockResolvedValueOnce({
           companyId: "company-1",
@@ -636,7 +687,12 @@ describe("CompaniesService", () => {
         .mockResolvedValueOnce(null);
 
       await expect(
-        service.respondToJoinRequest("company-1", "user-1", "approve", "owner-1"),
+        service.respondToJoinRequest(
+          "company-1",
+          "user-1",
+          "approve",
+          "owner-1",
+        ),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
@@ -652,7 +708,11 @@ describe("CompaniesService", () => {
       };
       const updatedMembership = { ...membership, role: "recruiter" };
 
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-1", name: "Test" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-1",
+        name: "Test",
+      });
       mockPrisma.companyMembership.findUnique
         .mockResolvedValueOnce({
           companyId: "company-1",
@@ -706,7 +766,10 @@ describe("CompaniesService", () => {
         company: { id: "company-1", name: "Test" },
       };
 
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-2" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-2",
+      });
       mockPrisma.companyMembership.findUnique
         .mockResolvedValueOnce({
           companyId: "company-1",
@@ -739,7 +802,10 @@ describe("CompaniesService", () => {
     });
 
     it("should throw NotFoundException for non-existent team", async () => {
-      mockPrisma.company.findUnique.mockResolvedValue({ id: "company-1", ownerId: "owner-2" });
+      mockPrisma.company.findUnique.mockResolvedValue({
+        id: "company-1",
+        ownerId: "owner-2",
+      });
       mockPrisma.companyMembership.findUnique
         .mockResolvedValueOnce({
           companyId: "company-1",
@@ -764,9 +830,9 @@ describe("CompaniesService", () => {
     it("should reject verification request from non-owner", async () => {
       mockPrisma.companyMembership.findFirst.mockResolvedValue(null);
 
-      await expect(service.requestVerification("user-1")).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
+      await expect(
+        service.requestVerification("user-1"),
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it("should reject when company already verified", async () => {
@@ -774,9 +840,9 @@ describe("CompaniesService", () => {
         company: { id: "company-1", verified: true, name: "Test" },
       });
 
-      await expect(service.requestVerification("user-1")).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.requestVerification("user-1"),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it("should submit verification request for unverified company", async () => {

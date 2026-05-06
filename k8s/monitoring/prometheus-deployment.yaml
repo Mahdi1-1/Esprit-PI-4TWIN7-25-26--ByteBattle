@@ -33,6 +33,9 @@ spec:
             - name: prometheus-config
               mountPath: /etc/prometheus/prometheus.yml
               subPath: prometheus.yml
+            - name: prometheus-config
+              mountPath: /etc/prometheus/alerting_rules.yml
+              subPath: alerting_rules.yml
             - name: prometheus-data
               mountPath: /prometheus
           resources:

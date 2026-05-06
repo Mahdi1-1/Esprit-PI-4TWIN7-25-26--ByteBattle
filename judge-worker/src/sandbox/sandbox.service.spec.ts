@@ -63,6 +63,124 @@ describe('SandboxService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('executeCode', () => {
+    it('should execute supported language aliases successfully', async () => {
+      (child_process.execFile as unknown as jest.Mock).mockImplementation(
+        createDockerExecMock('ok\n'),
+      );
+
+      const aliases = ['ts', 'python3', 'gcc', 'java', 'golang', 'rs'];
+
+      for (const language of aliases) {
+        const result = await service.executeCode(
+          language,
+          'print("ok")',
+          '1 2',
+        );
+        expect(result.stdout).toBe('ok\n');
+        expect(result.exitCode).toBe(0);
+      }
+
+      expect(child_process.execFile).toHaveBeenCalled();
+      expect(fs.unlink).toHaveBeenCalled();
+    });
+
+    it('should reject unsupported languages before writing files', async () => {
+      await expect(service.executeCode('brainfuck', '+')).rejects.toThrow(
+        'Unsupported language',
+      );
+
+      expect(fs.writeFile).not.toHaveBeenCalled();
+      expect(child_process.execFile).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['bash fork bomb', ':(){ :|:& };:', 'Bash fork bomb detected'],
+      ['fork syscall', 'fork()', 'fork() system call detected'],
+      ['reverse shell', 'cat /dev/tcp/host/1', 'TCP device access'],
+      ['socket connect', 'socket.connect()', 'Socket connect'],
+      ['node net', 'net.createConnection()', 'Node.js net module usage'],
+      ['child process', 'require("child_process")', 'child_process module'],
+      ['python os system', 'os.system("ls")', 'os.system() call'],
+      ['python subprocess', 'import subprocess', 'subprocess module'],
+      ['java runtime', 'Runtime.getRuntime().exec("ls")', 'Runtime.exec()'],
+      ['java process builder', 'new ProcessBuilder()', 'ProcessBuilder'],
+      ['go os exec', 'import "os/exec"', 'os/exec package'],
+      ['go syscall', 'syscall.Exec()', 'syscall package'],
+      ['rust command', 'std::process::Command', 'std::process::Command'],
+      ['shell rm', 'exec("rm -rf /tmp/x")', 'Shell exec with rm command'],
+      ['passwd file', 'open("/etc/passwd")', 'Attempt to read /etc/passwd'],
+      ['proc file', 'cat /proc/self/status', 'Attempt to access /proc/self'],
+    ])('should block dangerous code: %s', async (_caseName, code, message) => {
+      const result = await service.executeCode('javascript', code);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain(message);
+      expect(child_process.execFile).not.toHaveBeenCalled();
+    });
+
+    it('should tolerate unavailable docker stats', async () => {
+      (child_process.execFile as unknown as jest.Mock).mockImplementation(
+        (
+          _cmd: string,
+          args: readonly string[],
+          _options: unknown,
+          callback: (
+            error: ExecFileException | null,
+            stdout: string,
+            stderr: string,
+          ) => void,
+        ) => {
+          if (args[0] === 'stats') {
+            callback(new Error('stats unavailable'), '', '');
+          } else {
+            callback(null, 'ok\n', '');
+          }
+          return { stdin: { write: jest.fn(), end: jest.fn() } };
+        },
+      );
+
+      const result = await service.executeCode(
+        'javascript',
+        'console.log("ok")',
+      );
+
+      expect(result.stdout).toBe('ok\n');
+      expect(result.memMb).toBe(0);
+      expect(result.cpuPercent).toBe(0);
+    });
+
+    it('should tolerate malformed docker stats output', async () => {
+      (child_process.execFile as unknown as jest.Mock).mockImplementation(
+        (
+          _cmd: string,
+          args: readonly string[],
+          _options: unknown,
+          callback: (
+            error: ExecFileException | null,
+            stdout: string,
+            stderr: string,
+          ) => void,
+        ) => {
+          if (args[0] === 'stats') {
+            callback(null, 'not-a-number|not-a-size\n', '');
+          } else {
+            callback(null, 'ok\n', '');
+          }
+          return { stdin: { write: jest.fn(), end: jest.fn() } };
+        },
+      );
+
+      const result = await service.executeCode(
+        'javascript',
+        'console.log("ok")',
+      );
+
+      expect(result.stdout).toBe('ok\n');
+      expect(result.memMb).toBe(0);
+    });
+  });
+
   describe('evaluateAgainstTests', () => {
     it('should return AC when all test cases match expected output', async () => {
       // Mock execFile to simulate successful execution

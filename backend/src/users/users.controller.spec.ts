@@ -48,7 +48,10 @@ describe("UsersController", () => {
 
   it("delegates getMyActivity", () => {
     controller.getMyActivity("user-1", 5 as any);
-    expect(mockUsersService.getRecentActivity).toHaveBeenCalledWith("user-1", 5);
+    expect(mockUsersService.getRecentActivity).toHaveBeenCalledWith(
+      "user-1",
+      5,
+    );
   });
 
   it("delegates findOne", () => {
@@ -73,14 +76,19 @@ describe("UsersController", () => {
 
   it("delegates updateMe", () => {
     controller.updateMe("user-1", { firstName: "A" } as any);
-    expect(mockUsersService.update).toHaveBeenCalledWith("user-1", { firstName: "A" });
+    expect(mockUsersService.update).toHaveBeenCalledWith("user-1", {
+      firstName: "A",
+    });
   });
 
   it("delegates role and status updates", () => {
     controller.updateRole("user-1", "admin");
     controller.updateStatus("user-1", "suspended");
     expect(mockUsersService.updateRole).toHaveBeenCalledWith("user-1", "admin");
-    expect(mockUsersService.updateStatus).toHaveBeenCalledWith("user-1", "suspended");
+    expect(mockUsersService.updateStatus).toHaveBeenCalledWith(
+      "user-1",
+      "suspended",
+    );
   });
 
   it("delegates photo upload and delete", () => {
@@ -91,8 +99,14 @@ describe("UsersController", () => {
   });
 
   it("delegates password and email change", () => {
-    controller.changePassword("user-1", { currentPassword: "a", newPassword: "b" } as any);
-    controller.changeEmail("user-1", { currentPassword: "a", newEmail: "b@example.com" } as any);
+    controller.changePassword("user-1", {
+      currentPassword: "a",
+      newPassword: "b",
+    } as any);
+    controller.changeEmail("user-1", {
+      currentPassword: "a",
+      newEmail: "b@example.com",
+    } as any);
 
     expect(mockUsersService.changePassword).toHaveBeenCalled();
     expect(mockUsersService.changeEmail).toHaveBeenCalled();
@@ -103,12 +117,16 @@ describe("UsersController", () => {
     controller.getIntelligenceProfile("user-1");
 
     expect(mockUsersService.getProfileStats).toHaveBeenCalledWith("user-1");
-    expect(mockUsersService.getIntelligenceProfile).toHaveBeenCalledWith("user-1");
+    expect(mockUsersService.getIntelligenceProfile).toHaveBeenCalledWith(
+      "user-1",
+    );
   });
 
   it("delegates deleteAccount", () => {
     controller.deleteAccount("user-1", { currentPassword: "a" } as any);
-    expect(mockUsersService.deleteAccount).toHaveBeenCalledWith("user-1", { currentPassword: "a" });
+    expect(mockUsersService.deleteAccount).toHaveBeenCalledWith("user-1", {
+      currentPassword: "a",
+    });
   });
 
   describe("getPhoto", () => {

@@ -1,31 +1,50 @@
+import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JudgeProcessor } from './judge.processor';
 import { JudgeService } from './judge.service';
 import { ConfigService } from '@nestjs/config';
+import { Job } from 'bullmq';
 
-const mockJudgeService = {
+type JudgeProcessorJob = Parameters<JudgeProcessor['process']>[0];
+type JudgeProcessorJobData = JudgeProcessorJob['data'];
+type JudgeServiceMock = jest.Mocked<
+  Pick<JudgeService, 'executeAndEvaluate' | 'runCode' | 'evaluateOnly'>
+>;
+
+const mockJudgeService: JudgeServiceMock = {
   executeAndEvaluate: jest.fn(),
   runCode: jest.fn(),
   evaluateOnly: jest.fn(),
 };
 
-const mockConfig = {
-  get: jest.fn().mockImplementation((key: string, fallback?: any) => {
+const mockConfig: Pick<ConfigService, 'get'> = {
+  get: jest.fn((key: string, fallback?: number): number | undefined => {
     if (key === 'JUDGE_WORKER_CONCURRENCY') return 5;
     return fallback;
-  }),
+  }) as ConfigService['get'],
 };
 
-const makeJob = (name: string, data: any) => ({
-  id: `job-${Math.random().toString(36).slice(2)}`,
-  name,
-  data,
-});
+const makeJob = (
+  name: string,
+  data: JudgeProcessorJobData,
+): JudgeProcessorJob =>
+  ({
+    id: `job-${Math.random().toString(36).slice(2)}`,
+    name,
+    data,
+  }) as Partial<
+    Job<JudgeProcessorJobData, unknown, string>
+  > as JudgeProcessorJob;
 
 describe('JudgeProcessor', () => {
   let processor: JudgeProcessor;
+  let loggerErrorSpy: jest.SpyInstance;
 
   beforeEach(async () => {
+    loggerErrorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JudgeProcessor,
@@ -36,6 +55,10 @@ describe('JudgeProcessor', () => {
 
     processor = module.get<JudgeProcessor>(JudgeProcessor);
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    loggerErrorSpy.mockRestore();
   });
 
   it('should be defined', () => {
@@ -56,19 +79,24 @@ describe('JudgeProcessor', () => {
       const result = { verdict: 'AC', passed: 1, total: 1 };
       mockJudgeService.executeAndEvaluate.mockResolvedValue(result);
 
-      const ret = await processor.process(makeJob('execute-code', baseData) as any);
+      const ret = await processor.process(makeJob('execute-code', baseData));
 
       expect(mockJudgeService.executeAndEvaluate).toHaveBeenCalledWith(
-        'sub-1', 'python3', 'print("hello")', baseData.tests,
+        'sub-1',
+        'python3',
+        'print("hello")',
+        baseData.tests,
       );
       expect(ret).toEqual(result);
     });
 
     it('should re-throw when executeAndEvaluate throws', async () => {
-      mockJudgeService.executeAndEvaluate.mockRejectedValue(new Error('Sandbox timeout'));
+      mockJudgeService.executeAndEvaluate.mockRejectedValue(
+        new Error('Sandbox timeout'),
+      );
 
       await expect(
-        processor.process(makeJob('execute-code', baseData) as any),
+        processor.process(makeJob('execute-code', baseData)),
       ).rejects.toThrow('Sandbox timeout');
     });
   });
@@ -77,14 +105,26 @@ describe('JudgeProcessor', () => {
 
   describe('process() — run-code jobs', () => {
     it('should call judgeService.runCode with language and code', async () => {
-      const execResult = { stdout: 'hello', stderr: '', timeMs: 42, memMb: 8, exitCode: 0 };
+      const execResult = {
+        stdout: 'hello',
+        stderr: '',
+        timeMs: 42,
+        memMb: 8,
+        exitCode: 0,
+      };
       mockJudgeService.runCode.mockResolvedValue(execResult);
 
       const ret = await processor.process(
-        makeJob('run-code', { language: 'javascript', code: 'console.log("hello")' }) as any,
+        makeJob('run-code', {
+          language: 'javascript',
+          code: 'console.log("hello")',
+        }),
       );
 
-      expect(mockJudgeService.runCode).toHaveBeenCalledWith('javascript', 'console.log("hello")');
+      expect(mockJudgeService.runCode).toHaveBeenCalledWith(
+        'javascript',
+        'console.log("hello")',
+      );
       expect(ret.stdout).toBe('hello');
     });
   });
@@ -101,11 +141,13 @@ describe('JudgeProcessor', () => {
           language: 'cpp',
           code: 'int main(){}',
           tests: [{ input: '1', expectedOutput: '2' }],
-        }) as any,
+        }),
       );
 
       expect(mockJudgeService.evaluateOnly).toHaveBeenCalledWith(
-        'cpp', 'int main(){}', [{ input: '1', expectedOutput: '2' }],
+        'cpp',
+        'int main(){}',
+        [{ input: '1', expectedOutput: '2' }],
       );
       expect(ret.verdict).toBe('WA');
     });
@@ -116,13 +158,15 @@ describe('JudgeProcessor', () => {
   describe('process() — unknown job type', () => {
     it('should throw an error for unrecognised job name', async () => {
       await expect(
-        processor.process(makeJob('unknown-job-type', {}) as any),
+        processor.process(
+          makeJob('unknown-job-type', {} as JudgeProcessorJobData),
+        ),
       ).rejects.toThrow('Unknown job type: unknown-job-type');
     });
 
     it('should not call any service method for unknown job', async () => {
       await expect(
-        processor.process(makeJob('mystery', {}) as any),
+        processor.process(makeJob('mystery', {} as JudgeProcessorJobData)),
       ).rejects.toThrow();
 
       expect(mockJudgeService.executeAndEvaluate).not.toHaveBeenCalled();
@@ -143,8 +187,22 @@ describe('JudgeProcessor', () => {
         .mockResolvedValueOnce(result2);
 
       const [r1, r2] = await Promise.all([
-        processor.process(makeJob('execute-code', { submissionId: 's1', language: 'python3', code: 'x', tests: [] }) as any),
-        processor.process(makeJob('execute-code', { submissionId: 's2', language: 'javascript', code: 'y', tests: [] }) as any),
+        processor.process(
+          makeJob('execute-code', {
+            submissionId: 's1',
+            language: 'python3',
+            code: 'x',
+            tests: [],
+          }),
+        ),
+        processor.process(
+          makeJob('execute-code', {
+            submissionId: 's2',
+            language: 'javascript',
+            code: 'y',
+            tests: [],
+          }),
+        ),
       ]);
 
       expect(r1.verdict).toBe('AC');

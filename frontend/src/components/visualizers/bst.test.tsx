@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { TreeVisualizer } from './TreeVisualizer';
 
 (globalThis as any).React = React;
@@ -19,7 +19,9 @@ describe('TreeVisualizer (BST)', () => {
   });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     vi.useRealTimers();
     cleanup();
   });
@@ -43,7 +45,9 @@ describe('TreeVisualizer (BST)', () => {
     fireEvent.click(screen.getByText('Delete'));
 
     expect(screen.queryByText('delete(5)')).toBeTruthy();
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
   });
 
   it('search reports found for existing node', () => {
@@ -58,6 +62,8 @@ describe('TreeVisualizer (BST)', () => {
     fireEvent.click(screen.getByText('Search'));
 
     expect(screen.queryByText('search(10) → found')).toBeTruthy();
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
   });
 });

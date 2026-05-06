@@ -135,6 +135,9 @@ describe('axios instance', () => {
   });
 
   it('should clear token and redirect on 401 non-auth endpoints', async () => {
+    const consoleLogSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation(() => undefined);
     localStorage.setItem('token', 'expired-token');
     const { default: api } = await import('../api/axios');
 
@@ -146,9 +149,13 @@ describe('axios instance', () => {
       } catch (_) { /* expected */ }
       expect(localStorage.getItem('token')).toBeNull();
     }
+    consoleLogSpy.mockRestore();
   });
 
   it('should NOT clear token on 401 for auth login endpoint', async () => {
+    const consoleLogSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation(() => undefined);
     localStorage.setItem('token', 'valid-token');
     const { default: api } = await import('../api/axios');
 
@@ -160,5 +167,6 @@ describe('axios instance', () => {
       } catch (_) { /* expected */ }
       expect(localStorage.getItem('token')).toBe('valid-token');
     }
+    consoleLogSpy.mockRestore();
   });
 });

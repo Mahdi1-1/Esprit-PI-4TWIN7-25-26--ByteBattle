@@ -58,9 +58,9 @@ describe("SubmissionsService", () => {
 
   describe("create", () => {
     it("throws when challengeId is missing", async () => {
-      await expect(service.create("user-1", { kind: "CODE" })).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        service.create("user-1", { kind: "CODE" }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("throws when challenge is not found", async () => {
@@ -77,7 +77,10 @@ describe("SubmissionsService", () => {
         tests: [],
       });
       mockPrisma.submission.create.mockResolvedValue({ id: "s1" });
-      mockPrisma.submission.update.mockResolvedValue({ id: "s1", verdict: "AC" });
+      mockPrisma.submission.update.mockResolvedValue({
+        id: "s1",
+        verdict: "AC",
+      });
 
       const result = await service.create("user-1", {
         challengeId: "c1",
@@ -94,7 +97,10 @@ describe("SubmissionsService", () => {
       mockPrisma.challenge.findUnique.mockResolvedValue(baseChallenge);
       mockPrisma.submission.create.mockResolvedValue({ id: "s1" });
       mockQueue.addCodeExecutionJob.mockResolvedValue("job-1");
-      mockPrisma.submission.update.mockResolvedValue({ id: "s1", jobId: "job-1" });
+      mockPrisma.submission.update.mockResolvedValue({
+        id: "s1",
+        jobId: "job-1",
+      });
 
       const result = await service.create("user-1", {
         challengeId: "c1",
@@ -111,7 +117,10 @@ describe("SubmissionsService", () => {
 
     it("returns submission for non-code kinds", async () => {
       mockPrisma.challenge.findUnique.mockResolvedValue(baseChallenge);
-      mockPrisma.submission.create.mockResolvedValue({ id: "s1", kind: "CANVAS" });
+      mockPrisma.submission.create.mockResolvedValue({
+        id: "s1",
+        kind: "CANVAS",
+      });
 
       const result = await service.create("user-1", {
         challengeId: "c1",
@@ -341,7 +350,11 @@ describe("SubmissionsService", () => {
 
       expect(mockPrisma.submission.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ userId: "u1", kind: "CODE", verdict: "AC" }),
+          where: expect.objectContaining({
+            userId: "u1",
+            kind: "CODE",
+            verdict: "AC",
+          }),
         }),
       );
     });

@@ -26,7 +26,11 @@ describe('useVoiceSettings()', () => {
     expect(result.current.settings.ttsMode).toBe('server'); expect(result.current.settings.autoPlay).toBe(false);
   });
   it('should fall back to defaults on malformed localStorage', () => {
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
     localStorage.setItem(KEY,'not-json-{{{');
     const {result}=renderHook(()=>useVoiceSettings()); expect(result.current.settings.languageCode).toBe('fr-FR');
+    consoleWarnSpy.mockRestore();
   });
 });
