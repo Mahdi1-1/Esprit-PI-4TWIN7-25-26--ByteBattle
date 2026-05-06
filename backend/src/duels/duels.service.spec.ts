@@ -1,16 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { DuelsService } from './duels.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { QueueService } from '../queue/queue.service';
-import { ConfigService } from '@nestjs/config';
-import { AiService } from '../ai/ai.service';
-import { NotificationEmitterService } from '../notifications/notification-emitter.service';
-import { NotificationsGateway } from '../notifications/notifications.gateway';
-import { BadgeEngineService } from '../badges/badge-engine.service';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { Test, TestingModule } from "@nestjs/testing";
+import { DuelsService } from "./duels.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { QueueService } from "../queue/queue.service";
+import { ConfigService } from "@nestjs/config";
+import { AiService } from "../ai/ai.service";
+import { NotificationEmitterService } from "../notifications/notification-emitter.service";
+import { NotificationsGateway } from "../notifications/notifications.gateway";
+import { BadgeEngineService } from "../badges/badge-engine.service";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 
 // Mock Redis
-jest.mock('ioredis', () => {
+jest.mock("ioredis", () => {
   return jest.fn().mockImplementation(() => ({
     get: jest.fn(),
     setex: jest.fn(),
@@ -24,8 +24,13 @@ jest.mock('ioredis', () => {
   }));
 });
 
-jest.mock('../duels/duel-stats.util', () => ({
-  computeDuelStats: jest.fn().mockResolvedValue({ duelsWon: 3, duelsLost: 1, duelsTotal: 4, winRate: 75 }),
+jest.mock("../duels/duel-stats.util", () => ({
+  computeDuelStats: jest.fn().mockResolvedValue({
+    duelsWon: 3,
+    duelsLost: 1,
+    duelsTotal: 4,
+    winRate: 75,
+  }),
   computeDuelStatsBatch: jest.fn().mockResolvedValue(new Map()),
 }));
 
@@ -47,7 +52,7 @@ const mockPrisma = {
 const mockQueue = { addEvaluateCodeJob: jest.fn() };
 const mockConfig = {
   get: jest.fn().mockImplementation((key: string, fallback?: any) => {
-    if (key === 'REDIS_ENABLED') return 'false'; // disable Redis for unit tests
+    if (key === "REDIS_ENABLED") return "false"; // disable Redis for unit tests
     return fallback;
   }),
 };
@@ -60,25 +65,18 @@ const mockBadgeEngine = {
 };
 
 const mockChallenge = {
-  id: 'chal-1', title: 'Two Sum', descriptionMd: '##', difficulty: 'easy',
-  kind: 'CODE', tests: [{ input: '1', expectedOutput: '2' }],
-  duelTimeLimit: 1800, hints: [], allowedLanguages: ['python3'],
+  id: "chal-1",
+  title: "Two Sum",
+  descriptionMd: "##",
+  difficulty: "easy",
+  kind: "CODE",
+  tests: [{ input: "1", expectedOutput: "2" }],
+  duelTimeLimit: 1800,
+  hints: [],
+  allowedLanguages: ["python3"],
 };
 
-const basePlayer = { id: '', username: '', ready: false, testsPassed: 0, testsTotal: 1, score: 0 };
-
-const mockState = {
-  id: 'duel-1',
-  player1: { ...basePlayer, id: 'user-1', username: 'alice' },
-  player2: { ...basePlayer, id: 'user-2', username: 'bob' },
-  challenge: { id: 'chal-1', title: 'Two Sum', descriptionMd: '##', difficulty: 'easy', tests: [{ input: '1', expectedOutput: '2' }] },
-  status: 'active' as const,
-  timeLimit: 1800,
-  startedAt: Date.now() - 60000,
-  events: [],
-};
-
-describe('DuelsService (Redis disabled)', () => {
+describe("DuelsService (Redis disabled)", () => {
   let service: DuelsService;
 
   beforeEach(async () => {
@@ -101,76 +99,102 @@ describe('DuelsService (Redis disabled)', () => {
 
   // ─── createOrJoinDuel ─────────────────────────────────────────────────────────
 
-  describe('createOrJoinDuel()', () => {
-    it('should return existing waiting duel if user already has one', async () => {
-      const existingDuel = { id: 'duel-existing', status: 'waiting', player1Id: 'user-1' };
+  describe("createOrJoinDuel()", () => {
+    it("should return existing waiting duel if user already has one", async () => {
+      const existingDuel = {
+        id: "duel-existing",
+        status: "waiting",
+        player1Id: "user-1",
+      };
       mockPrisma.duel.findFirst.mockResolvedValueOnce(existingDuel); // findMyWaitingDuel
 
-      const result = await service.createOrJoinDuel('user-1', 'easy');
+      const result = await service.createOrJoinDuel("user-1", "easy");
 
       expect(result).toEqual(existingDuel);
     });
 
-    it('should join an available duel when one exists', async () => {
+    it("should join an available duel when one exists", async () => {
       mockPrisma.duel.findFirst
         .mockResolvedValueOnce(null) // no own waiting duel
-        .mockResolvedValueOnce({ id: 'available-duel', status: 'waiting' }); // findAvailableDuel
+        .mockResolvedValueOnce({ id: "available-duel", status: "waiting" }); // findAvailableDuel
 
       // spy joinDuel
-      const joinSpy = jest.spyOn(service, 'joinDuel').mockResolvedValue({ id: 'available-duel' } as any);
+      const joinSpy = jest
+        .spyOn(service, "joinDuel")
+        .mockResolvedValue({ id: "available-duel" } as any);
 
-      await service.createOrJoinDuel('user-1', 'easy');
+      await service.createOrJoinDuel("user-1", "easy");
 
-      expect(joinSpy).toHaveBeenCalledWith('available-duel', 'user-1');
+      expect(joinSpy).toHaveBeenCalledWith("available-duel", "user-1");
     });
 
-    it('should create a new duel when no available duels exist', async () => {
+    it("should create a new duel when no available duels exist", async () => {
       mockPrisma.duel.findFirst
-        .mockResolvedValueOnce(null)  // no own waiting
-        .mockResolvedValueOnce(null)  // no available
+        .mockResolvedValueOnce(null) // no own waiting
+        .mockResolvedValueOnce(null) // no available
         .mockResolvedValueOnce(null); // no older waiting (race check)
 
-      const createSpy = jest.spyOn(service, 'createDuel').mockResolvedValue({ id: 'new-duel' } as any);
+      const createSpy = jest
+        .spyOn(service, "createDuel")
+        .mockResolvedValue({ id: "new-duel" } as any);
 
-      await service.createOrJoinDuel('user-1', 'easy');
+      await service.createOrJoinDuel("user-1", "easy");
 
-      expect(createSpy).toHaveBeenCalledWith('user-1', 'easy');
+      expect(createSpy).toHaveBeenCalledWith("user-1", "easy");
     });
   });
 
   // ─── joinDuel ─────────────────────────────────────────────────────────────────
 
-  describe('joinDuel()', () => {
-    it('should throw NotFoundException when duel not found', async () => {
+  describe("joinDuel()", () => {
+    it("should throw NotFoundException when duel not found", async () => {
       mockPrisma.duel.findUnique.mockResolvedValue(null);
-      await expect(service.joinDuel('bad-id', 'user-2')).rejects.toThrow(NotFoundException);
+      await expect(service.joinDuel("bad-id", "user-2")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should throw BadRequestException when duel is not waiting', async () => {
-      mockPrisma.duel.findUnique.mockResolvedValue({ id: 'duel-1', status: 'active', player1Id: 'user-1', player1: { id: 'user-1', username: 'alice' }, challenge: mockChallenge });
-      await expect(service.joinDuel('duel-1', 'user-2')).rejects.toThrow(BadRequestException);
+    it("should throw BadRequestException when duel is not waiting", async () => {
+      mockPrisma.duel.findUnique.mockResolvedValue({
+        id: "duel-1",
+        status: "active",
+        player1Id: "user-1",
+        player1: { id: "user-1", username: "alice" },
+        challenge: mockChallenge,
+      });
+      await expect(service.joinDuel("duel-1", "user-2")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
-    it('should throw BadRequestException when player tries to join their own duel', async () => {
-      mockPrisma.duel.findUnique.mockResolvedValue({ id: 'duel-1', status: 'waiting', player1Id: 'user-1', player1: { id: 'user-1', username: 'alice' }, challenge: mockChallenge });
-      await expect(service.joinDuel('duel-1', 'user-1')).rejects.toThrow(BadRequestException);
+    it("should throw BadRequestException when player tries to join their own duel", async () => {
+      mockPrisma.duel.findUnique.mockResolvedValue({
+        id: "duel-1",
+        status: "waiting",
+        player1Id: "user-1",
+        player1: { id: "user-1", username: "alice" },
+        challenge: mockChallenge,
+      });
+      await expect(service.joinDuel("duel-1", "user-1")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   // ─── findAvailableDuel ────────────────────────────────────────────────────────
 
-  describe('findAvailableDuel()', () => {
-    it('should call prisma with correct filters excluding current user', async () => {
+  describe("findAvailableDuel()", () => {
+    it("should call prisma with correct filters excluding current user", async () => {
       mockPrisma.duel.findFirst.mockResolvedValue(null);
 
-      await service.findAvailableDuel('easy', 'user-1');
+      await service.findAvailableDuel("easy", "user-1");
 
       expect(mockPrisma.duel.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            status: 'waiting',
-            difficulty: 'easy',
-            player1Id: { not: 'user-1' },
+            status: "waiting",
+            difficulty: "easy",
+            player1Id: { not: "user-1" },
           }),
         }),
       );
@@ -179,10 +203,10 @@ describe('DuelsService (Redis disabled)', () => {
 
   // ─── getQueueStats ────────────────────────────────────────────────────────────
 
-  describe('getQueueStats()', () => {
-    it('should return correct queue stats', async () => {
+  describe("getQueueStats()", () => {
+    it("should return correct queue stats", async () => {
       mockPrisma.duel.count
-        .mockResolvedValueOnce(3)  // waiting
+        .mockResolvedValueOnce(3) // waiting
         .mockResolvedValueOnce(2); // active/ready
       mockGateway.getOnlineUserCount.mockReturnValue(10);
 
@@ -197,20 +221,20 @@ describe('DuelsService (Redis disabled)', () => {
 
   // ─── getUserDuels ─────────────────────────────────────────────────────────────
 
-  describe('getUserDuels()', () => {
-    it('should return paginated duels for a user', async () => {
-      mockPrisma.duel.findMany.mockResolvedValue([{ id: 'duel-1' }]);
+  describe("getUserDuels()", () => {
+    it("should return paginated duels for a user", async () => {
+      mockPrisma.duel.findMany.mockResolvedValue([{ id: "duel-1" }]);
       mockPrisma.duel.count.mockResolvedValue(1);
 
-      const result = await service.getUserDuels('user-1', 1, 20);
+      const result = await service.getUserDuels("user-1", 1, 20);
 
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(mockPrisma.duel.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            OR: [{ player1Id: 'user-1' }, { player2Id: 'user-1' }],
-            status: 'completed',
+            OR: [{ player1Id: "user-1" }, { player2Id: "user-1" }],
+            status: "completed",
           }),
           skip: 0,
           take: 20,
@@ -221,19 +245,27 @@ describe('DuelsService (Redis disabled)', () => {
 
   // ─── getUserStats ─────────────────────────────────────────────────────────────
 
-  describe('getUserStats()', () => {
-    it('should throw NotFoundException when user not found', async () => {
+  describe("getUserStats()", () => {
+    it("should throw NotFoundException when user not found", async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.getUserStats('unknown')).rejects.toThrow(NotFoundException);
+      await expect(service.getUserStats("unknown")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should return user stats with duel form', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', username: 'alice', elo: 1400 });
+    it("should return user stats with duel form", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        username: "alice",
+        elo: 1400,
+      });
       mockPrisma.duel.findMany.mockResolvedValue([
-        { winnerId: 'user-1' }, { winnerId: 'user-1' }, { winnerId: 'user-2' },
+        { winnerId: "user-1" },
+        { winnerId: "user-1" },
+        { winnerId: "user-2" },
       ]);
 
-      const result = await service.getUserStats('user-1');
+      const result = await service.getUserStats("user-1");
 
       expect(result.recentForm).toBeDefined();
       expect(Array.isArray(result.recentForm)).toBe(true);
@@ -243,20 +275,22 @@ describe('DuelsService (Redis disabled)', () => {
 
   // ─── getDuelResult ────────────────────────────────────────────────────────────
 
-  describe('getDuelResult()', () => {
-    it('should throw NotFoundException when duel not found', async () => {
+  describe("getDuelResult()", () => {
+    it("should throw NotFoundException when duel not found", async () => {
       mockPrisma.duel.findUnique.mockResolvedValue(null);
-      await expect(service.getDuelResult('bad-id')).rejects.toThrow(NotFoundException);
+      await expect(service.getDuelResult("bad-id")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should return duel result', async () => {
-      const duel = { id: 'duel-1', status: 'completed', winnerId: 'user-1' };
+    it("should return duel result", async () => {
+      const duel = { id: "duel-1", status: "completed", winnerId: "user-1" };
       mockPrisma.duel.findUnique.mockResolvedValue(duel);
 
-      const result = await service.getDuelResult('duel-1');
+      const result = await service.getDuelResult("duel-1");
 
-      expect(result.status).toBe('completed');
-      expect(result.winnerId).toBe('user-1');
+      expect(result.status).toBe("completed");
+      expect(result.winnerId).toBe("user-1");
     });
   });
 });
