@@ -120,7 +120,7 @@ describe("JwtAuthGuard", () => {
 
   it("should return true immediately for public routes", () => {
     (reflector.getAllAndOverride as jest.Mock).mockReturnValue(true); // isPublic = true
-    guard.canActivate(makeContext({ role: "user" }));
+    const result = guard.canActivate(makeContext({ role: "user" }));
     expect(result).toBe(true);
   });
 
