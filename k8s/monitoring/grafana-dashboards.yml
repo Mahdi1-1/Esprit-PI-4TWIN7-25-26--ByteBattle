@@ -13,7 +13,7 @@ data:
       "links": [],
       "panels": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
               "color": { "mode": "thresholds" },
@@ -27,12 +27,12 @@ data:
           "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
           "id": 1,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "up{job=\"bytebattle-backend\"}", "instant": true, "legendFormat": "backend", "range": false, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "up{job=\"bytebattle-backend\"}", "instant": true, "legendFormat": "backend", "range": false, "refId": "A" } ],
           "title": "Backend Target",
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
               "color": { "mode": "thresholds" },
@@ -46,53 +46,53 @@ data:
           "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
           "id": 2,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "up{job=\"bytebattle-judge-worker\"}", "instant": true, "legendFormat": "judge", "range": false, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "up{job=\"bytebattle-judge-worker\"}", "instant": true, "legendFormat": "judge", "range": false, "refId": "A" } ],
           "title": "Judge Target",
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
           "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
           "id": 3,
           "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_backend_uptime_seconds", "instant": false, "legendFormat": "backend", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_backend_uptime_seconds", "instant": false, "legendFormat": "backend", "range": true, "refId": "A" } ],
           "title": "Backend Uptime",
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
           "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
           "id": 4,
           "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_uptime_seconds", "instant": false, "legendFormat": "judge", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_uptime_seconds", "instant": false, "legendFormat": "judge", "range": true, "refId": "A" } ],
           "title": "Judge Uptime",
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
           "id": 5,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
           "targets": [
-            { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "process_resident_memory_bytes{job=\"bytebattle-backend\"}", "legendFormat": "backend", "range": true, "refId": "A" },
-            { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "process_resident_memory_bytes{job=\"bytebattle-judge-worker\"}", "legendFormat": "judge", "range": true, "refId": "B" }
+            { "datasource": "Prometheus", "editorMode": "code", "expr": "process_resident_memory_bytes{job=\"bytebattle-backend\"}", "legendFormat": "backend", "range": true, "refId": "A" },
+            { "datasource": "Prometheus", "editorMode": "code", "expr": "process_resident_memory_bytes{job=\"bytebattle-judge-worker\"}", "legendFormat": "judge", "range": true, "refId": "B" }
           ],
           "title": "Resident Memory",
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
           "id": 6,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
           "targets": [
-            { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_queue_waiting", "legendFormat": "waiting", "range": true, "refId": "A" },
-            { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_queue_active", "legendFormat": "active", "range": true, "refId": "B" },
-            { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_queue_failed", "legendFormat": "failed", "range": true, "refId": "C" }
+            { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_queue_waiting", "legendFormat": "waiting", "range": true, "refId": "A" },
+            { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_queue_active", "legendFormat": "active", "range": true, "refId": "B" },
+            { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_queue_failed", "legendFormat": "failed", "range": true, "refId": "C" }
           ],
           "title": "Judge Queue Health",
           "type": "timeseries"
@@ -118,7 +118,7 @@ data:
       "links": [],
       "panels": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
               "color": { "mode": "thresholds" },
@@ -132,42 +132,42 @@ data:
           "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
           "id": 1,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_backend_up", "instant": true, "legendFormat": "backend", "range": false, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_backend_up", "instant": true, "legendFormat": "backend", "range": false, "refId": "A" } ],
           "title": "Backend UP",
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
           "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
           "id": 2,
           "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_backend_uptime_seconds", "instant": false, "legendFormat": "uptime", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_backend_uptime_seconds", "instant": false, "legendFormat": "uptime", "range": true, "refId": "A" } ],
           "title": "Backend Uptime",
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
           "id": 3,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "process_resident_memory_bytes{job=\"bytebattle-backend\"}", "legendFormat": "rss", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "process_resident_memory_bytes{job=\"bytebattle-backend\"}", "legendFormat": "rss", "range": true, "refId": "A" } ],
           "title": "Backend RSS Memory",
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
           "id": 4,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "process_heap_used_bytes{job=\"bytebattle-backend\"}", "legendFormat": "heap used", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "process_heap_used_bytes{job=\"bytebattle-backend\"}", "legendFormat": "heap used", "range": true, "refId": "A" } ],
           "title": "Backend Heap Used",
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
               "color": { "mode": "thresholds" },
@@ -181,7 +181,7 @@ data:
           "gridPos": { "h": 6, "w": 6, "x": 0, "y": 14 },
           "id": 5,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "up{job=\"bytebattle-backend\"}", "instant": true, "legendFormat": "target", "range": false, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "up{job=\"bytebattle-backend\"}", "instant": true, "legendFormat": "target", "range": false, "refId": "A" } ],
           "title": "Prometheus Scrape",
           "type": "stat"
         }
@@ -206,7 +206,7 @@ data:
       "links": [],
       "panels": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
               "color": { "mode": "thresholds" },
@@ -220,60 +220,60 @@ data:
           "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
           "id": 1,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_up", "instant": true, "legendFormat": "judge", "range": false, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_up", "instant": true, "legendFormat": "judge", "range": false, "refId": "A" } ],
           "title": "Judge UP",
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
           "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
           "id": 2,
           "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_uptime_seconds", "instant": false, "legendFormat": "uptime", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_uptime_seconds", "instant": false, "legendFormat": "uptime", "range": true, "refId": "A" } ],
           "title": "Judge Uptime",
           "type": "stat"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
           "id": 3,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_queue_waiting", "legendFormat": "waiting", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_queue_waiting", "legendFormat": "waiting", "range": true, "refId": "A" } ],
           "title": "Queue Waiting",
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
           "id": 4,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_queue_active", "legendFormat": "active", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_queue_active", "legendFormat": "active", "range": true, "refId": "A" } ],
           "title": "Queue Active",
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
           "id": 5,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
           "targets": [
-            { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_queue_failed", "legendFormat": "failed", "range": true, "refId": "A" },
-            { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "bytebattle_judge_queue_completed", "legendFormat": "completed", "range": true, "refId": "B" }
+            { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_queue_failed", "legendFormat": "failed", "range": true, "refId": "A" },
+            { "datasource": "Prometheus", "editorMode": "code", "expr": "bytebattle_judge_queue_completed", "legendFormat": "completed", "range": true, "refId": "B" }
           ],
           "title": "Failed vs Completed",
           "type": "timeseries"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
           "id": 6,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-          "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "process_resident_memory_bytes{job=\"bytebattle-judge-worker\"}", "legendFormat": "rss", "range": true, "refId": "A" } ],
+          "targets": [ { "datasource": "Prometheus", "editorMode": "code", "expr": "process_resident_memory_bytes{job=\"bytebattle-judge-worker\"}", "legendFormat": "rss", "range": true, "refId": "A" } ],
           "title": "Judge RSS Memory",
           "type": "timeseries"
         }
