@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
-import { MulterModule } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
-import { IntelligenceModule } from '../intelligence/intelligence.module';
+import { Module } from "@nestjs/common";
+import { MulterModule } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
+import { ThrottlerModule } from "@nestjs/throttler";
+import { UsersController } from "./users.controller";
+import { UsersService } from "./users.service";
+import { IntelligenceModule } from "../intelligence/intelligence.module";
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { IntelligenceModule } from '../intelligence/intelligence.module';
     IntelligenceModule,
     ThrottlerModule.forRoot([
       {
-        name: 'short',
+        name: "short",
         ttl: 900, // 15 minutes
         limit: 5, // 5 requests per 15 minutes for sensitive endpoints
       },
@@ -24,4 +24,4 @@ import { IntelligenceModule } from '../intelligence/intelligence.module';
   providers: [UsersService],
   exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

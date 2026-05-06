@@ -1,5 +1,5 @@
-import { IsString, IsOptional, MaxLength, IsIn } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, MaxLength, IsIn } from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
 
 export class UpdateUserDto {
   @ApiPropertyOptional()
@@ -31,12 +31,23 @@ export class UpdateUserDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @IsIn(['vs-dark', 'vs-light', 'hc-black', 'hc-light', 'monokai', 'dracula', 'github-dark', 'one-dark-pro', 'solarized-dark', 'solarized-light'])
+  @IsIn([
+    "vs-dark",
+    "vs-light",
+    "hc-black",
+    "hc-light",
+    "monokai",
+    "dracula",
+    "github-dark",
+    "one-dark-pro",
+    "solarized-dark",
+    "solarized-light",
+  ])
   editorTheme?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @IsIn(['en', 'fr', 'ar'])
+  @IsIn(["en", "fr", "ar"])
   preferredLanguage?: string;
 }

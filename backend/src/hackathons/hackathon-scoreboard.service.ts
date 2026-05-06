@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import { Injectable, NotFoundException, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import Redis from "ioredis";
 
 export interface ProblemStatus {
-  status: 'solved' | 'attempted' | 'unattempted';
+  status: "solved" | "attempted" | "unattempted";
   time?: number; // minutes from start
   attempts: number;
   isFirstBlood: boolean;
@@ -40,15 +40,18 @@ export class HackathonScoreboardService {
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {
-    this.redisEnabled = this.configService.get<string>('REDIS_ENABLED', 'true') !== 'false';
+    this.redisEnabled =
+      this.configService.get<string>("REDIS_ENABLED", "true") !== "false";
     if (this.redisEnabled) {
       this.redis = new Redis({
-        host: this.configService.get('REDIS_HOST', 'localhost'),
-        port: this.configService.get<number>('REDIS_PORT', 6379),
-        password: this.configService.get('REDIS_PASSWORD'),
+        host: this.configService.get("REDIS_HOST", "localhost"),
+        port: this.configService.get<number>("REDIS_PORT", 6379),
+        password: this.configService.get("REDIS_PASSWORD"),
       });
     } else {
-      this.logger.warn('Redis is disabled. Frozen scoreboard caching is unavailable.');
+      this.logger.warn(
+        "Redis is disabled. Frozen scoreboard caching is unavailable.",
+      );
     }
   }
 
@@ -57,8 +60,10 @@ export class HackathonScoreboardService {
   // ────────────────────────────────────────────────────────
 
   async computeScoreboard(hackathonId: string): Promise<Scoreboard> {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     const teams = await this.prisma.hackathonTeam.findMany({
       where: { hackathonId, isDisqualified: false },
@@ -66,7 +71,7 @@ export class HackathonScoreboardService {
 
     const submissions = await this.prisma.hackathonSubmission.findMany({
       where: { hackathonId },
-      orderBy: { submittedAt: 'asc' },
+      orderBy: { submittedAt: "asc" },
     });
 
     const startTime = new Date(hackathon.startTime).getTime();
@@ -80,18 +85,20 @@ export class HackathonScoreboardService {
 
       for (const cId of challengeIds) {
         const challengeSubs = teamSubs.filter((s) => s.challengeId === cId);
-        const acSub = challengeSubs.find((s) => s.verdict === 'AC');
+        const acSub = challengeSubs.find((s) => s.verdict === "AC");
 
         if (acSub) {
           const timeMins = Math.floor(
             (new Date(acSub.submittedAt).getTime() - startTime) / 60_000,
           );
           const wrongAttempts = challengeSubs.filter(
-            (s) => s.verdict !== 'AC' && new Date(s.submittedAt) < new Date(acSub.submittedAt),
+            (s) =>
+              s.verdict !== "AC" &&
+              new Date(s.submittedAt) < new Date(acSub.submittedAt),
           ).length;
 
           problems[cId] = {
-            status: 'solved',
+            status: "solved",
             time: timeMins,
             attempts: wrongAttempts + 1,
             isFirstBlood: acSub.isFirstBlood,
@@ -101,13 +108,13 @@ export class HackathonScoreboardService {
           penalty += timeMins + wrongAttempts * 20;
         } else if (challengeSubs.length > 0) {
           problems[cId] = {
-            status: 'attempted',
+            status: "attempted",
             attempts: challengeSubs.length,
             isFirstBlood: false,
           };
         } else {
           problems[cId] = {
-            status: 'unattempted',
+            status: "unattempted",
             attempts: 0,
             isFirstBlood: false,
           };
@@ -134,7 +141,11 @@ export class HackathonScoreboardService {
     // Assign ranks (same rank for ties)
     let rank = 1;
     for (let i = 0; i < rows.length; i++) {
-      if (i > 0 && rows[i].solved === rows[i - 1].solved && rows[i].penalty === rows[i - 1].penalty) {
+      if (
+        i > 0 &&
+        rows[i].solved === rows[i - 1].solved &&
+        rows[i].penalty === rows[i - 1].penalty
+      ) {
         rows[i].rank = rows[i - 1].rank;
       } else {
         rows[i].rank = rank;
@@ -148,7 +159,7 @@ export class HackathonScoreboardService {
       status: hackathon.status,
       challengeIds,
       rows,
-      isFrozen: hackathon.status === 'frozen',
+      isFrozen: hackathon.status === "frozen",
       generatedAt: new Date().toISOString(),
     };
   }
@@ -159,7 +170,9 @@ export class HackathonScoreboardService {
 
   async freezeScoreboard(hackathonId: string): Promise<void> {
     if (!this.redisEnabled || !this.redis) {
-      this.logger.warn(`Skipping frozen scoreboard cache for hackathon ${hackathonId} because Redis is disabled.`);
+      this.logger.warn(
+        `Skipping frozen scoreboard cache for hackathon ${hackathonId} because Redis is disabled.`,
+      );
       return;
     }
     const scoreboard = await this.computeScoreboard(hackathonId);
@@ -180,12 +193,17 @@ export class HackathonScoreboardService {
   // T037 — Get scoreboard (frozen or live based on role)
   // ────────────────────────────────────────────────────────
 
-  async getScoreboard(hackathonId: string, isAdmin: boolean): Promise<Scoreboard> {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+  async getScoreboard(
+    hackathonId: string,
+    isAdmin: boolean,
+  ): Promise<Scoreboard> {
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     // If frozen and not admin, return frozen snapshot
-    if (hackathon.status === 'frozen' && !isAdmin) {
+    if (hackathon.status === "frozen" && !isAdmin) {
       const frozen = await this.getFrozenScoreboard(hackathonId);
       if (frozen) return frozen;
       // Fallback: compute using only pre-freeze submissions
@@ -196,8 +214,12 @@ export class HackathonScoreboardService {
   }
 
   /** Compute scoreboard using only submissions before freezeAt */
-  private async computePreFreezeScoreboard(hackathonId: string): Promise<Scoreboard> {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
+  private async computePreFreezeScoreboard(
+    hackathonId: string,
+  ): Promise<Scoreboard> {
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
     if (!hackathon || !hackathon.freezeAt) {
       return this.computeScoreboard(hackathonId);
     }
@@ -211,7 +233,7 @@ export class HackathonScoreboardService {
         hackathonId,
         submittedAt: { lte: hackathon.freezeAt },
       },
-      orderBy: { submittedAt: 'asc' },
+      orderBy: { submittedAt: "asc" },
     });
 
     const startTime = new Date(hackathon.startTime).getTime();
@@ -225,18 +247,20 @@ export class HackathonScoreboardService {
 
       for (const cId of challengeIds) {
         const challengeSubs = teamSubs.filter((s) => s.challengeId === cId);
-        const acSub = challengeSubs.find((s) => s.verdict === 'AC');
+        const acSub = challengeSubs.find((s) => s.verdict === "AC");
 
         if (acSub) {
           const timeMins = Math.floor(
             (new Date(acSub.submittedAt).getTime() - startTime) / 60_000,
           );
           const wrongAttempts = challengeSubs.filter(
-            (s) => s.verdict !== 'AC' && new Date(s.submittedAt) < new Date(acSub.submittedAt),
+            (s) =>
+              s.verdict !== "AC" &&
+              new Date(s.submittedAt) < new Date(acSub.submittedAt),
           ).length;
 
           problems[cId] = {
-            status: 'solved',
+            status: "solved",
             time: timeMins,
             attempts: wrongAttempts + 1,
             isFirstBlood: acSub.isFirstBlood,
@@ -244,19 +268,41 @@ export class HackathonScoreboardService {
           solved++;
           penalty += timeMins + wrongAttempts * 20;
         } else if (challengeSubs.length > 0) {
-          problems[cId] = { status: 'attempted', attempts: challengeSubs.length, isFirstBlood: false };
+          problems[cId] = {
+            status: "attempted",
+            attempts: challengeSubs.length,
+            isFirstBlood: false,
+          };
         } else {
-          problems[cId] = { status: 'unattempted', attempts: 0, isFirstBlood: false };
+          problems[cId] = {
+            status: "unattempted",
+            attempts: 0,
+            isFirstBlood: false,
+          };
         }
       }
 
-      return { rank: 0, teamId: team.id, teamName: team.name, members: team.members, solved, penalty, problems };
+      return {
+        rank: 0,
+        teamId: team.id,
+        teamName: team.name,
+        members: team.members,
+        solved,
+        penalty,
+        problems,
+      };
     });
 
-    rows.sort((a, b) => (b.solved !== a.solved ? b.solved - a.solved : a.penalty - b.penalty));
+    rows.sort((a, b) =>
+      b.solved !== a.solved ? b.solved - a.solved : a.penalty - b.penalty,
+    );
     let rank = 1;
     for (let i = 0; i < rows.length; i++) {
-      if (i > 0 && rows[i].solved === rows[i - 1].solved && rows[i].penalty === rows[i - 1].penalty) {
+      if (
+        i > 0 &&
+        rows[i].solved === rows[i - 1].solved &&
+        rows[i].penalty === rows[i - 1].penalty
+      ) {
         rows[i].rank = rows[i - 1].rank;
       } else {
         rows[i].rank = rank;
@@ -329,10 +375,10 @@ export class HackathonScoreboardService {
   // T065 — Export results
   // ────────────────────────────────────────────────────────
 
-  async exportResults(hackathonId: string, format: 'csv' | 'json') {
+  async exportResults(hackathonId: string, format: "csv" | "json") {
     const scoreboard = await this.computeScoreboard(hackathonId);
 
-    if (format === 'json') {
+    if (format === "json") {
       return scoreboard;
     }
 
@@ -341,18 +387,33 @@ export class HackathonScoreboardService {
       (_, i) => String.fromCharCode(65 + i), // A, B, C...
     );
 
-    const header = ['Rank', 'Team', 'Members', 'Solved', 'Penalty', ...challengeLabels].join(',');
+    const header = [
+      "Rank",
+      "Team",
+      "Members",
+      "Solved",
+      "Penalty",
+      ...challengeLabels,
+    ].join(",");
     const rows = scoreboard.rows.map((r) => {
-      const memberNames = r.members.map((m) => m.userId).join(';');
+      const memberNames = r.members.map((m) => m.userId).join(";");
       const problemCols = scoreboard.challengeIds.map((cId) => {
         const p = r.problems[cId];
-        if (p.status === 'solved') return `+${p.attempts > 1 ? p.attempts : ''}(${p.time})`;
-        if (p.status === 'attempted') return `-${p.attempts}`;
-        return '';
+        if (p.status === "solved")
+          return `+${p.attempts > 1 ? p.attempts : ""}(${p.time})`;
+        if (p.status === "attempted") return `-${p.attempts}`;
+        return "";
       });
-      return [r.rank, `"${r.teamName}"`, `"${memberNames}"`, r.solved, r.penalty, ...problemCols].join(',');
+      return [
+        r.rank,
+        `"${r.teamName}"`,
+        `"${memberNames}"`,
+        r.solved,
+        r.penalty,
+        ...problemCols,
+      ].join(",");
     });
 
-    return [header, ...rows].join('\n');
+    return [header, ...rows].join("\n");
   }
 }

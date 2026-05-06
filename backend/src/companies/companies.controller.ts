@@ -9,15 +9,15 @@ import {
   Query,
   UseGuards,
   BadRequestException,
-} from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { CompaniesService } from './companies.service';
+} from "@nestjs/common";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { CompaniesService } from "./companies.service";
 import {
   CompanyResponseDto,
   CompanyMemberResponseDto,
   JoinCompanyResultDto,
-} from './dto/company-response.dto';
+} from "./dto/company-response.dto";
 import {
   CreateCompanyDto,
   UpdateCompanyDto,
@@ -30,9 +30,9 @@ import {
   UpdateRoadmapProgressDto,
   UpdateCourseProgressDto,
   UpdateCompanyJobDto,
-} from './dto/company-request.dto';
+} from "./dto/company-request.dto";
 
-@Controller('companies')
+@Controller("companies")
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
@@ -41,7 +41,7 @@ export class CompaniesController {
     return this.companiesService.getPublicCompanies();
   }
 
-  @Get('jobs')
+  @Get("jobs")
   async getPublicJobs() {
     return this.companiesService.getPublicJobs();
   }
@@ -53,107 +53,110 @@ export class CompaniesController {
     @CurrentUser() user: any,
   ): Promise<CompanyResponseDto> {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.createCompany(user.id, dto);
   }
 
-  @Get('my-company')
+  @Get("my-company")
   @UseGuards(JwtAuthGuard)
   async getMyCompany(@CurrentUser() user: any) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getMyCompany(user.id);
   }
 
-  @Post('request-verification')
+  @Post("request-verification")
   @UseGuards(JwtAuthGuard)
   async requestVerification(@CurrentUser() user: any) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.requestVerification(user.id);
   }
 
-  @Post('join-code')
+  @Post("join-code")
   @UseGuards(JwtAuthGuard)
   async joinByCode(
-    @Body('code') code: string,
+    @Body("code") code: string,
     @CurrentUser() user: any,
   ): Promise<JoinCompanyResultDto> {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     if (!code) {
-      throw new BadRequestException('Join code is required');
+      throw new BadRequestException("Join code is required");
     }
     const membership = await this.companiesService.joinByCode(user.id, code);
     return {
       success: true,
       membership,
-      message: membership.status === 'active' ? 'Successfully joined company' : 'Join request sent. Awaiting admin approval.',
+      message:
+        membership.status === "active"
+          ? "Successfully joined company"
+          : "Join request sent. Awaiting admin approval.",
     };
   }
 
-  @Post(':id/join-code/regenerate')
+  @Post(":id/join-code/regenerate")
   @UseGuards(JwtAuthGuard)
   async regenerateJoinCode(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.regenerateJoinCode(companyId, user.id);
   }
 
-  @Patch(':id')
+  @Patch(":id")
   @UseGuards(JwtAuthGuard)
   async updateCompany(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @Body() dto: UpdateCompanyDto,
     @CurrentUser() user: any,
   ): Promise<CompanyResponseDto> {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.updateCompany(companyId, user.id, dto);
   }
 
-  @Get('my')
+  @Get("my")
   @UseGuards(JwtAuthGuard)
   async getMyCompanies(
     @CurrentUser() user: any,
   ): Promise<CompanyMemberResponseDto[]> {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getUserCompanies(user.id);
   }
 
-  @Get('my/announcements')
+  @Get("my/announcements")
   @UseGuards(JwtAuthGuard)
   async getMyAnnouncements(@CurrentUser() user: any) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getMyAnnouncements(user.id);
   }
 
-  @Get(':id')
-  async getCompany(@Param('id') id: string): Promise<CompanyResponseDto> {
+  @Get(":id")
+  async getCompany(@Param("id") id: string): Promise<CompanyResponseDto> {
     return this.companiesService.getCompanyById(id);
   }
 
-  @Post(':id/join')
+  @Post(":id/join")
   @UseGuards(JwtAuthGuard)
   async joinCompany(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ): Promise<JoinCompanyResultDto> {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
 
     const membership = await this.companiesService.joinCompany(
@@ -165,126 +168,141 @@ export class CompaniesController {
       success: true,
       membership,
       message:
-        membership.status === 'active'
-          ? 'Successfully joined company'
-          : 'Join request sent. Awaiting admin approval.',
+        membership.status === "active"
+          ? "Successfully joined company"
+          : "Join request sent. Awaiting admin approval.",
     };
   }
 
-  @Get(':id/members')
+  @Get(":id/members")
   @UseGuards(JwtAuthGuard)
   async getCompanyMembers(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getCompanyMembers(companyId, user.id);
   }
 
-  @Patch(':id/members/:userId/role')
+  @Patch(":id/members/:userId/role")
   @UseGuards(JwtAuthGuard)
   async updateMemberRole(
-    @Param('id') companyId: string,
-    @Param('userId') targetUserId: string,
-    @Body('role') role: string,
+    @Param("id") companyId: string,
+    @Param("userId") targetUserId: string,
+    @Body("role") role: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
-    return this.companiesService.updateMemberRole(companyId, targetUserId, role, user.id);
+    return this.companiesService.updateMemberRole(
+      companyId,
+      targetUserId,
+      role,
+      user.id,
+    );
   }
 
-  @Get(':id/teams')
+  @Get(":id/teams")
   @UseGuards(JwtAuthGuard)
   async getCompanyTeams(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getCompanyTeams(companyId, user.id);
   }
 
-  @Post(':id/teams')
+  @Post(":id/teams")
   @UseGuards(JwtAuthGuard)
   async createCompanyTeam(
-    @Param('id') companyId: string,
-    @Body('name') name: string,
-    @Body('description') description: string,
+    @Param("id") companyId: string,
+    @Body("name") name: string,
+    @Body("description") description: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
-    return this.companiesService.createCompanyTeam(companyId, user.id, name, description);
+    return this.companiesService.createCompanyTeam(
+      companyId,
+      user.id,
+      name,
+      description,
+    );
   }
 
-  @Patch(':id/members/:userId/team')
+  @Patch(":id/members/:userId/team")
   @UseGuards(JwtAuthGuard)
   async assignMemberToTeam(
-    @Param('id') companyId: string,
-    @Param('userId') targetUserId: string,
-    @Body('teamId') teamId: string | null,
+    @Param("id") companyId: string,
+    @Param("userId") targetUserId: string,
+    @Body("teamId") teamId: string | null,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
-    return this.companiesService.assignMemberToTeam(companyId, targetUserId, teamId, user.id);
+    return this.companiesService.assignMemberToTeam(
+      companyId,
+      targetUserId,
+      teamId,
+      user.id,
+    );
   }
 
-  @Delete(':id/members/:userId')
+  @Delete(":id/members/:userId")
   @UseGuards(JwtAuthGuard)
   async removeMember(
-    @Param('id') companyId: string,
-    @Param('userId') targetUserId: string,
+    @Param("id") companyId: string,
+    @Param("userId") targetUserId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.removeMember(companyId, targetUserId, user.id);
   }
 
-  @Post(':id/invite')
+  @Post(":id/invite")
   @UseGuards(JwtAuthGuard)
   async inviteMember(
-    @Param('id') companyId: string,
-    @Body('email') email: string,
+    @Param("id") companyId: string,
+    @Body("email") email: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.inviteMember(companyId, email, user.id);
   }
 
-  @Get(':id/join-requests')
+  @Get(":id/join-requests")
   @UseGuards(JwtAuthGuard)
   async getJoinRequests(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getPendingJoinRequests(companyId, user.id);
   }
 
-  @Post(':id/join-requests/:userId/respond')
+  @Post(":id/join-requests/:userId/respond")
   @UseGuards(JwtAuthGuard)
   async respondToJoinRequest(
-    @Param('id') companyId: string,
-    @Param('userId') targetUserId: string,
-    @Query('action') action: 'approve' | 'reject',
+    @Param("id") companyId: string,
+    @Param("userId") targetUserId: string,
+    @Query("action") action: "approve" | "reject",
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.respondToJoinRequest(
       companyId,
@@ -294,41 +312,41 @@ export class CompaniesController {
     );
   }
 
-  @Get(':id/roadmaps')
+  @Get(":id/roadmaps")
   @UseGuards(JwtAuthGuard)
   async getCompanyRoadmaps(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getCompanyRoadmaps(companyId, user.id);
   }
 
-  @Post(':id/roadmaps')
+  @Post(":id/roadmaps")
   @UseGuards(JwtAuthGuard)
   async createCompanyRoadmap(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @Body() dto: CreateCompanyRoadmapDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.createCompanyRoadmap(companyId, user.id, dto);
   }
 
-  @Post(':id/roadmaps/:roadmapId/assign')
+  @Post(":id/roadmaps/:roadmapId/assign")
   @UseGuards(JwtAuthGuard)
   async assignRoadmap(
-    @Param('id') companyId: string,
-    @Param('roadmapId') roadmapId: string,
+    @Param("id") companyId: string,
+    @Param("roadmapId") roadmapId: string,
     @Body() dto: AssignRoadmapDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.assignRoadmap(
       companyId,
@@ -338,16 +356,16 @@ export class CompaniesController {
     );
   }
 
-  @Patch(':id/roadmaps/:roadmapId/progress')
+  @Patch(":id/roadmaps/:roadmapId/progress")
   @UseGuards(JwtAuthGuard)
   async updateRoadmapProgress(
-    @Param('id') companyId: string,
-    @Param('roadmapId') roadmapId: string,
+    @Param("id") companyId: string,
+    @Param("roadmapId") roadmapId: string,
     @Body() dto: UpdateRoadmapProgressDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.updateRoadmapProgress(
       companyId,
@@ -357,54 +375,54 @@ export class CompaniesController {
     );
   }
 
-  @Get(':id/courses')
+  @Get(":id/courses")
   @UseGuards(JwtAuthGuard)
   async getCompanyCourses(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getCompanyCourses(companyId, user.id);
   }
 
-  @Post(':id/courses')
+  @Post(":id/courses")
   @UseGuards(JwtAuthGuard)
   async createCompanyCourse(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @Body() dto: CreateCompanyCourseDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.createCompanyCourse(companyId, user.id, dto);
   }
 
-  @Post(':id/courses/:courseId/enroll')
+  @Post(":id/courses/:courseId/enroll")
   @UseGuards(JwtAuthGuard)
   async enrollInCourse(
-    @Param('id') companyId: string,
-    @Param('courseId') courseId: string,
+    @Param("id") companyId: string,
+    @Param("courseId") courseId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.enrollInCourse(companyId, courseId, user.id);
   }
 
-  @Patch(':id/courses/:courseId/progress')
+  @Patch(":id/courses/:courseId/progress")
   @UseGuards(JwtAuthGuard)
   async updateCourseProgress(
-    @Param('id') companyId: string,
-    @Param('courseId') courseId: string,
+    @Param("id") companyId: string,
+    @Param("courseId") courseId: string,
     @Body() dto: UpdateCourseProgressDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.updateCourseProgress(
       companyId,
@@ -414,90 +432,99 @@ export class CompaniesController {
     );
   }
 
-  @Get(':id/jobs')
-  async getCompanyJobs(@Param('id') companyId: string) {
+  @Get(":id/jobs")
+  async getCompanyJobs(@Param("id") companyId: string) {
     return this.companiesService.getCompanyJobs(companyId);
   }
 
-  @Get(':id/hiring/candidates')
+  @Get(":id/hiring/candidates")
   @UseGuards(JwtAuthGuard)
   async getHiringCandidates(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
-    @Query('search') search?: string,
+    @Query("search") search?: string,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
-    return this.companiesService.getHiringCandidates(companyId, user.id, search);
+    return this.companiesService.getHiringCandidates(
+      companyId,
+      user.id,
+      search,
+    );
   }
 
-  @Get(':id/hiring/dashboard')
+  @Get(":id/hiring/dashboard")
   @UseGuards(JwtAuthGuard)
   async getHiringDashboard(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getHiringDashboard(companyId, user.id);
   }
 
-  @Post(':id/jobs')
+  @Post(":id/jobs")
   @UseGuards(JwtAuthGuard)
   async createCompanyJob(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @Body() dto: CreateCompanyJobDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.createCompanyJob(companyId, user.id, dto);
   }
 
-  @Patch(':id/jobs/:jobId')
+  @Patch(":id/jobs/:jobId")
   @UseGuards(JwtAuthGuard)
   async updateCompanyJob(
-    @Param('id') companyId: string,
-    @Param('jobId') jobId: string,
+    @Param("id") companyId: string,
+    @Param("jobId") jobId: string,
     @Body() dto: UpdateCompanyJobDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
-    return this.companiesService.updateCompanyJob(companyId, jobId, user.id, dto);
+    return this.companiesService.updateCompanyJob(
+      companyId,
+      jobId,
+      user.id,
+      dto,
+    );
   }
 
-  @Post(':id/jobs/:jobId/apply')
+  @Post(":id/jobs/:jobId/apply")
   @UseGuards(JwtAuthGuard)
   async applyToJob(
-    @Param('id') companyId: string,
-    @Param('jobId') jobId: string,
+    @Param("id") companyId: string,
+    @Param("jobId") jobId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.applyToJob(companyId, jobId, user.id);
   }
 
-  @Get(':id/forum/groups')
-  async getCompanyForumGroups(@Param('id') companyId: string) {
+  @Get(":id/forum/groups")
+  async getCompanyForumGroups(@Param("id") companyId: string) {
     return this.companiesService.getCompanyForumGroups(companyId);
   }
 
-  @Post(':id/forum/groups')
+  @Post(":id/forum/groups")
   @UseGuards(JwtAuthGuard)
   async createCompanyForumGroup(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @Body() dto: CreateCompanyForumGroupDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.createCompanyForumGroup(
       companyId,
@@ -506,24 +533,24 @@ export class CompaniesController {
     );
   }
 
-  @Get(':id/forum/posts')
+  @Get(":id/forum/posts")
   async getCompanyForumPosts(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     const userId = user?.id ?? null;
     return this.companiesService.getCompanyForumPosts(companyId, userId);
   }
 
-  @Post(':id/forum/posts')
+  @Post(":id/forum/posts")
   @UseGuards(JwtAuthGuard)
   async createCompanyForumPost(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @Body() dto: CreateCompanyForumPostDto,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.createCompanyForumPost(
       companyId,
@@ -532,27 +559,27 @@ export class CompaniesController {
     );
   }
 
-  @Get(':id/notifications')
+  @Get(":id/notifications")
   @UseGuards(JwtAuthGuard)
   async getCompanyNotifications(
-    @Param('id') companyId: string,
+    @Param("id") companyId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.getCompanyNotifications(companyId, user.id);
   }
 
-  @Post(':companyId/notifications/:notificationId/read')
+  @Post(":companyId/notifications/:notificationId/read")
   @UseGuards(JwtAuthGuard)
   async readCompanyNotification(
-    @Param('companyId') companyId: string,
-    @Param('notificationId') notificationId: string,
+    @Param("companyId") companyId: string,
+    @Param("notificationId") notificationId: string,
     @CurrentUser() user: any,
   ) {
     if (!user?.id) {
-      throw new BadRequestException('User not authenticated');
+      throw new BadRequestException("User not authenticated");
     }
     return this.companiesService.markCompanyNotificationRead(
       notificationId,

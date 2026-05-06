@@ -1,4 +1,10 @@
-import { IsString, IsInt, IsOptional, IsBoolean, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+} from "class-validator";
 
 export class RequestHintDto {
   @IsString()
@@ -46,15 +52,20 @@ export class RequestHintDto {
 
   @IsOptional()
   @IsString()
-  hintStyle?: 'concept' | 'strategy' | 'pseudocode' | 'partial_snippet' | 'near_solution';
+  hintStyle?:
+    | "concept"
+    | "strategy"
+    | "pseudocode"
+    | "partial_snippet"
+    | "near_solution";
 
   @IsOptional()
   @IsString()
-  hintIntensity?: 'low' | 'medium' | 'high';
+  hintIntensity?: "low" | "medium" | "high";
 
   @IsOptional()
   @IsString()
-  hintTiming?: 'now' | 'wait';
+  hintTiming?: "now" | "wait";
 }
 
 export class RecommendLevelDto {

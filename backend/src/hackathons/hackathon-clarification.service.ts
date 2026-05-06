@@ -2,8 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class HackathonClarificationService {
@@ -17,10 +17,14 @@ export class HackathonClarificationService {
     challengeId: string | undefined,
     question: string,
   ) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
-    if (!['active', 'frozen'].includes(hackathon.status)) {
-      throw new BadRequestException('Clarifications only allowed during active or frozen phases');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
+    if (!["active", "frozen"].includes(hackathon.status)) {
+      throw new BadRequestException(
+        "Clarifications only allowed during active or frozen phases",
+      );
     }
 
     return this.prisma.hackathonClarification.create({
@@ -30,7 +34,7 @@ export class HackathonClarificationService {
         userId,
         challengeId,
         question,
-        status: 'pending',
+        status: "pending",
       },
     });
   }
@@ -45,7 +49,7 @@ export class HackathonClarificationService {
     const clar = await this.prisma.hackathonClarification.findUnique({
       where: { id: clarificationId },
     });
-    if (!clar) throw new NotFoundException('Clarification not found');
+    if (!clar) throw new NotFoundException("Clarification not found");
 
     return this.prisma.hackathonClarification.update({
       where: { id: clarificationId },
@@ -53,7 +57,7 @@ export class HackathonClarificationService {
         answer,
         answeredById: adminId,
         answeredAt: new Date(),
-        status: 'answered',
+        status: "answered",
         isBroadcast,
       },
     });
@@ -68,7 +72,7 @@ export class HackathonClarificationService {
       // Admin sees all
       return this.prisma.hackathonClarification.findMany({
         where: { hackathonId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
     }
 
@@ -76,15 +80,15 @@ export class HackathonClarificationService {
     const [ownClarifications, broadcastClarifications] = await Promise.all([
       this.prisma.hackathonClarification.findMany({
         where: { hackathonId, teamId: options.teamId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.hackathonClarification.findMany({
         where: {
           hackathonId,
           isBroadcast: true,
-          status: 'answered',
+          status: "answered",
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
     ]);
 
@@ -99,7 +103,8 @@ export class HackathonClarificationService {
     }
 
     return merged.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }
 }

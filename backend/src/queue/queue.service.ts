@@ -1,11 +1,16 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue, QueueEvents } from 'bullmq';
-import { ConfigService } from '@nestjs/config';
-import { forwardRef, Inject } from '@nestjs/common';
-import { CodeExecutionJob } from './interfaces/code-execution-job.interface';
-import { SubmissionsGateway } from '../submissions/submissions.gateway';
-import { BadgeEngineService } from '../badges/badge-engine.service';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue, QueueEvents } from "bullmq";
+import { ConfigService } from "@nestjs/config";
+import { forwardRef, Inject } from "@nestjs/common";
+import { CodeExecutionJob } from "./interfaces/code-execution-job.interface";
+import { SubmissionsGateway } from "../submissions/submissions.gateway";
+import { BadgeEngineService } from "../badges/badge-engine.service";
 
 @Injectable()
 export class QueueService implements OnModuleInit, OnModuleDestroy {
@@ -13,7 +18,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   public queueEvents: QueueEvents;
 
   constructor(
-    @InjectQueue('code-execution') private readonly codeExecutionQueue: Queue,
+    @InjectQueue("code-execution") private readonly codeExecutionQueue: Queue,
     private configService: ConfigService,
     @Inject(forwardRef(() => SubmissionsGateway))
     private submissionsGateway: SubmissionsGateway,
@@ -21,58 +26,67 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    this.queueEvents = new QueueEvents('code-execution', {
+    this.queueEvents = new QueueEvents("code-execution", {
       connection: {
-        host: this.configService.get('REDIS_HOST', 'localhost'),
-        port: this.configService.get<number>('REDIS_PORT', 6379),
-        password: this.configService.get('REDIS_PASSWORD', ''),
+        host: this.configService.get("REDIS_HOST", "localhost"),
+        port: this.configService.get<number>("REDIS_PORT", 6379),
+        password: this.configService.get("REDIS_PASSWORD", ""),
       },
     });
 
-    this.queueEvents.on('active', async ({ jobId }) => {
+    this.queueEvents.on("active", async ({ jobId }) => {
       const job = await this.codeExecutionQueue.getJob(jobId);
-      if (job && job.name === 'execute-code') {
+      if (job && job.name === "execute-code") {
         this.submissionsGateway.emitSubmissionStatus(job.data.userId, {
           submissionId: job.data.submissionId,
-          status: 'executing',
+          status: "executing",
         });
       }
     });
 
-    this.queueEvents.on('completed', async ({ jobId, returnvalue }) => {
+    this.queueEvents.on("completed", async ({ jobId, returnvalue }) => {
       const job = await this.codeExecutionQueue.getJob(jobId);
-      if (job && job.name === 'execute-code') {
-        const parsedResult = typeof returnvalue === 'string' ? JSON.parse(returnvalue) : returnvalue;
+      if (job && job.name === "execute-code") {
+        const parsedResult =
+          typeof returnvalue === "string"
+            ? JSON.parse(returnvalue)
+            : returnvalue;
         this.submissionsGateway.emitSubmissionStatus(job.data.userId, {
           submissionId: job.data.submissionId,
-          status: 'completed',
+          status: "completed",
           result: parsedResult,
         });
 
         // Trigger badge evaluation for AC submissions (fire-and-forget)
-        const result = returnvalue as any;
-        if (result?.verdict === 'AC' && job.data.context !== 'duel') {
-          this.badgeEngine.onSubmissionAccepted(job.data.userId, {
-            id: job.data.submissionId,
-            challengeId: job.data.challengeId,
-            language: job.data.language,
-            timeMs: result.totalTimeMs,
-            createdAt: new Date(),
-          }).catch(err => this.logger.error('Badge engine error (submission):', err));
+        if (parsedResult?.verdict === "AC" && job.data.context !== "duel") {
+          this.badgeEngine
+            .onSubmissionAccepted(job.data.userId, {
+              id: job.data.submissionId,
+              challengeId: job.data.challengeId,
+              language: job.data.language,
+              timeMs: parsedResult.totalTimeMs,
+              createdAt: new Date(),
+            })
+            .catch((err) =>
+              this.logger.error("Badge engine error (submission):", err),
+            );
 
           // Check level/XP badges after every AC submission
-          this.badgeEngine.checkUserLevelBadges(job.data.userId)
-            .catch(err => this.logger.error('Badge engine error (level):', err));
+          this.badgeEngine
+            .checkUserLevelBadges(job.data.userId)
+            .catch((err) =>
+              this.logger.error("Badge engine error (level):", err),
+            );
         }
       }
     });
 
-    this.queueEvents.on('failed', async ({ jobId, failedReason }) => {
+    this.queueEvents.on("failed", async ({ jobId, failedReason }) => {
       const job = await this.codeExecutionQueue.getJob(jobId);
-      if (job && job.name === 'execute-code') {
+      if (job && job.name === "execute-code") {
         this.submissionsGateway.emitSubmissionStatus(job.data.userId, {
           submissionId: job.data.submissionId,
-          status: 'error',
+          status: "error",
           error: failedReason,
         });
       }
@@ -84,27 +98,25 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   async addCodeExecutionJob(jobData: CodeExecutionJob): Promise<string> {
-    const isDuel = jobData.context === 'duel';
-    
-    const job = await this.codeExecutionQueue.add(
-      'execute-code', 
-      jobData, 
-      {
-        priority: isDuel ? 1 : 2, // 1 is higher priority in BullMQ
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 1000,
-        },
-      }
+    const isDuel = jobData.context === "duel";
+
+    const job = await this.codeExecutionQueue.add("execute-code", jobData, {
+      priority: isDuel ? 1 : 2, // 1 is higher priority in BullMQ
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+    });
+
+    this.logger.log(
+      `Enqueued code execution job ${job.id} for submission ${jobData.submissionId} (Priority: ${isDuel ? "High" : "Normal"})`,
     );
-    
-    this.logger.log(`Enqueued code execution job ${job.id} for submission ${jobData.submissionId} (Priority: ${isDuel ? 'High' : 'Normal'})`);
-    
+
     // Emit queued status immediately
     this.submissionsGateway.emitSubmissionStatus(jobData.userId, {
       submissionId: jobData.submissionId,
-      status: 'queued',
+      status: "queued",
       jobId: job.id,
     });
 
@@ -112,32 +124,28 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   async addRunCodeJob(jobData: any): Promise<any> {
-    const job = await this.codeExecutionQueue.add(
-      'run-code', 
-      jobData, 
-      {
-        priority: 1, // High priority for synchronous interactive runs
-        attempts: 1,
-        removeOnComplete: true,
-      }
+    const job = await this.codeExecutionQueue.add("run-code", jobData, {
+      priority: 1, // High priority for synchronous interactive runs
+      attempts: 1,
+      removeOnComplete: true,
+    });
+    this.logger.log(
+      `Waiting for run-code job ${job.id} to finish synchronously`,
     );
-    this.logger.log(`Waiting for run-code job ${job.id} to finish synchronously`);
     // wait until the job finishes
     const returnValue = await job.waitUntilFinished(this.queueEvents);
     return returnValue;
   }
 
   async addEvaluateCodeJob(jobData: any): Promise<any> {
-    const job = await this.codeExecutionQueue.add(
-      'evaluate-code',
-      jobData,
-      {
-        priority: 1, // High priority for synchronous duels evaluation
-        attempts: 1,
-        removeOnComplete: true,
-      }
+    const job = await this.codeExecutionQueue.add("evaluate-code", jobData, {
+      priority: 1, // High priority for synchronous duels evaluation
+      attempts: 1,
+      removeOnComplete: true,
+    });
+    this.logger.log(
+      `Waiting for evaluate-code job ${job.id} to finish synchronously`,
     );
-    this.logger.log(`Waiting for evaluate-code job ${job.id} to finish synchronously`);
     const returnValue = await job.waitUntilFinished(this.queueEvents);
     return returnValue;
   }

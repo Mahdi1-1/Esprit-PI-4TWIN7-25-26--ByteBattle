@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsString,
   IsNotEmpty,
@@ -7,13 +7,13 @@ import {
   ArrayNotEmpty,
   IsIn,
   IsObject,
-} from 'class-validator';
+} from "class-validator";
 
-const JOIN_POLICIES = ['open', 'approval', 'invite_only'] as const;
-const ROADMAP_TYPES = ['platform', 'custom'] as const;
-const ROADMAP_VISIBILITIES = ['public', 'employees_only'] as const;
-const COURSE_VISIBILITIES = ['public', 'employees_only'] as const;
-const JOB_TYPES = ['full_time', 'part_time', 'contract', 'internship'] as const;
+const JOIN_POLICIES = ["open", "approval", "invite_only"] as const;
+const ROADMAP_TYPES = ["platform", "custom"] as const;
+const ROADMAP_VISIBILITIES = ["public", "employees_only"] as const;
+const COURSE_VISIBILITIES = ["public", "employees_only"] as const;
+const JOB_TYPES = ["full_time", "part_time", "contract", "internship"] as const;
 
 export class CreateCompanyDto {
   @ApiProperty()
@@ -49,7 +49,7 @@ export class CreateCompanyDto {
   @ApiPropertyOptional({ enum: JOIN_POLICIES })
   @IsOptional()
   @IsIn(JOIN_POLICIES)
-  joinPolicy?: typeof JOIN_POLICIES[number];
+  joinPolicy?: (typeof JOIN_POLICIES)[number];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -86,7 +86,7 @@ export class UpdateCompanyDto {
   @ApiPropertyOptional({ enum: JOIN_POLICIES })
   @IsOptional()
   @IsIn(JOIN_POLICIES)
-  joinPolicy?: typeof JOIN_POLICIES[number];
+  joinPolicy?: (typeof JOIN_POLICIES)[number];
 }
 
 export class CreateCompanyRoadmapDto {
@@ -103,7 +103,7 @@ export class CreateCompanyRoadmapDto {
   @ApiPropertyOptional({ enum: ROADMAP_TYPES })
   @IsOptional()
   @IsIn(ROADMAP_TYPES)
-  type?: typeof ROADMAP_TYPES[number];
+  type?: (typeof ROADMAP_TYPES)[number];
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -115,7 +115,7 @@ export class CreateCompanyRoadmapDto {
   @ApiPropertyOptional({ enum: ROADMAP_VISIBILITIES })
   @IsOptional()
   @IsIn(ROADMAP_VISIBILITIES)
-  visibility?: typeof ROADMAP_VISIBILITIES[number];
+  visibility?: (typeof ROADMAP_VISIBILITIES)[number];
 }
 
 export class AssignRoadmapDto {
@@ -144,7 +144,7 @@ export class CreateCompanyCourseDto {
   @ApiPropertyOptional({ enum: COURSE_VISIBILITIES })
   @IsOptional()
   @IsIn(COURSE_VISIBILITIES)
-  visibility?: typeof COURSE_VISIBILITIES[number];
+  visibility?: (typeof COURSE_VISIBILITIES)[number];
 }
 
 export class CreateCompanyJobDto {
@@ -177,7 +177,7 @@ export class CreateCompanyJobDto {
   @ApiPropertyOptional({ enum: JOB_TYPES })
   @IsOptional()
   @IsIn(JOB_TYPES)
-  type?: typeof JOB_TYPES[number];
+  type?: (typeof JOB_TYPES)[number];
 }
 
 export class CreateCompanyForumGroupDto {
@@ -194,7 +194,7 @@ export class CreateCompanyForumGroupDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsIn(ROADMAP_VISIBILITIES)
-  visibility?: typeof ROADMAP_VISIBILITIES[number];
+  visibility?: (typeof ROADMAP_VISIBILITIES)[number];
 }
 
 export class CreateCompanyForumPostDto {
@@ -216,7 +216,7 @@ export class CreateCompanyForumPostDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsIn(ROADMAP_VISIBILITIES)
-  visibility?: typeof ROADMAP_VISIBILITIES[number];
+  visibility?: (typeof ROADMAP_VISIBILITIES)[number];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -271,10 +271,10 @@ export class UpdateCompanyJobDto {
   @ApiPropertyOptional({ enum: JOB_TYPES })
   @IsOptional()
   @IsIn(JOB_TYPES)
-  type?: typeof JOB_TYPES[number];
+  type?: (typeof JOB_TYPES)[number];
 
-  @ApiPropertyOptional({ enum: ['active', 'closed'] })
+  @ApiPropertyOptional({ enum: ["active", "closed"] })
   @IsOptional()
-  @IsIn(['active', 'closed'])
-  status?: 'active' | 'closed';
+  @IsIn(["active", "closed"])
+  status?: "active" | "closed";
 }

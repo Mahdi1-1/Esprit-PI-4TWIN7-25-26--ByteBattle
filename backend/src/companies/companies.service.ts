@@ -4,18 +4,18 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 import {
   CompanyResponseDto,
   CompanyMemberResponseDto,
-} from './dto/company-response.dto';
-import { NotificationEmitterService } from '../notifications/notification-emitter.service';
+} from "./dto/company-response.dto";
+import { NotificationEmitterService } from "../notifications/notification-emitter.service";
 import {
   NotificationCategory,
   NotificationPriority,
   NotificationType,
-} from '../notifications/notification.constants';
+} from "../notifications/notification.constants";
 
 @Injectable()
 export class CompaniesService {
@@ -31,13 +31,13 @@ export class CompaniesService {
     return text
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
 
   private generateJoinCode(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
     for (let i = 0; i < 8; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -55,7 +55,7 @@ export class CompaniesService {
   }
 
   private parseJoinCodeExpiry(joinCode: string): Date | null {
-    const parts = joinCode.split('-');
+    const parts = joinCode.split("-");
     if (parts.length !== 2) {
       return null;
     }
@@ -70,9 +70,11 @@ export class CompaniesService {
 
   private async getCompanyOrThrow(companyId: string) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
     return company;
   }
@@ -92,12 +94,14 @@ export class CompaniesService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const membership = await this.getCompanyMembership(companyId, userId);
-    if (!membership || membership.status !== 'active') {
-      throw new ForbiddenException('Access denied to company administration');
+    if (!membership || membership.status !== "active") {
+      throw new ForbiddenException("Access denied to company administration");
     }
 
-    if (membership.role !== 'owner' && membership.role !== 'recruiter') {
-      throw new ForbiddenException('Only company owner or recruiter can perform this action');
+    if (membership.role !== "owner" && membership.role !== "recruiter") {
+      throw new ForbiddenException(
+        "Only company owner or recruiter can perform this action",
+      );
     }
 
     return company;
@@ -105,8 +109,8 @@ export class CompaniesService {
 
   private async requireActiveMember(companyId: string, userId: string) {
     const membership = await this.getCompanyMembership(companyId, userId);
-    if (!membership || membership.status !== 'active') {
-      throw new ForbiddenException('Access denied to company resources');
+    if (!membership || membership.status !== "active") {
+      throw new ForbiddenException("Access denied to company resources");
     }
     return membership;
   }
@@ -114,7 +118,7 @@ export class CompaniesService {
   private async requireCompanyMember(companyId: string, userId: string) {
     const membership = await this.getCompanyMembership(companyId, userId);
     if (!membership) {
-      throw new ForbiddenException('Access denied to company resources');
+      throw new ForbiddenException("Access denied to company resources");
     }
     return membership;
   }
@@ -155,7 +159,9 @@ export class CompaniesService {
   }
 
   async createCompany(userId: string, dto: any) {
-    const slug = dto.slug?.trim() ? this.slugify(dto.slug) : this.slugify(dto.name);
+    const slug = dto.slug?.trim()
+      ? this.slugify(dto.slug)
+      : this.slugify(dto.name);
     const joinCode = this.generateJoinCode();
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -168,11 +174,11 @@ export class CompaniesService {
         industry: dto.industry,
         size: dto.size,
         logo: dto.logoUrl,
-        joinPolicy: dto.joinPolicy ?? 'approval',
+        joinPolicy: dto.joinPolicy ?? "approval",
         joinCode,
         ownerId: userId,
         verified: false,
-        status: 'active',
+        status: "active",
       },
     });
 
@@ -180,8 +186,8 @@ export class CompaniesService {
       data: {
         companyId: company.id,
         userId,
-        role: 'owner',
-        status: 'active',
+        role: "owner",
+        status: "active",
         joinedAt: new Date(),
         requestedAt: new Date(),
       },
@@ -191,7 +197,7 @@ export class CompaniesService {
       where: { id: userId },
       data: {
         companyId: company.id,
-        companyRole: 'owner',
+        companyRole: "owner",
         companyJoinedAt: new Date(),
       },
     });
@@ -218,8 +224,8 @@ export class CompaniesService {
 
   async getPublicCompanies(): Promise<CompanyResponseDto[]> {
     const companies = await this.prisma.company.findMany({
-      where: { status: 'active' },
-      orderBy: { name: 'asc' },
+      where: { status: "active" },
+      orderBy: { name: "asc" },
     });
     return companies.map((c) => CompanyResponseDto.fromPrisma(c));
   }
@@ -228,7 +234,7 @@ export class CompaniesService {
     const memberships = await this.prisma.companyMembership.findMany({
       where: { userId },
       include: { company: true },
-      orderBy: { joinedAt: 'desc' },
+      orderBy: { joinedAt: "desc" },
     });
     return memberships.map((m) => CompanyMemberResponseDto.fromPrisma(m));
   }
@@ -241,7 +247,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     return CompanyResponseDto.fromPrisma(company);
@@ -249,7 +255,7 @@ export class CompaniesService {
 
   async getMyCompany(userId: string) {
     const membership = await this.prisma.companyMembership.findFirst({
-      where: { userId, status: 'active' },
+      where: { userId, status: "active" },
       include: { company: true },
     });
 
@@ -266,28 +272,39 @@ export class CompaniesService {
       size: membership.company.size,
       verified: membership.company.verified,
       status: membership.company.status,
-      joinCode: membership.role === 'owner' || membership.role === 'recruiter' ? membership.company.joinCode : null,
+      joinCode:
+        membership.role === "owner" || membership.role === "recruiter"
+          ? membership.company.joinCode
+          : null,
     };
   }
 
   async requestVerification(userId: string) {
     const membership = await this.prisma.companyMembership.findFirst({
-      where: { userId, status: 'active', role: 'owner' },
+      where: { userId, status: "active", role: "owner" },
       include: { company: true },
     });
 
     if (!membership) {
-      throw new ForbiddenException('You must be an owner to request verification');
+      throw new ForbiddenException(
+        "You must be an owner to request verification",
+      );
     }
 
     if (membership.company.verified) {
-      throw new BadRequestException('Company is already verified');
+      throw new BadRequestException("Company is already verified");
     }
 
-    return { message: 'Verification request submitted', company: membership.company.name };
+    return {
+      message: "Verification request submitted",
+      company: membership.company.name,
+    };
   }
 
-  async joinCompany(userId: string, companyId: string): Promise<CompanyMemberResponseDto> {
+  async joinCompany(
+    userId: string,
+    companyId: string,
+  ): Promise<CompanyMemberResponseDto> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const company = await this.getCompanyOrThrow(companyId);
     const existingMembership = await this.prisma.companyMembership.findUnique({
@@ -297,31 +314,33 @@ export class CompaniesService {
     });
 
     if (existingMembership) {
-      if (existingMembership.status === 'active') {
-        throw new BadRequestException('Already a member of this company');
+      if (existingMembership.status === "active") {
+        throw new BadRequestException("Already a member of this company");
       }
-      if (existingMembership.status === 'pending') {
-        throw new BadRequestException('Join request already pending');
+      if (existingMembership.status === "pending") {
+        throw new BadRequestException("Join request already pending");
       }
     }
 
-    if (company.joinPolicy === 'invite_only') {
+    if (company.joinPolicy === "invite_only") {
       throw new ForbiddenException(
-        'This company is invite-only. Please contact an administrator.',
+        "This company is invite-only. Please contact an administrator.",
       );
     }
 
-    const status = company.joinPolicy === 'open' ? 'active' : 'pending';
+    const status = company.joinPolicy === "open" ? "active" : "pending";
 
-    if (existingMembership?.status === 'rejected') {
-      await this.prisma.companyMembership.delete({ where: { id: existingMembership.id } });
+    if (existingMembership?.status === "rejected") {
+      await this.prisma.companyMembership.delete({
+        where: { id: existingMembership.id },
+      });
     }
 
     const membership = await this.prisma.companyMembership.create({
       data: {
         companyId,
         userId,
-        role: 'member',
+        role: "member",
         status,
         joinedAt: new Date(),
         requestedAt: new Date(),
@@ -329,27 +348,31 @@ export class CompaniesService {
       include: { company: true },
     });
 
-    if (status === 'active') {
+    if (status === "active") {
       await this.prisma.user.update({
         where: { id: userId },
         data: {
           companyId,
-          companyRole: 'member',
+          companyRole: "member",
           companyJoinedAt: new Date(),
         },
       });
     }
 
-    if (status === 'pending') {
-      await this.createCompanyNotification(companyId, 'join_request', company.ownerId || undefined);
+    if (status === "pending") {
+      await this.createCompanyNotification(
+        companyId,
+        "join_request",
+        company.ownerId || undefined,
+      );
       if (company.ownerId) {
         await this.emitAppNotification(
           company.ownerId,
-          'New company join request',
+          "New company join request",
           `${membership.userId} requested to join ${company.name}.`,
           `/companies/${companyId}`,
           companyId,
-          'company',
+          "company",
         );
       }
     }
@@ -357,7 +380,10 @@ export class CompaniesService {
     return CompanyMemberResponseDto.fromPrisma(membership);
   }
 
-  async joinByCode(userId: string, code: string): Promise<CompanyMemberResponseDto> {
+  async joinByCode(
+    userId: string,
+    code: string,
+  ): Promise<CompanyMemberResponseDto> {
     const normalizedCode = code.trim().toUpperCase();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const company = await this.prisma.company.findUnique({
@@ -365,22 +391,27 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException('Invalid join code');
+      throw new NotFoundException("Invalid join code");
     }
 
-    if (company.status !== 'active') {
-      throw new BadRequestException('Company is not active');
+    if (company.status !== "active") {
+      throw new BadRequestException("Company is not active");
     }
 
-    const expiresAt = this.parseJoinCodeExpiry(company.joinCode ?? '');
+    const expiresAt = this.parseJoinCodeExpiry(company.joinCode ?? "");
     if (expiresAt && expiresAt.getTime() < Date.now()) {
-      throw new BadRequestException('Join code expired. Ask a recruiter for a new one.');
+      throw new BadRequestException(
+        "Join code expired. Ask a recruiter for a new one.",
+      );
     }
 
     return this.joinCompany(userId, company.id);
   }
 
-  async regenerateJoinCode(companyId: string, userId: string): Promise<{ joinCode: string; expiresAt: string }> {
+  async regenerateJoinCode(
+    companyId: string,
+    userId: string,
+  ): Promise<{ joinCode: string; expiresAt: string }> {
     await this.requireCompanyAdmin(companyId, userId);
     const { joinCode, expiresAt } = this.generateTimedJoinCode();
 
@@ -414,7 +445,7 @@ export class CompaniesService {
         company: true,
         team: true,
       },
-      orderBy: { joinedAt: 'desc' },
+      orderBy: { joinedAt: "desc" },
     });
     return members.map((m) => CompanyMemberResponseDto.fromPrisma(m));
   }
@@ -430,12 +461,12 @@ export class CompaniesService {
           },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     return teams.map((team: any) => {
       const activeMembers = team.members
-        ? team.members.filter((m: any) => m.status === 'active')
+        ? team.members.filter((m: any) => m.status === "active")
         : [];
       const totalElo = activeMembers.reduce(
         (sum: number, m: any) => sum + (m.user?.elo || 1200),
@@ -458,7 +489,12 @@ export class CompaniesService {
     });
   }
 
-  async createCompanyTeam(companyId: string, userId: string, name: string, description?: string) {
+  async createCompanyTeam(
+    companyId: string,
+    userId: string,
+    name: string,
+    description?: string,
+  ) {
     await this.requireCompanyAdmin(companyId, userId);
     return this.prisma.companyTeam.create({
       data: {
@@ -469,14 +505,19 @@ export class CompaniesService {
     });
   }
 
-  async assignMemberToTeam(companyId: string, memberUserId: string, teamId: string | null, actorId: string) {
+  async assignMemberToTeam(
+    companyId: string,
+    memberUserId: string,
+    teamId: string | null,
+    actorId: string,
+  ) {
     await this.requireCompanyAdmin(companyId, actorId);
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: memberUserId } },
     });
 
-    if (!membership || membership.status !== 'active') {
-      throw new NotFoundException('Active company member not found');
+    if (!membership || membership.status !== "active") {
+      throw new NotFoundException("Active company member not found");
     }
 
     if (teamId) {
@@ -484,7 +525,7 @@ export class CompaniesService {
         where: { id: teamId },
       });
       if (!team || team.companyId !== companyId) {
-        throw new NotFoundException('Team not found');
+        throw new NotFoundException("Team not found");
       }
     }
 
@@ -513,32 +554,40 @@ export class CompaniesService {
   async getPendingJoinRequests(companyId: string, userId: string) {
     await this.requireCompanyAdmin(companyId, userId);
     return this.prisma.companyMembership.findMany({
-      where: { companyId, status: 'pending' },
+      where: { companyId, status: "pending" },
       include: { user: { select: { id: true, username: true, email: true } } },
-      orderBy: { requestedAt: 'asc' },
+      orderBy: { requestedAt: "asc" },
     });
   }
 
-  async updateMemberRole(companyId: string, targetUserId: string, role: string, actorId: string) {
+  async updateMemberRole(
+    companyId: string,
+    targetUserId: string,
+    role: string,
+    actorId: string,
+  ) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const company = await this.requireCompanyAdmin(companyId, actorId);
 
     if (company.ownerId === targetUserId) {
-      throw new BadRequestException('Cannot change the owner\'s role');
+      throw new BadRequestException("Cannot change the owner's role");
     }
 
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: targetUserId } },
     });
-    if (!membership || membership.status !== 'active') {
-      throw new NotFoundException('Active company member not found');
+    if (!membership || membership.status !== "active") {
+      throw new NotFoundException("Active company member not found");
     }
 
     const previousRole = membership.role;
     const updated = await this.prisma.companyMembership.update({
       where: { id: membership.id },
       data: { role: role as any },
-      include: { user: { select: { id: true, username: true, email: true } }, company: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        company: true,
+      },
     });
 
     await this.prisma.user.update({
@@ -546,10 +595,14 @@ export class CompaniesService {
       data: { companyRole: role as any },
     });
 
-    await this.createCompanyNotification(companyId, 'member_role_changed', targetUserId);
+    await this.createCompanyNotification(
+      companyId,
+      "member_role_changed",
+      targetUserId,
+    );
     await this.emitAppNotification(
       targetUserId,
-      'Company role updated',
+      "Company role updated",
       `Your role in ${company.name} has been changed from ${previousRole} to ${role}.`,
     );
 
@@ -561,17 +614,19 @@ export class CompaniesService {
     const company = await this.requireCompanyAdmin(companyId, actorId);
 
     if (company.ownerId === targetUserId) {
-      throw new BadRequestException('Cannot remove the company owner');
+      throw new BadRequestException("Cannot remove the company owner");
     }
 
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: targetUserId } },
     });
     if (!membership) {
-      throw new NotFoundException('Company member not found');
+      throw new NotFoundException("Company member not found");
     }
 
-    await this.prisma.companyMembership.delete({ where: { id: membership.id } });
+    await this.prisma.companyMembership.delete({
+      where: { id: membership.id },
+    });
 
     await this.prisma.user.update({
       where: { id: targetUserId },
@@ -584,7 +639,7 @@ export class CompaniesService {
 
     await this.emitAppNotification(
       targetUserId,
-      'Removed from company',
+      "Removed from company",
       `You have been removed from ${company.name}.`,
     );
 
@@ -597,30 +652,35 @@ export class CompaniesService {
 
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
-      throw new NotFoundException('User with this email not found');
+      throw new NotFoundException("User with this email not found");
     }
 
     const existingMembership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: user.id } },
     });
     if (existingMembership) {
-      throw new BadRequestException('User is already a member or has a pending request');
+      throw new BadRequestException(
+        "User is already a member or has a pending request",
+      );
     }
 
     const membership = await this.prisma.companyMembership.create({
       data: {
         companyId,
         userId: user.id,
-        role: 'member',
-        status: 'pending',
+        role: "member",
+        status: "pending",
       },
-      include: { user: { select: { id: true, username: true, email: true } }, company: true },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        company: true,
+      },
     });
 
-    await this.createCompanyNotification(companyId, 'join_request', user.id);
+    await this.createCompanyNotification(companyId, "join_request", user.id);
     await this.emitAppNotification(
       user.id,
-      'Company invitation',
+      "Company invitation",
       `You have been invited to join ${company.name}.`,
       `/companies/${companyId}/join`,
     );
@@ -631,7 +691,7 @@ export class CompaniesService {
   async respondToJoinRequest(
     companyId: string,
     targetUserId: string,
-    action: 'approve' | 'reject',
+    action: "approve" | "reject",
     adminId: string,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -640,19 +700,19 @@ export class CompaniesService {
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId: targetUserId } },
     });
-    if (!membership || membership.status !== 'pending') {
-      throw new NotFoundException('Pending company request not found');
+    if (!membership || membership.status !== "pending") {
+      throw new NotFoundException("Pending company request not found");
     }
 
     const updated = await this.prisma.companyMembership.update({
       where: { id: membership.id },
       data: {
-        status: action === 'approve' ? 'active' : 'rejected',
+        status: action === "approve" ? "active" : "rejected",
       },
       include: { company: true },
     });
 
-    if (action === 'approve') {
+    if (action === "approve") {
       await this.prisma.user.update({
         where: { id: targetUserId },
         data: {
@@ -663,16 +723,22 @@ export class CompaniesService {
       });
     }
 
-    await this.createCompanyNotification(companyId, 'join_request', targetUserId);
+    await this.createCompanyNotification(
+      companyId,
+      "join_request",
+      targetUserId,
+    );
     await this.emitAppNotification(
       targetUserId,
-      action === 'approve' ? 'Company membership approved' : 'Company membership rejected',
-      action === 'approve'
+      action === "approve"
+        ? "Company membership approved"
+        : "Company membership rejected",
+      action === "approve"
         ? `Your request to join ${company.name} has been approved.`
         : `Your request to join ${company.name} was rejected.`,
       `/company-space`,
       companyId,
-      'company',
+      "company",
     );
 
     return updated;
@@ -684,11 +750,11 @@ export class CompaniesService {
     const isActiveMember = await this.getCompanyMembership(companyId, userId);
     const where: any = { companyId };
     if (!isActiveMember) {
-      where.visibility = 'public';
+      where.visibility = "public";
     }
     return this.prisma.companyRoadmap.findMany({
       where,
-      orderBy: { order: 'asc' },
+      orderBy: { order: "asc" },
       include: { assignments: true },
     });
   }
@@ -700,9 +766,9 @@ export class CompaniesService {
         companyId,
         title: dto.title,
         description: dto.description,
-        type: dto.type || 'custom',
+        type: dto.type || "custom",
         challengeIds: dto.challengeIds || [],
-        visibility: dto.visibility || 'public',
+        visibility: dto.visibility || "public",
       },
     });
   }
@@ -714,9 +780,11 @@ export class CompaniesService {
     targetUserId: string,
   ) {
     await this.requireCompanyAdmin(companyId, userId);
-    const roadmap = await this.prisma.companyRoadmap.findUnique({ where: { id: roadmapId } });
+    const roadmap = await this.prisma.companyRoadmap.findUnique({
+      where: { id: roadmapId },
+    });
     if (!roadmap || roadmap.companyId !== companyId) {
-      throw new NotFoundException('Company roadmap not found');
+      throw new NotFoundException("Company roadmap not found");
     }
 
     const existing = await this.prisma.roadmapAssignment.findUnique({
@@ -734,14 +802,18 @@ export class CompaniesService {
       },
     });
 
-    await this.createCompanyNotification(companyId, 'roadmap_assigned', targetUserId);
+    await this.createCompanyNotification(
+      companyId,
+      "roadmap_assigned",
+      targetUserId,
+    );
     await this.emitAppNotification(
       targetUserId,
-      'New roadmap assigned',
+      "New roadmap assigned",
       `A company training roadmap has been assigned to you.`,
       `/company-space`,
       roadmapId,
-      'roadmap',
+      "roadmap",
     );
 
     return assignment;
@@ -753,9 +825,11 @@ export class CompaniesService {
     userId: string,
     progress: number,
   ) {
-    const roadmap = await this.prisma.companyRoadmap.findUnique({ where: { id: roadmapId } });
+    const roadmap = await this.prisma.companyRoadmap.findUnique({
+      where: { id: roadmapId },
+    });
     if (!roadmap || roadmap.companyId !== companyId) {
-      throw new NotFoundException('Roadmap not found');
+      throw new NotFoundException("Roadmap not found");
     }
 
     await this.requireActiveMember(companyId, userId);
@@ -780,11 +854,11 @@ export class CompaniesService {
     const membership = await this.getCompanyMembership(companyId, userId);
     const where: any = { companyId };
     if (!membership) {
-      where.visibility = 'public';
+      where.visibility = "public";
     }
     return this.prisma.companyCourse.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: { enrollments: true },
     });
   }
@@ -797,17 +871,19 @@ export class CompaniesService {
         title: dto.title,
         description: dto.description,
         content: dto.content ?? {},
-        visibility: dto.visibility || 'public',
+        visibility: dto.visibility || "public",
       },
     });
   }
 
   async enrollInCourse(companyId: string, courseId: string, userId: string) {
-    const course = await this.prisma.companyCourse.findUnique({ where: { id: courseId } });
+    const course = await this.prisma.companyCourse.findUnique({
+      where: { id: courseId },
+    });
     if (!course || course.companyId !== companyId) {
-      throw new NotFoundException('Course not found');
+      throw new NotFoundException("Course not found");
     }
-    if (course.visibility === 'employees_only') {
+    if (course.visibility === "employees_only") {
       await this.requireActiveMember(companyId, userId);
     }
 
@@ -815,7 +891,7 @@ export class CompaniesService {
       where: { courseId_userId: { courseId, userId } },
     });
     if (existing) {
-      throw new BadRequestException('Already enrolled');
+      throw new BadRequestException("Already enrolled");
     }
 
     const enrollment = await this.prisma.courseEnrollment.create({
@@ -825,14 +901,14 @@ export class CompaniesService {
       },
     });
 
-    await this.createCompanyNotification(companyId, 'course_enrolled', userId);
+    await this.createCompanyNotification(companyId, "course_enrolled", userId);
     await this.emitAppNotification(
       userId,
-      'Course enrolled',
+      "Course enrolled",
       `You have been enrolled in ${course.title}.`,
       `/company-space`,
       courseId,
-      'course',
+      "course",
     );
 
     return enrollment;
@@ -844,11 +920,13 @@ export class CompaniesService {
     userId: string,
     progress: number,
   ) {
-    const course = await this.prisma.companyCourse.findUnique({ where: { id: courseId } });
+    const course = await this.prisma.companyCourse.findUnique({
+      where: { id: courseId },
+    });
     if (!course || course.companyId !== companyId) {
-      throw new NotFoundException('Course not found');
+      throw new NotFoundException("Course not found");
     }
-    if (course.visibility === 'employees_only') {
+    if (course.visibility === "employees_only") {
       await this.requireActiveMember(companyId, userId);
     }
 
@@ -870,12 +948,16 @@ export class CompaniesService {
 
   async getCompanyJobs(companyId: string) {
     return this.prisma.companyJobPosting.findMany({
-      where: { companyId, status: 'active' },
-      orderBy: { createdAt: 'desc' },
+      where: { companyId, status: "active" },
+      orderBy: { createdAt: "desc" },
     });
   }
 
-  async getHiringCandidates(companyId: string, userId: string, search?: string) {
+  async getHiringCandidates(
+    companyId: string,
+    userId: string,
+    search?: string,
+  ) {
     await this.requireActiveMember(companyId, userId);
 
     const jobs = await this.prisma.companyJobPosting.findMany({
@@ -888,7 +970,9 @@ export class CompaniesService {
     });
 
     const candidateIds = Array.from(
-      new Set(jobs.flatMap((job) => job.applicants ?? []).filter((id) => Boolean(id))),
+      new Set(
+        jobs.flatMap((job) => job.applicants ?? []).filter((id) => Boolean(id)),
+      ),
     );
 
     if (candidateIds.length === 0) {
@@ -902,8 +986,10 @@ export class CompaniesService {
         ...(normalizedSearch
           ? {
               OR: [
-                { username: { contains: normalizedSearch, mode: 'insensitive' } },
-                { email: { contains: normalizedSearch, mode: 'insensitive' } },
+                {
+                  username: { contains: normalizedSearch, mode: "insensitive" },
+                },
+                { email: { contains: normalizedSearch, mode: "insensitive" } },
               ],
             }
           : {}),
@@ -917,7 +1003,7 @@ export class CompaniesService {
         elo: true,
         earnedBadges: {
           take: 5,
-          orderBy: { earnedAt: 'desc' },
+          orderBy: { earnedAt: "desc" },
           select: {
             badge: {
               select: {
@@ -934,7 +1020,7 @@ export class CompaniesService {
     const userIds = users.map((user) => user.id);
     const submissions = await this.prisma.submission.findMany({
       where: { userId: { in: userIds } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         userId: true,
@@ -963,17 +1049,17 @@ export class CompaniesService {
       const userSubmissions = submissionsByUser.get(candidateUser.id) ?? [];
       const accepted = userSubmissions.filter((submission) => {
         const verdict = submission.verdict?.toUpperCase();
-        return verdict === 'AC' || verdict === 'ACCEPTED';
+        return verdict === "AC" || verdict === "ACCEPTED";
       });
 
       const easy = accepted.filter(
-        (submission) => submission.challenge?.difficulty === 'easy',
+        (submission) => submission.challenge?.difficulty === "easy",
       ).length;
       const medium = accepted.filter(
-        (submission) => submission.challenge?.difficulty === 'medium',
+        (submission) => submission.challenge?.difficulty === "medium",
       ).length;
       const hard = accepted.filter(
-        (submission) => submission.challenge?.difficulty === 'hard',
+        (submission) => submission.challenge?.difficulty === "hard",
       ).length;
 
       const totalSubmissions = userSubmissions.length;
@@ -988,15 +1074,17 @@ export class CompaniesService {
           jobId: job.id,
           jobTitle: job.title,
           appliedAt: null,
-          status: 'pending',
+          status: "pending",
         }));
 
-      const recentSubmissions = userSubmissions.slice(0, 5).map((submission) => ({
-        id: submission.id,
-        challengeTitle: submission.challenge?.title ?? 'Challenge',
-        verdict: submission.verdict,
-        createdAt: submission.createdAt,
-      }));
+      const recentSubmissions = userSubmissions
+        .slice(0, 5)
+        .map((submission) => ({
+          id: submission.id,
+          challengeTitle: submission.challenge?.title ?? "Challenge",
+          verdict: submission.verdict,
+          createdAt: submission.createdAt,
+        }));
 
       return {
         id: candidateUser.id,
@@ -1009,7 +1097,9 @@ export class CompaniesService {
           level: candidateUser.level,
           elo: candidateUser.elo,
           solvedCount: accepted.length,
-          badges: candidateUser.earnedBadges.map((userBadge) => userBadge.badge),
+          badges: candidateUser.earnedBadges.map(
+            (userBadge) => userBadge.badge,
+          ),
         },
         stats: {
           totalSolved: accepted.length,
@@ -1052,8 +1142,8 @@ export class CompaniesService {
 
   async getPublicJobs() {
     return this.prisma.companyJobPosting.findMany({
-      where: { status: 'active' },
-      orderBy: { createdAt: 'desc' },
+      where: { status: "active" },
+      orderBy: { createdAt: "desc" },
       include: { company: { select: { id: true, name: true } } },
     });
   }
@@ -1068,17 +1158,24 @@ export class CompaniesService {
         requirements: dto.requirements || [],
         salaryRange: dto.salaryRange,
         location: dto.location,
-        type: dto.type || 'full_time',
-        status: 'active',
+        type: dto.type || "full_time",
+        status: "active",
       },
     });
   }
 
-  async updateCompanyJob(companyId: string, jobId: string, userId: string, dto: any) {
+  async updateCompanyJob(
+    companyId: string,
+    jobId: string,
+    userId: string,
+    dto: any,
+  ) {
     await this.requireCompanyAdmin(companyId, userId);
-    const job = await this.prisma.companyJobPosting.findUnique({ where: { id: jobId } });
+    const job = await this.prisma.companyJobPosting.findUnique({
+      where: { id: jobId },
+    });
     if (!job || job.companyId !== companyId) {
-      throw new NotFoundException('Job posting not found');
+      throw new NotFoundException("Job posting not found");
     }
 
     return this.prisma.companyJobPosting.update({
@@ -1096,12 +1193,14 @@ export class CompaniesService {
   }
 
   async applyToJob(companyId: string, jobId: string, userId: string) {
-    const job = await this.prisma.companyJobPosting.findUnique({ where: { id: jobId } });
+    const job = await this.prisma.companyJobPosting.findUnique({
+      where: { id: jobId },
+    });
     if (!job || job.companyId !== companyId) {
-      throw new NotFoundException('Job posting not found');
+      throw new NotFoundException("Job posting not found");
     }
     if (job.applicants.includes(userId)) {
-      throw new BadRequestException('Already applied to this job');
+      throw new BadRequestException("Already applied to this job");
     }
 
     const updated = await this.prisma.companyJobPosting.update({
@@ -1112,18 +1211,26 @@ export class CompaniesService {
     });
 
     const admins = await this.prisma.companyMembership.findMany({
-      where: { companyId, role: { in: ['owner', 'recruiter'] }, status: 'active' },
+      where: {
+        companyId,
+        role: { in: ["owner", "recruiter"] },
+        status: "active",
+      },
     });
     const recipientId = admins[0]?.userId || job.companyId;
     if (recipientId) {
-      await this.createCompanyNotification(companyId, 'application_received', recipientId);
+      await this.createCompanyNotification(
+        companyId,
+        "application_received",
+        recipientId,
+      );
       await this.emitAppNotification(
         recipientId,
-        'New job application',
+        "New job application",
         `A candidate applied to ${job.title}.`,
         `/company/${companyId}/jobs`,
         jobId,
-        'job',
+        "job",
       );
     }
 
@@ -1133,7 +1240,7 @@ export class CompaniesService {
   async getCompanyForumGroups(companyId: string) {
     return this.prisma.companyForumGroup.findMany({
       where: { companyId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -1144,7 +1251,7 @@ export class CompaniesService {
         companyId,
         name: dto.name,
         description: dto.description,
-        visibility: dto.visibility || 'public',
+        visibility: dto.visibility || "public",
       },
     });
   }
@@ -1152,25 +1259,32 @@ export class CompaniesService {
   async getCompanyForumPosts(companyId: string, userId: string) {
     const membership = await this.getCompanyMembership(companyId, userId);
     const where: any = { companyId };
-    if (!membership || membership.status !== 'active') {
-      where.visibility = 'public';
+    if (!membership || membership.status !== "active") {
+      where.visibility = "public";
     }
     return this.prisma.companyForumPost.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
   async createCompanyForumPost(companyId: string, userId: string, dto: any) {
     const membership = await this.getCompanyMembership(companyId, userId);
-    if (dto.visibility === 'company_only' && (!membership || membership.status !== 'active')) {
-      throw new ForbiddenException('Only company members can post private content');
+    if (
+      dto.visibility === "company_only" &&
+      (!membership || membership.status !== "active")
+    ) {
+      throw new ForbiddenException(
+        "Only company members can post private content",
+      );
     }
 
     if (dto.groupId) {
-      const group = await this.prisma.companyForumGroup.findUnique({ where: { id: dto.groupId } });
+      const group = await this.prisma.companyForumGroup.findUnique({
+        where: { id: dto.groupId },
+      });
       if (!group || group.companyId !== companyId) {
-        throw new NotFoundException('Forum group not found');
+        throw new NotFoundException("Forum group not found");
       }
     }
 
@@ -1181,7 +1295,7 @@ export class CompaniesService {
         content: dto.content,
         authorId: userId,
         groupId: dto.groupId,
-        visibility: dto.visibility || 'public',
+        visibility: dto.visibility || "public",
         isCompanyAnnouncement: dto.isCompanyAnnouncement ?? false,
         tags: dto.tags || [],
       },
@@ -1192,25 +1306,30 @@ export class CompaniesService {
     const membership = await this.requireCompanyMember(companyId, userId);
 
     const where: any = { companyId };
-    if (membership.role !== 'owner' && membership.role !== 'recruiter') {
+    if (membership.role !== "owner" && membership.role !== "recruiter") {
       where.OR = [{ userId }, { userId: null }];
     }
 
     return this.prisma.companyNotification.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
   async markCompanyNotificationRead(notificationId: string, userId: string) {
-    const notification = await this.prisma.companyNotification.findUnique({ where: { id: notificationId } });
+    const notification = await this.prisma.companyNotification.findUnique({
+      where: { id: notificationId },
+    });
     if (!notification) {
-      throw new NotFoundException('Company notification not found');
+      throw new NotFoundException("Company notification not found");
     }
     if (notification.userId && notification.userId !== userId) {
-      const membership = await this.getCompanyMembership(notification.companyId, userId);
-      if (!membership || membership.role === 'member') {
-        throw new ForbiddenException('Not allowed to update this notification');
+      const membership = await this.getCompanyMembership(
+        notification.companyId,
+        userId,
+      );
+      if (!membership || membership.role === "member") {
+        throw new ForbiddenException("Not allowed to update this notification");
       }
     }
     return this.prisma.companyNotification.update({
@@ -1219,20 +1338,26 @@ export class CompaniesService {
     });
   }
 
-  async userIsCompanyMember(userId: string, companyId: string): Promise<boolean> {
+  async userIsCompanyMember(
+    userId: string,
+    companyId: string,
+  ): Promise<boolean> {
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId } },
     });
-    return membership?.status === 'active';
+    return membership?.status === "active";
   }
 
-  async getCompanyMember(companyId: string, userId: string): Promise<CompanyMemberResponseDto> {
+  async getCompanyMember(
+    companyId: string,
+    userId: string,
+  ): Promise<CompanyMemberResponseDto> {
     const membership = await this.prisma.companyMembership.findUnique({
       where: { companyId_userId: { companyId, userId } },
       include: { company: true },
     });
     if (!membership) {
-      throw new NotFoundException('Not a member of this company');
+      throw new NotFoundException("Not a member of this company");
     }
     return CompanyMemberResponseDto.fromPrisma(membership);
   }
@@ -1262,17 +1387,14 @@ export class CompaniesService {
           },
         },
       },
-      orderBy: [
-        { isPinned: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
       take: 20,
     });
 
     return rows.map((a) => ({
       id: a.id,
-      type: 'hackathon_announcement',
-      title: a.hackathon?.title || 'Company Update',
+      type: "hackathon_announcement",
+      title: a.hackathon?.title || "Company Update",
       content: a.content,
       isPinned: a.isPinned,
       createdAt: a.createdAt,

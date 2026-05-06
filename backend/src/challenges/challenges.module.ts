@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { ChallengesController } from './challenges.controller';
-import { ChallengesService } from './challenges.service';
-import { AiModule } from '../ai/ai.module';
+import { Module } from "@nestjs/common";
+import { ChallengesController } from "./challenges.controller";
+import { ChallengesService } from "./challenges.service";
+import { AiModule } from "../ai/ai.module";
 
 @Module({
   imports: [AiModule],

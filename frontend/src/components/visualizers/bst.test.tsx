@@ -1,6 +1,6 @@
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { TreeVisualizer } from './TreeVisualizer';
 
 (globalThis as any).React = React;
@@ -14,6 +14,16 @@ vi.mock('sonner', () => ({
 }));
 
 describe('TreeVisualizer (BST)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+    cleanup();
+  });
+
   it('inserts and deletes values in BST', () => {
     render(<TreeVisualizer />);
 
@@ -33,6 +43,7 @@ describe('TreeVisualizer (BST)', () => {
     fireEvent.click(screen.getByText('Delete'));
 
     expect(screen.queryByText('delete(5)')).toBeTruthy();
+    vi.runOnlyPendingTimers();
   });
 
   it('search reports found for existing node', () => {
@@ -47,5 +58,6 @@ describe('TreeVisualizer (BST)', () => {
     fireEvent.click(screen.getByText('Search'));
 
     expect(screen.queryByText('search(10) → found')).toBeTruthy();
+    vi.runOnlyPendingTimers();
   });
 });

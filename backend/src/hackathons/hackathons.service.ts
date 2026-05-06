@@ -3,30 +3,35 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateHackathonDto, UpdateHackathonDto } from './dto/hackathon.dto';
-import { CreateHackathonTeamDto } from './dto/team.dto';
-import { HackathonAuditService } from './hackathon-audit.service';
-import { NotificationEmitterService } from '../notifications/notification-emitter.service';
-import { NotificationCategory, NotificationPriority, NotificationType } from '../notifications/notification.constants';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateHackathonDto, UpdateHackathonDto } from "./dto/hackathon.dto";
+import { CreateHackathonTeamDto } from "./dto/team.dto";
+import { HackathonAuditService } from "./hackathon-audit.service";
+import { NotificationEmitterService } from "../notifications/notification-emitter.service";
+import {
+  NotificationCategory,
+  NotificationPriority,
+  NotificationType,
+} from "../notifications/notification.constants";
 
 // ── helpers ──────────────────────────────────────────────
 function generateJoinCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
-  let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
+  let code = "";
+  for (let i = 0; i < 6; i++)
+    code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
 
 /** Valid state-machine transitions (source → allowed targets) */
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  draft: ['lobby'],
-  lobby: ['draft', 'checkin', 'cancelled'],
-  checkin: ['active', 'cancelled'],
-  active: ['frozen', 'ended'],
-  frozen: ['active', 'ended'],
-  ended: ['archived'],
+  draft: ["lobby"],
+  lobby: ["draft", "checkin", "cancelled"],
+  checkin: ["active", "cancelled"],
+  active: ["frozen", "ended"],
+  frozen: ["active", "ended"],
+  ended: ["archived"],
 };
 
 @Injectable()
@@ -46,7 +51,7 @@ export class HackathonsService {
 
     // Enterprise scope enforcement (Decision #23)
     let teamPolicy = dto.teamPolicy ?? { minSize: 1, maxSize: 3 };
-    if (dto.scope === 'enterprise' && dto.companyId) {
+    if (dto.scope === "enterprise" && dto.companyId) {
       teamPolicy = { minSize: 1, maxSize: 1 };
     }
 
@@ -59,7 +64,7 @@ export class HackathonsService {
         freezeAt: dto.freezeAt ? new Date(dto.freezeAt) : undefined,
         challengeIds: dto.challengeIds || [],
         rulesMd: dto.rulesMd,
-        scope: dto.scope || 'public',
+        scope: dto.scope || "public",
         companyId: dto.companyId,
         joinCode,
         teamPolicy,
@@ -69,7 +74,12 @@ export class HackathonsService {
     });
   }
 
-  async findAll(query: { page?: number; limit?: number; status?: string; scope?: string }) {
+  async findAll(query: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    scope?: string;
+  }) {
     const page = query.page || 1;
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
@@ -83,7 +93,7 @@ export class HackathonsService {
         where,
         skip,
         take: limit,
-        orderBy: { startTime: 'desc' },
+        orderBy: { startTime: "desc" },
         include: {
           _count: { select: { hackathonTeams: true, teams: true } },
           hackathonTeams: {
@@ -107,14 +117,14 @@ export class HackathonsService {
       where: { id },
       include: {
         hackathonTeams: {
-          orderBy: { score: 'desc' },
+          orderBy: { score: "desc" },
         },
         teams: {
-          orderBy: { score: 'desc' },
+          orderBy: { score: "desc" },
         },
       },
     });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
     return hackathon;
   }
 
@@ -125,8 +135,10 @@ export class HackathonsService {
    *   easy → 15 min, medium → 25 min, hard → 40 min
    */
   async getHackathonChallenges(hackathonId: string, teamId?: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     if (hackathon.challengeIds.length === 0) return [];
 
@@ -174,16 +186,18 @@ export class HackathonsService {
     }
 
     // Get team's accepted submissions
-    const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
-    if (!team) throw new NotFoundException('Team not found');
+    const team = await this.prisma.hackathonTeam.findUnique({
+      where: { id: teamId },
+    });
+    if (!team) throw new NotFoundException("Team not found");
 
     const teamACSubs = await this.prisma.hackathonSubmission.findMany({
       where: {
         hackathonId,
         teamId,
-        verdict: 'AC',
+        verdict: "AC",
       },
-      distinct: ['challengeId'],
+      distinct: ["challengeId"],
       select: { challengeId: true, submittedAt: true },
     });
 
@@ -199,7 +213,8 @@ export class HackathonsService {
     }
 
     // Q5: Team-wide problem timer — auto-start timer for current unlocked unsolved problem
-    const problemStartTimes: Record<string, string> = (team.problemStartTimes as Record<string, string>) || {};
+    const problemStartTimes: Record<string, string> =
+      (team.problemStartTimes as Record<string, string>) || {};
     let timersUpdated = false;
 
     if (firstUnsolvedIndex < orderedChallenges.length) {
@@ -227,12 +242,12 @@ export class HackathonsService {
         label: String.fromCharCode(65 + i),
         title: locked ? `Problem ${String.fromCharCode(65 + i)}` : c.title,
         difficulty: c.difficulty,
-        descriptionMd: locked ? '' : c.descriptionMd,
+        descriptionMd: locked ? "" : c.descriptionMd,
         tags: locked ? [] : c.tags,
         constraints: locked ? null : c.constraints,
         hints: locked ? [] : c.hints,
         examples: locked ? [] : c.examples,
-        tests: locked ? [] : (c.tests?.filter((t: any) => !t.isHidden) || []),
+        tests: locked ? [] : c.tests?.filter((t: any) => !t.isHidden) || [],
         allowedLanguages: c.allowedLanguages,
         category: c.category,
         timeLimitMinutes: TIME_LIMITS[c.difficulty] || 25,
@@ -246,11 +261,13 @@ export class HackathonsService {
 
   async update(id: string, dto: UpdateHackathonDto) {
     const hackathon = await this.prisma.hackathon.findUnique({ where: { id } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     // Only allow edits when draft or lobby
-    if (!['draft', 'lobby'].includes(hackathon.status)) {
-      throw new BadRequestException('Can only edit hackathon in draft or lobby status');
+    if (!["draft", "lobby"].includes(hackathon.status)) {
+      throw new BadRequestException(
+        "Can only edit hackathon in draft or lobby status",
+      );
     }
 
     const data: any = {};
@@ -273,7 +290,10 @@ export class HackathonsService {
   // ────────────────────────────────────────────────────────
 
   /** T018 — validate a status transition is allowed */
-  private async validateTransition(hackathon: any, newStatus: string): Promise<void> {
+  private async validateTransition(
+    hackathon: any,
+    newStatus: string,
+  ): Promise<void> {
     const current = hackathon.status;
     const allowed = VALID_TRANSITIONS[current];
 
@@ -284,32 +304,40 @@ export class HackathonsService {
     }
 
     // Extra guards per transition
-    if (current === 'lobby' && newStatus === 'draft') {
+    if (current === "lobby" && newStatus === "draft") {
       const teamCount = await this.prisma.hackathonTeam.count({
         where: { hackathonId: hackathon.id },
       });
       if (teamCount > 0) {
-        throw new BadRequestException('Cannot unpublish: teams have already registered');
+        throw new BadRequestException(
+          "Cannot unpublish: teams have already registered",
+        );
       }
     }
 
-    if (newStatus === 'active') {
+    if (newStatus === "active") {
       const checkedIn = await this.prisma.hackathonTeam.count({
         where: { hackathonId: hackathon.id, isCheckedIn: true },
       });
       if (checkedIn === 0) {
-        throw new BadRequestException('Cannot start: no teams have checked in');
+        throw new BadRequestException("Cannot start: no teams have checked in");
       }
     }
   }
 
   /** T019 — transition hackathon status */
-  async transitionStatus(hackathonId: string, newStatus: string, adminId: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+  async transitionStatus(
+    hackathonId: string,
+    newStatus: string,
+    adminId: string,
+  ) {
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     // Auto-check-in all registered teams when admin starts the competition
-    if (newStatus === 'active') {
+    if (newStatus === "active") {
       await this.prisma.hackathonTeam.updateMany({
         where: { hackathonId: hackathon.id, isCheckedIn: false },
         data: { isCheckedIn: true },
@@ -323,31 +351,41 @@ export class HackathonsService {
       data: { status: newStatus as any },
     });
 
-    await this.auditService.log(hackathonId, adminId, 'lifecycle_change', {
+    await this.auditService.log(hackathonId, adminId, "lifecycle_change", {
       from: hackathon.status,
       to: newStatus,
     });
 
     // Notify all participants when hackathon goes live or ends
-    if (newStatus === 'active' || newStatus === 'ended') {
-      const teams = await this.prisma.hackathonTeam.findMany({ where: { hackathonId } });
-      const participantIds = [...new Set(teams.flatMap(t => t.members.map((m: any) => m.userId)))];
+    if (newStatus === "active" || newStatus === "ended") {
+      const teams = await this.prisma.hackathonTeam.findMany({
+        where: { hackathonId },
+      });
+      const participantIds = [
+        ...new Set(teams.flatMap((t) => t.members.map((m: any) => m.userId))),
+      ];
 
-      const isStart = newStatus === 'active';
+      const isStart = newStatus === "active";
       await Promise.all(
-        participantIds.map(uid =>
+        participantIds.map((uid) =>
           this.notificationEmitter.emit({
             userId: uid,
-            type: isStart ? NotificationType.HACKATHON_STARTED : NotificationType.HACKATHON_ENDED,
+            type: isStart
+              ? NotificationType.HACKATHON_STARTED
+              : NotificationType.HACKATHON_ENDED,
             category: NotificationCategory.HACKATHON,
-            priority: isStart ? NotificationPriority.HIGH : NotificationPriority.MEDIUM,
-            title: isStart ? `🚀 ${hackathon.title} has started!` : `🏁 ${hackathon.title} has ended`,
+            priority: isStart
+              ? NotificationPriority.HIGH
+              : NotificationPriority.MEDIUM,
+            title: isStart
+              ? `🚀 ${hackathon.title} has started!`
+              : `🏁 ${hackathon.title} has ended`,
             message: isStart
-              ? 'The competition is live. Good luck!'
-              : 'Check the scoreboard for final results.',
+              ? "The competition is live. Good luck!"
+              : "Check the scoreboard for final results.",
             actionUrl: `/hackathon/${hackathonId}`,
             entityId: hackathonId,
-            entityType: 'Hackathon',
+            entityType: "Hackathon",
           }),
         ),
       );
@@ -358,17 +396,19 @@ export class HackathonsService {
 
   /** T019b — cancel a hackathon */
   async cancelHackathon(hackathonId: string, adminId: string, reason: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
-    if (['active', 'frozen'].includes(hackathon.status)) {
+    if (["active", "frozen"].includes(hackathon.status)) {
       throw new ForbiddenException(
-        'Cannot cancel hackathon during active competition. End it first.',
+        "Cannot cancel hackathon during active competition. End it first.",
       );
     }
 
     // Draft → hard delete
-    if (hackathon.status === 'draft') {
+    if (hackathon.status === "draft") {
       await this.prisma.hackathon.delete({ where: { id: hackathonId } });
       return { deleted: true };
     }
@@ -378,42 +418,48 @@ export class HackathonsService {
 
     const updated = await this.prisma.hackathon.update({
       where: { id: hackathonId },
-      data: { status: 'cancelled', cancelledReason: reason },
+      data: { status: "cancelled", cancelledReason: reason },
     });
 
-    await this.auditService.log(hackathonId, adminId, 'cancel', { reason });
+    await this.auditService.log(hackathonId, adminId, "cancel", { reason });
 
     return updated;
   }
 
   /** T019c — delete a hackathon (status-dependent rules) */
   async deleteHackathon(hackathonId: string, adminId: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     switch (hackathon.status) {
-      case 'draft':
+      case "draft":
         await this.prisma.hackathon.delete({ where: { id: hackathonId } });
         return { deleted: true };
 
-      case 'lobby':
-      case 'checkin':
-        return this.cancelHackathon(hackathonId, adminId, 'Deleted by admin');
+      case "lobby":
+      case "checkin":
+        return this.cancelHackathon(hackathonId, adminId, "Deleted by admin");
 
-      case 'active':
-      case 'frozen':
-        throw new ForbiddenException('Cannot delete hackathon during active competition');
+      case "active":
+      case "frozen":
+        throw new ForbiddenException(
+          "Cannot delete hackathon during active competition",
+        );
 
-      case 'ended':
+      case "ended":
         const updated = await this.prisma.hackathon.update({
           where: { id: hackathonId },
-          data: { status: 'archived' },
+          data: { status: "archived" },
         });
-        await this.auditService.log(hackathonId, adminId, 'archive', {});
+        await this.auditService.log(hackathonId, adminId, "archive", {});
         return updated;
 
       default:
-        throw new BadRequestException('Hackathon is already cancelled or archived');
+        throw new BadRequestException(
+          "Hackathon is already cancelled or archived",
+        );
     }
   }
 
@@ -434,10 +480,12 @@ export class HackathonsService {
     userId: string,
     dto: CreateHackathonTeamDto,
   ) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
-    if (hackathon.status !== 'lobby') {
-      throw new BadRequestException('Can only create teams during lobby phase');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
+    if (hackathon.status !== "lobby") {
+      throw new BadRequestException("Can only create teams during lobby phase");
     }
 
     // Decision #15: no concurrent participation
@@ -447,10 +495,14 @@ export class HackathonsService {
     await this.ensureNotInHackathonTeam(hackathonId, userId);
 
     // Enterprise enforcement (Decision #23)
-    if (hackathon.scope === 'enterprise') {
-      const teamCount = await this.prisma.hackathonTeam.count({ where: { hackathonId } });
+    if (hackathon.scope === "enterprise") {
+      const teamCount = await this.prisma.hackathonTeam.count({
+        where: { hackathonId },
+      });
       if (teamCount >= 1) {
-        throw new BadRequestException('Enterprise hackathons allow only 1 team');
+        throw new BadRequestException(
+          "Enterprise hackathons allow only 1 team",
+        );
       }
     }
 
@@ -461,25 +513,28 @@ export class HackathonsService {
         hackathonId,
         name: dto.name,
         joinCode,
-        type: hackathon.scope === 'enterprise' ? 'enterprise' : 'open',
+        type: hackathon.scope === "enterprise" ? "enterprise" : "open",
         companyId: hackathon.companyId,
-        members: [{ userId, role: 'captain', joinedAt: new Date() }],
+        members: [{ userId, role: "captain", joinedAt: new Date() }],
       },
     });
   }
 
   /** T024 — join a HackathonTeam by joinCode */
   async joinTeamByCode(hackathonId: string, joinCode: string, userId: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
-    if (hackathon.status !== 'lobby') {
-      throw new BadRequestException('Can only join teams during lobby phase');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
+    if (hackathon.status !== "lobby") {
+      throw new BadRequestException("Can only join teams during lobby phase");
     }
 
     const team = await this.prisma.hackathonTeam.findFirst({
       where: { hackathonId, joinCode },
     });
-    if (!team) throw new NotFoundException('Team not found with this join code');
+    if (!team)
+      throw new NotFoundException("Team not found with this join code");
 
     // Decision #15: no concurrent participation
     await this.ensureNotInActiveHackathon(userId);
@@ -489,21 +544,24 @@ export class HackathonsService {
     const policy = hackathon.teamPolicy as any;
     const maxSize = policy?.maxSize ?? 3;
     if (team.members.length >= maxSize) {
-      throw new BadRequestException('Team is full');
+      throw new BadRequestException("Team is full");
     }
 
     const updated = await this.prisma.hackathonTeam.update({
       where: { id: team.id },
       data: {
         members: {
-          push: { userId, role: 'member', joinedAt: new Date() },
+          push: { userId, role: "member", joinedAt: new Date() },
         },
       },
     });
 
     // Notify all existing team members
     const existingMemberIds = team.members.map((m: any) => m.userId);
-    const joiner = await this.prisma.user.findUnique({ where: { id: userId }, select: { username: true, profileImage: true } });
+    const joiner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true, profileImage: true },
+    });
     await Promise.all(
       existingMemberIds.map((mid: string) =>
         this.notificationEmitter.emit({
@@ -511,11 +569,11 @@ export class HackathonsService {
           type: NotificationType.HACKATHON_TEAM_JOINED,
           category: NotificationCategory.HACKATHON,
           priority: NotificationPriority.MEDIUM,
-          title: `${joiner?.username ?? 'Someone'} joined your team!`,
+          title: `${joiner?.username ?? "Someone"} joined your team!`,
           message: `New member in ${team.name} for ${hackathon.title}.`,
           actionUrl: `/hackathon/${hackathonId}`,
           entityId: hackathonId,
-          entityType: 'Hackathon',
+          entityType: "Hackathon",
           senderId: userId,
           senderName: joiner?.username,
           senderPhoto: joiner?.profileImage ?? undefined,
@@ -528,33 +586,42 @@ export class HackathonsService {
 
   /** Solo join shortcut — auto-creates a team of 1 */
   async joinSolo(hackathonId: string, userId: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     const policy = hackathon.teamPolicy as any;
     if (policy?.minSize > 1) {
       throw new BadRequestException(
-        'Solo participation not allowed: minimum team size is ' + policy.minSize,
+        "Solo participation not allowed: minimum team size is " +
+          policy.minSize,
       );
     }
 
     // Look up user for name
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    const teamName = `${user?.username ?? 'Player'} (solo)`;
+    const teamName = `${user?.username ?? "Player"} (solo)`;
 
     return this.createHackathonTeam(hackathonId, userId, { name: teamName });
   }
 
   /** T025 — captain checks in the team */
   async checkinTeam(hackathonId: string, teamId: string, userId: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
-    if (hackathon.status !== 'checkin') {
-      throw new BadRequestException('Check-in is only available during the checkin phase');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
+    if (hackathon.status !== "checkin") {
+      throw new BadRequestException(
+        "Check-in is only available during the checkin phase",
+      );
     }
 
-    const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
-    if (!team) throw new NotFoundException('Team not found');
+    const team = await this.prisma.hackathonTeam.findUnique({
+      where: { id: teamId },
+    });
+    if (!team) throw new NotFoundException("Team not found");
     this.assertCaptain(team, userId);
 
     return this.prisma.hackathonTeam.update({
@@ -570,23 +637,29 @@ export class HackathonsService {
     userId: string,
     targetUserId: string,
   ) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
-    if (!['lobby', 'checkin'].includes(hackathon.status)) {
-      throw new BadRequestException('Cannot modify team during competition');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
+    if (!["lobby", "checkin"].includes(hackathon.status)) {
+      throw new BadRequestException("Cannot modify team during competition");
     }
 
-    const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
-    if (!team) throw new NotFoundException('Team not found');
+    const team = await this.prisma.hackathonTeam.findUnique({
+      where: { id: teamId },
+    });
+    if (!team) throw new NotFoundException("Team not found");
     this.assertCaptain(team, userId);
 
     if (userId === targetUserId) {
-      throw new BadRequestException('Captain cannot remove themselves; use leave instead');
+      throw new BadRequestException(
+        "Captain cannot remove themselves; use leave instead",
+      );
     }
 
     const newMembers = team.members.filter((m) => m.userId !== targetUserId);
     if (newMembers.length === team.members.length) {
-      throw new NotFoundException('User is not a member of this team');
+      throw new NotFoundException("User is not a member of this team");
     }
 
     return this.prisma.hackathonTeam.update({
@@ -597,18 +670,26 @@ export class HackathonsService {
 
   /** T027 — member (or captain) leaves the team */
   async leaveTeam(hackathonId: string, teamId: string, userId: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
-    if (!['lobby', 'checkin'].includes(hackathon.status)) {
-      throw new BadRequestException('Cannot leave team during competition');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
+    if (!["lobby", "checkin"].includes(hackathon.status)) {
+      throw new BadRequestException("Cannot leave team during competition");
     }
 
-    const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
-    if (!team) throw new NotFoundException('Team not found');
+    const team = await this.prisma.hackathonTeam.findUnique({
+      where: { id: teamId },
+    });
+    if (!team) throw new NotFoundException("Team not found");
 
-    const isCaptain = team.members.find((m) => m.userId === userId)?.role === 'captain';
+    const isCaptain =
+      team.members.find((m) => m.userId === userId)?.role === "captain";
     const remainingMembers = team.members.filter((m) => m.userId !== userId);
-    const leaver = await this.prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
+    const leaver = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    });
 
     const notifyTeamLeft = async (newCaptainId: string | null) => {
       await Promise.all(
@@ -618,13 +699,13 @@ export class HackathonsService {
             type: NotificationType.HACKATHON_TEAM_LEFT,
             category: NotificationCategory.HACKATHON,
             priority: NotificationPriority.LOW,
-            title: `${leaver?.username ?? 'A member'} left your team`,
+            title: `${leaver?.username ?? "A member"} left your team`,
             message: newCaptainId
               ? `Captain succession: new captain assigned.`
               : `Team: ${team.name}`,
             actionUrl: `/hackathon/${hackathonId}`,
             entityId: hackathonId,
-            entityType: 'Hackathon',
+            entityType: "Hackathon",
             senderId: userId,
             senderName: leaver?.username,
           }),
@@ -635,15 +716,16 @@ export class HackathonsService {
     // No members left → dissolve team
     if (remainingMembers.length === 0) {
       await this.prisma.hackathonTeam.delete({ where: { id: teamId } });
-      return { message: 'Left team successfully', newCaptain: null };
+      return { message: "Left team successfully", newCaptain: null };
     }
 
     // Captain succession (Decision #14): promote oldest member by joinedAt
     if (isCaptain) {
       const sorted = [...remainingMembers].sort(
-        (a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime(),
+        (a, b) =>
+          new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime(),
       );
-      sorted[0] = { ...sorted[0], role: 'captain' };
+      sorted[0] = { ...sorted[0], role: "captain" };
       // Rebuild with promoted captain
       const updated = remainingMembers.map((m) =>
         m.userId === sorted[0].userId ? sorted[0] : m,
@@ -655,7 +737,10 @@ export class HackathonsService {
       });
 
       await notifyTeamLeft(sorted[0].userId);
-      return { message: 'Left team successfully', newCaptain: sorted[0].userId };
+      return {
+        message: "Left team successfully",
+        newCaptain: sorted[0].userId,
+      };
     }
 
     await this.prisma.hackathonTeam.update({
@@ -664,16 +749,24 @@ export class HackathonsService {
     });
 
     await notifyTeamLeft(null);
-    return { message: 'Left team successfully', newCaptain: null };
+    return { message: "Left team successfully", newCaptain: null };
   }
 
   /** T028 — admin disqualify / reinstate */
-  async disqualifyTeam(hackathonId: string, teamId: string, adminId: string, reason: string) {
+  async disqualifyTeam(
+    hackathonId: string,
+    teamId: string,
+    adminId: string,
+    reason: string,
+  ) {
     await this.prisma.hackathonTeam.update({
       where: { id: teamId },
       data: { isDisqualified: true },
     });
-    await this.auditService.log(hackathonId, adminId, 'disqualify', { teamId, reason });
+    await this.auditService.log(hackathonId, adminId, "disqualify", {
+      teamId,
+      reason,
+    });
     return { disqualified: true };
   }
 
@@ -682,7 +775,7 @@ export class HackathonsService {
       where: { id: teamId },
       data: { isDisqualified: false },
     });
-    await this.auditService.log(hackathonId, adminId, 'reinstate', { teamId });
+    await this.auditService.log(hackathonId, adminId, "reinstate", { teamId });
     return { disqualified: false };
   }
 
@@ -694,11 +787,11 @@ export class HackathonsService {
     const hackathon = await this.prisma.hackathon.findUnique({
       where: { id: hackathonId },
     });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     const teams = await this.prisma.hackathonTeam.findMany({
       where: { hackathonId, isDisqualified: false },
-      orderBy: [{ solvedCount: 'desc' }, { penaltyTime: 'asc' }],
+      orderBy: [{ solvedCount: "desc" }, { penaltyTime: "asc" }],
     });
 
     return {
@@ -709,45 +802,48 @@ export class HackathonsService {
         freezeAt: hackathon.freezeAt,
       },
       teams,
-      isFrozen: hackathon.status === 'frozen',
+      isFrozen: hackathon.status === "frozen",
     };
   }
 
   // Legacy team operations — kept for backward compatibility with existing Team model
   async createTeam(hackathonId: string, userId: string, dto: { name: string }) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
     return this.prisma.team.create({
       data: {
         hackathonId,
         name: dto.name,
-        type: 'team',
-        members: [{ userId, role: 'captain' }],
+        type: "team",
+        members: [{ userId, role: "captain" }],
       },
     });
   }
 
   async joinTeam(teamId: string, userId: string) {
     const team = await this.prisma.team.findUnique({ where: { id: teamId } });
-    if (!team) throw new NotFoundException('Team not found');
+    if (!team) throw new NotFoundException("Team not found");
 
     const alreadyMember = team.members.some((m) => m.userId === userId);
-    if (alreadyMember) throw new BadRequestException('Already a member of this team');
+    if (alreadyMember)
+      throw new BadRequestException("Already a member of this team");
 
     const hackathon = await this.prisma.hackathon.findUnique({
       where: { id: team.hackathonId },
     });
     const maxMembers = (hackathon?.teamPolicy as any)?.maxMembers || 4;
     if (team.members.length >= maxMembers) {
-      throw new BadRequestException('Team is full');
+      throw new BadRequestException("Team is full");
     }
 
     return this.prisma.team.update({
       where: { id: teamId },
       data: {
         members: {
-          push: { userId, role: 'member' },
+          push: { userId, role: "member" },
         },
       },
     });
@@ -761,7 +857,7 @@ export class HackathonsService {
   private async ensureNotInActiveHackathon(userId: string) {
     const activeHackathonIds = (
       await this.prisma.hackathon.findMany({
-        where: { status: { in: ['lobby', 'checkin', 'active', 'frozen'] } },
+        where: { status: { in: ["lobby", "checkin", "active", "frozen"] } },
         select: { id: true },
       })
     ).map((h) => h.id);
@@ -777,7 +873,7 @@ export class HackathonsService {
 
     if (existingTeam) {
       throw new BadRequestException(
-        'You are already participating in another active hackathon. Leave that team first.',
+        "You are already participating in another active hackathon. Leave that team first.",
       );
     }
   }
@@ -791,15 +887,19 @@ export class HackathonsService {
       },
     });
     if (existing) {
-      throw new BadRequestException('You are already in a team for this hackathon');
+      throw new BadRequestException(
+        "You are already in a team for this hackathon",
+      );
     }
   }
 
   /** Assert that userId is the captain of the team */
   private assertCaptain(team: any, userId: string) {
-    const captain = team.members.find((m: any) => m.role === 'captain');
+    const captain = team.members.find((m: any) => m.role === "captain");
     if (!captain || captain.userId !== userId) {
-      throw new ForbiddenException('Only the team captain can perform this action');
+      throw new ForbiddenException(
+        "Only the team captain can perform this action",
+      );
     }
   }
 }

@@ -1,14 +1,22 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { AiService, ChallengeDraft } from '../ai/ai.service';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { AiService, ChallengeDraft } from "../ai/ai.service";
 // import { any } from './dto/create-challenge.dto';
-import { } from './dto/update-challenge.dto';
+import {} from "./dto/update-challenge.dto";
 
-import { CacheService } from '../cache/cache.service';
+import { CacheService } from "../cache/cache.service";
 
 @Injectable()
 export class ChallengesService {
-  constructor(private prisma: PrismaService, private cache: CacheService, private aiService: AiService) { }
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+    private aiService: AiService,
+  ) {}
 
   async create(dto: any) {
     return this.prisma.challenge.create({
@@ -17,18 +25,22 @@ export class ChallengesService {
         kind: dto.kind as any,
         difficulty: dto.difficulty as any,
         tags: dto.tags,
-        descriptionMd: dto.statementMd || dto.descriptionMd || dto.briefMd || '', // Handle statementMd (Code) or briefMd (Canvas)
-        status: (dto.status || 'draft') as any,
+        descriptionMd:
+          dto.statementMd || dto.descriptionMd || dto.briefMd || "", // Handle statementMd (Code) or briefMd (Canvas)
+        status: (dto.status || "draft") as any,
         allowedLanguages: dto.allowedLanguages || [],
         constraints: dto.constraints || {},
         hints: dto.hints || [], // Save hints
-        tests: dto.tests && dto.tests.length > 0 ? dto.tests.map((t: any) => ({
-          input: String(t.input || ''),
-          expectedOutput: String(t.expectedOutput || ''),
-          isHidden: Boolean(t.isHidden)
-        })) : [],
+        tests:
+          dto.tests && dto.tests.length > 0
+            ? dto.tests.map((t: any) => ({
+                input: String(t.input || ""),
+                expectedOutput: String(t.expectedOutput || ""),
+                isHidden: Boolean(t.isHidden),
+              }))
+            : [],
         examples: dto.examples || [],
-        category: dto.category || 'general',
+        category: dto.category || "general",
         deliverables: dto.deliverables,
         rubric: dto.rubric,
         assets: dto.assets || [],
@@ -37,41 +49,46 @@ export class ChallengesService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async createCompanyChallenge(userId: string, dto: any & { companyId: string; visibility: 'public' | 'employees_only' }) {
+  async createCompanyChallenge(
+    userId: string,
+    dto: any & { companyId: string; visibility: "public" | "employees_only" },
+  ) {
     const membership = await this.prisma.companyMembership.findFirst({
       where: {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         userId,
         companyId: dto.companyId,
-        status: 'active',
-        role: { in: ['owner', 'recruiter'] }
-      }
+        status: "active",
+        role: { in: ["owner", "recruiter"] },
+      },
     });
 
     if (!membership) {
-      throw new BadRequestException('Only company owners and recruiters can create challenges');
+      throw new BadRequestException(
+        "Only company owners and recruiters can create challenges",
+      );
     }
 
     try {
       return await this.prisma.challenge.create({
         data: {
           title: dto.title,
-          kind: dto.kind as any || 'CODE',
-          difficulty: dto.difficulty as any || 'medium',
+          kind: (dto.kind as any) || "CODE",
+          difficulty: (dto.difficulty as any) || "medium",
           tags: dto.tags || [],
-          descriptionMd: dto.description || '',
-          status: dto.visibility === 'public' ? 'published' : 'draft',
+          descriptionMd: dto.description || "",
+          status: dto.visibility === "public" ? "published" : "draft",
           allowedLanguages: dto.allowedLanguages || [],
           constraints: dto.constraints || {},
           hints: dto.hints || [],
           tests: [],
           examples: dto.examples || [],
-          category: 'company',
+          category: "company",
           companyId: dto.companyId,
         },
       });
     } catch (err) {
-      console.error('Error creating company challenge:', err);
+      console.error("Error creating company challenge:", err);
       throw err;
     }
   }
@@ -96,14 +113,14 @@ export class ChallengesService {
     if (query.status) {
       where.status = query.status;
     } else {
-      where.status = 'published'; // default to published for public
+      where.status = "published"; // default to published for public
     }
     if (query.tags) {
-      where.tags = { hasSome: query.tags.split(',') };
+      where.tags = { hasSome: query.tags.split(",") };
     }
     if (query.search) {
       where.OR = [
-        { title: { contains: query.search, mode: 'insensitive' } },
+        { title: { contains: query.search, mode: "insensitive" } },
         { tags: { hasSome: [query.search] } },
       ];
     }
@@ -113,7 +130,7 @@ export class ChallengesService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         select: {
           id: true,
           title: true,
@@ -143,12 +160,12 @@ export class ChallengesService {
         _count: { select: { submissions: true } },
       },
     });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (!challenge) throw new NotFoundException("Challenge not found");
 
     // Filter hidden tests for non-admin
     const publicTests = challenge.tests.filter((t) => !t.isHidden);
     const result = { ...challenge, tests: publicTests };
-    
+
     await this.cache.set(cacheKey, result, 3600); // Cache for 1 hour
     return result;
   }
@@ -164,15 +181,15 @@ export class ChallengesService {
         _count: { select: { submissions: true } },
       },
     });
-    if (!challenge) throw new NotFoundException('Challenge not found');
-    
+    if (!challenge) throw new NotFoundException("Challenge not found");
+
     await this.cache.set(cacheKey, challenge, 3600);
     return challenge;
   }
 
   async update(id: string, dto: any) {
     const challenge = await this.prisma.challenge.findUnique({ where: { id } });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (!challenge) throw new NotFoundException("Challenge not found");
 
     const updateData: any = { ...dto };
 
@@ -188,9 +205,9 @@ export class ChallengesService {
 
     if (updateData.tests && Array.isArray(updateData.tests)) {
       updateData.tests = updateData.tests.map((t: any) => ({
-        input: String(t.input || ''),
-        expectedOutput: String(t.expectedOutput || ''),
-        isHidden: Boolean(t.isHidden)
+        input: String(t.input || ""),
+        expectedOutput: String(t.expectedOutput || ""),
+        isHidden: Boolean(t.isHidden),
       }));
     }
 
@@ -198,35 +215,44 @@ export class ChallengesService {
       where: { id },
       data: updateData,
     });
-    
+
     await this.cache.del(`challenge:public:${id}`);
     await this.cache.del(`challenge:admin:${id}`);
-    
+
     return updated;
   }
 
   async remove(id: string) {
     const challenge = await this.prisma.challenge.findUnique({ where: { id } });
-    if (!challenge) throw new NotFoundException('Challenge not found');
-    
+    if (!challenge) throw new NotFoundException("Challenge not found");
+
     await this.cache.del(`challenge:public:${id}`);
     await this.cache.del(`challenge:admin:${id}`);
-    
+
     return this.prisma.challenge.delete({ where: { id } });
   }
 
-  async generateDraft(prompt: string, kind: 'CODE' | 'CANVAS' = 'CODE'): Promise<ChallengeDraft> {
+  async generateDraft(
+    prompt: string,
+    kind: "CODE" | "CANVAS" = "CODE",
+  ): Promise<ChallengeDraft> {
     return this.aiService.generateChallengeDraft(prompt, kind);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async generateDraftForUser(userId: string, prompt: string, kind: 'CODE' | 'CANVAS' = 'CODE'): Promise<ChallengeDraft> {
+  async generateDraftForUser(
+    userId: string,
+    prompt: string,
+    kind: "CODE" | "CANVAS" = "CODE",
+  ): Promise<ChallengeDraft> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     if (!user.isPremium && user.tokensLeft < 5) {
-      throw new BadRequestException('Not enough tokens remaining. Generating a canvas draft consumes 5 tokens. Upgrade to premium for unlimited AI generation.');
+      throw new BadRequestException(
+        "Not enough tokens remaining. Generating a canvas draft consumes 5 tokens. Upgrade to premium for unlimited AI generation.",
+      );
     }
 
     const draft = await this.aiService.generateChallengeDraft(prompt, kind);
@@ -246,9 +272,9 @@ export class ChallengesService {
   async getRecommended(userId: string) {
     // Simple recommendation: return a few published challenges
     const challenges = await this.prisma.challenge.findMany({
-      where: { status: 'published' },
+      where: { status: "published" },
       take: 6,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         title: true,
@@ -279,7 +305,7 @@ export class ChallengesService {
     if (query.difficulty) where.difficulty = query.difficulty;
     if (query.status) where.status = query.status;
     if (query.search) {
-      where.title = { contains: query.search, mode: 'insensitive' };
+      where.title = { contains: query.search, mode: "insensitive" };
     }
 
     const [challenges, total] = await Promise.all([
@@ -287,7 +313,7 @@ export class ChallengesService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: { _count: { select: { submissions: true } } },
       }),
       this.prisma.challenge.count({ where }),

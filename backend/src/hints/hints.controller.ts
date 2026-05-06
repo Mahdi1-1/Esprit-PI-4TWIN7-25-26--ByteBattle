@@ -1,20 +1,20 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
-import { HintsService } from './hints.service';
-import { RecommendLevelDto, RequestHintDto } from './dto/hint.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Controller, Post, Body, UseGuards, Req } from "@nestjs/common";
+import { HintsService } from "./hints.service";
+import { RecommendLevelDto, RequestHintDto } from "./dto/hint.dto";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
-@Controller('hints')
+@Controller("hints")
 export class HintsController {
   constructor(private readonly hintsService: HintsService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post('recommend-level')
+  @Post("recommend-level")
   async recommendLevel(@Req() req, @Body() dto: RecommendLevelDto) {
     return this.hintsService.recommendLevel(req.user.id, dto);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('serve')
+  @Post("serve")
   async getHint(@Req() req, @Body() dto: RequestHintDto) {
     return this.hintsService.getHint(req.user.id, {
       challengeId: dto.challengeId,

@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class HackathonMonitoringService {
@@ -9,7 +9,9 @@ export class HackathonMonitoringService {
 
   // T061 — Aggregate monitoring data for admin dashboard
   async getMonitoringData(hackathonId: string) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
     if (!hackathon) return null;
 
     const fifteenMinAgo = new Date(Date.now() - 15 * 60_000);
@@ -22,19 +24,21 @@ export class HackathonMonitoringService {
       activeTeamIds,
     ] = await Promise.all([
       this.prisma.hackathonSubmission.count({ where: { hackathonId } }),
-      this.prisma.hackathonSubmission.count({ where: { hackathonId, verdict: 'AC' } }),
+      this.prisma.hackathonSubmission.count({
+        where: { hackathonId, verdict: "AC" },
+      }),
       this.prisma.hackathonTeam.findMany({
         where: { hackathonId, isDisqualified: false },
         select: { id: true, name: true, solvedCount: true },
       }),
       this.prisma.hackathonSubmission.findMany({
         where: { hackathonId },
-        orderBy: { submittedAt: 'desc' },
+        orderBy: { submittedAt: "desc" },
         take: 20,
       }),
       this.prisma.hackathonSubmission.findMany({
         where: { hackathonId, submittedAt: { gte: fifteenMinAgo } },
-        distinct: ['teamId'],
+        distinct: ["teamId"],
         select: { teamId: true },
       }),
     ]);
@@ -44,14 +48,16 @@ export class HackathonMonitoringService {
     const idleTeams = allTeams.filter((t) => !activeTeamIdSet.has(t.id));
 
     const acceptanceRate =
-      totalSubmissions > 0 ? ((acceptedSubmissions / totalSubmissions) * 100).toFixed(1) : '0';
+      totalSubmissions > 0
+        ? ((acceptedSubmissions / totalSubmissions) * 100).toFixed(1)
+        : "0";
 
     // Problems solved distribution
     const problemsSolvedDistribution: Record<string, number> = {};
     for (const cId of hackathon.challengeIds) {
       const solvedTeams = await this.prisma.hackathonSubmission.findMany({
-        where: { hackathonId, challengeId: cId, verdict: 'AC' },
-        distinct: ['teamId'],
+        where: { hackathonId, challengeId: cId, verdict: "AC" },
+        distinct: ["teamId"],
         select: { teamId: true },
       });
       problemsSolvedDistribution[cId] = solvedTeams.length;

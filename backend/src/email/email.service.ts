@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type { Transporter } from 'nodemailer';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import type { Transporter } from "nodemailer";
 
-import * as nodemailer from 'nodemailer';
+import * as nodemailer from "nodemailer";
 
 @Injectable()
 export class EmailService {
@@ -13,41 +13,61 @@ export class EmailService {
     this.transporter = this.createTransporter();
   }
 
-  async sendVerificationEmail(email: string, username: string, verificationLink: string) {
-    const subject = 'Verify your ByteBattle account';
+  async sendVerificationEmail(
+    email: string,
+    username: string,
+    verificationLink: string,
+  ) {
+    const subject = "Verify your ByteBattle account";
     const html = this.renderEmailTemplate({
-      title: 'Verify your ByteBattle account',
+      title: "Verify your ByteBattle account",
       greeting: `Hi ${username},`,
-      intro: 'Your account was created successfully. Verify your email address to activate your account.',
-      ctaLabel: 'Verify Email',
+      intro:
+        "Your account was created successfully. Verify your email address to activate your account.",
+      ctaLabel: "Verify Email",
       ctaUrl: verificationLink,
-      footer: 'Your account will stay inactive until verification is complete.',
+      footer: "Your account will stay inactive until verification is complete.",
     });
 
     await this.sendMail(email, subject, html, verificationLink);
   }
 
-  async sendPasswordResetEmail(email: string, username: string, resetLink: string) {
-    const subject = 'Reset your ByteBattle password';
+  async sendPasswordResetEmail(
+    email: string,
+    username: string,
+    resetLink: string,
+  ) {
+    const subject = "Reset your ByteBattle password";
     const html = this.renderEmailTemplate({
-      title: 'Reset your ByteBattle password',
+      title: "Reset your ByteBattle password",
       greeting: `Hi ${username},`,
-      intro: 'We received a request to reset your password. Use the button below to choose a new one.',
-      ctaLabel: 'Reset Password',
+      intro:
+        "We received a request to reset your password. Use the button below to choose a new one.",
+      ctaLabel: "Reset Password",
       ctaUrl: resetLink,
-      footer: 'If you did not request this email, you can safely ignore it.',
+      footer: "If you did not request this email, you can safely ignore it.",
     });
 
     await this.sendMail(email, subject, html, resetLink);
   }
 
-  private async sendMail(email: string, subject: string, html: string, link: string) {
+  private async sendMail(
+    email: string,
+    subject: string,
+    html: string,
+    link: string,
+  ) {
     if (!this.transporter) {
-      this.logger.warn(`SMTP not configured. Skipping email send to ${email}. Link: ${link}`);
+      this.logger.warn(
+        `SMTP not configured. Skipping email send to ${email}. Link: ${link}`,
+      );
       return;
     }
 
-    const from = this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER') || 'no-reply@bytebattle.local';
+    const from =
+      this.configService.get<string>("SMTP_FROM") ||
+      this.configService.get<string>("SMTP_USER") ||
+      "no-reply@bytebattle.local";
 
     await this.transporter.sendMail({
       from,
@@ -60,14 +80,20 @@ export class EmailService {
   }
 
   private createTransporter(): Transporter | null {
-    const host = this.configService.get<string>('SMTP_HOST');
-    const port = Number(this.configService.get<string | number>('SMTP_PORT', 587));
-    const user = this.configService.get<string>('SMTP_USER');
-    const pass = this.configService.get<string>('SMTP_PASS');
-    const secure = String(this.configService.get<string | boolean>('SMTP_SECURE', false)) === 'true';
+    const host = this.configService.get<string>("SMTP_HOST");
+    const port = Number(
+      this.configService.get<string | number>("SMTP_PORT", 587),
+    );
+    const user = this.configService.get<string>("SMTP_USER");
+    const pass = this.configService.get<string>("SMTP_PASS");
+    const secure =
+      String(this.configService.get<string | boolean>("SMTP_SECURE", false)) ===
+      "true";
 
     if (!host || !user || !pass) {
-      this.logger.warn('SMTP environment variables are missing. Email will be logged only.');
+      this.logger.warn(
+        "SMTP environment variables are missing. Email will be logged only.",
+      );
       return null;
     }
 
@@ -119,14 +145,15 @@ export class EmailService {
   }
 
   private getLogoUrl() {
-    const explicitLogoUrl = this.configService.get<string>('EMAIL_LOGO_URL');
+    const explicitLogoUrl = this.configService.get<string>("EMAIL_LOGO_URL");
     if (explicitLogoUrl) {
       return explicitLogoUrl;
     }
 
-    const frontendUrl = this.configService.get<string>('PUBLIC_FRONTEND_URL')
-      || this.configService.get<string>('FRONTEND_URL')
-      || 'http://bytebattle.local';
+    const frontendUrl =
+      this.configService.get<string>("PUBLIC_FRONTEND_URL") ||
+      this.configService.get<string>("FRONTEND_URL") ||
+      "http://bytebattle.local";
     return `${frontendUrl}/images/logo.png`;
   }
 }

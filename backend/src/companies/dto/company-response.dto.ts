@@ -9,7 +9,7 @@ export class CompanyResponseDto {
   size?: string;
   verified?: boolean;
   status: string;
-  joinPolicy: 'open' | 'approval' | 'invite_only';
+  joinPolicy: "open" | "approval" | "invite_only";
   ownerId?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -38,8 +38,8 @@ export class CompanyMemberResponseDto {
   id: string;
   companyId: string;
   userId: string;
-  role: 'member' | 'recruiter' | 'owner';
-  status: 'pending' | 'active' | 'rejected';
+  role: "member" | "recruiter" | "owner";
+  status: "pending" | "active" | "rejected";
   joinedAt: Date;
   company?: CompanyResponseDto;
 
@@ -51,7 +51,9 @@ export class CompanyMemberResponseDto {
       role: member.role,
       status: member.status,
       joinedAt: member.joinedAt,
-      company: member.company ? CompanyResponseDto.fromPrisma(member.company) : undefined,
+      company: member.company
+        ? CompanyResponseDto.fromPrisma(member.company)
+        : undefined,
     };
   }
 }

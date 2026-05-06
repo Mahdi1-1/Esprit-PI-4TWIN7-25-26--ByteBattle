@@ -2,7 +2,7 @@ export class TeamMemberDto {
   userId: string;
   username: string;
   profileImage: string | null;
-  role: 'captain' | 'member';
+  role: "captain" | "member";
   joinedAt: Date;
 }
 
@@ -11,7 +11,7 @@ export class TeamJoinRequestDto {
   username: string;
   profileImage: string | null;
   requestedAt: Date;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
 }
 
 export class TeamResponseDto {
@@ -29,16 +29,18 @@ export class TeamResponseDto {
   static async fromPrisma(
     raw: any,
     requestingUserId: string,
-    getUser: (userId: string) => Promise<{ username: string; profileImage: string | null } | null>,
+    getUser: (
+      userId: string,
+    ) => Promise<{ username: string; profileImage: string | null } | null>,
   ): Promise<TeamResponseDto> {
     const normalizeName = (...candidates: Array<string | null | undefined>) => {
       for (const value of candidates) {
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
           const trimmed = value.trim();
           if (trimmed.length > 0) return trimmed;
         }
       }
-      return 'Unknown user';
+      return "Unknown user";
     };
 
     const ids = Array.from(
@@ -49,13 +51,12 @@ export class TeamResponseDto {
     );
 
     const users = await Promise.all(ids.map((userId) => getUser(userId)));
-    const userById = ids.reduce<Record<string, { username: string; profileImage: string | null } | null>>(
-      (acc, userId, index) => {
-        acc[userId] = users[index] ?? null;
-        return acc;
-      },
-      {},
-    );
+    const userById = ids.reduce<
+      Record<string, { username: string; profileImage: string | null } | null>
+    >((acc, userId, index) => {
+      acc[userId] = users[index] ?? null;
+      return acc;
+    }, {});
 
     return {
       id: raw.id,
@@ -79,7 +80,7 @@ export class TeamResponseDto {
           username: normalizeName(user?.username, request.username),
           profileImage: user?.profileImage ?? request.profileImage ?? null,
           requestedAt: request.requestedAt ?? raw.updatedAt,
-          status: request.status ?? 'pending',
+          status: request.status ?? "pending",
         };
       }),
       registeredHackathonIds: [],

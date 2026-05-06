@@ -1,14 +1,23 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationEmitterService } from '../notifications/notification-emitter.service';
-import { NotificationCategory, NotificationPriority, NotificationType } from '../notifications/notification.constants';
-import { BadgeEngineService } from '../badges/badge-engine.service';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { NotificationEmitterService } from "../notifications/notification-emitter.service";
+import {
+  NotificationCategory,
+  NotificationPriority,
+  NotificationType,
+} from "../notifications/notification.constants";
+import { BadgeEngineService } from "../badges/badge-engine.service";
 import {
   CreateDiscussionDto,
   UpdateDiscussionDto,
   CreateCommentDto,
   UpdateCommentDto,
-} from './dto/discussion.dto';
+} from "./dto/discussion.dto";
 
 @Injectable()
 export class DiscussionsService {
@@ -16,11 +25,11 @@ export class DiscussionsService {
     private prisma: PrismaService,
     private notificationEmitter: NotificationEmitterService,
     private badgeEngine: BadgeEngineService,
-  ) { }
+  ) {}
 
   /** Returns true if the role is moderator or admin (can bypass ownership). */
   private canModerate(role?: string): boolean {
-    return role === 'moderator' || role === 'admin';
+    return role === "moderator" || role === "admin";
   }
 
   // ─── Discussions ──────────────────────────────────
@@ -60,13 +69,13 @@ export class DiscussionsService {
     const where: any = { isHidden: false };
 
     // Treat explicit 'all' category as no filter (return everything)
-    if (query.category && query.category !== 'all') {
+    if (query.category && query.category !== "all") {
       where.category = query.category;
     }
 
     // Tags filter (from category sidebar)
     if (query.tags) {
-      where.tags = { hasSome: query.tags.split(',') };
+      where.tags = { hasSome: query.tags.split(",") };
     }
 
     // Search filter — searches in title, content, and tags
@@ -75,16 +84,13 @@ export class DiscussionsService {
       if (searchTerm) {
         // If tags filter is also active, wrap everything in AND
         const searchOR = [
-          { title: { contains: searchTerm, mode: 'insensitive' as const } },
-          { content: { contains: searchTerm, mode: 'insensitive' as const } },
+          { title: { contains: searchTerm, mode: "insensitive" as const } },
+          { content: { contains: searchTerm, mode: "insensitive" as const } },
           { tags: { hasSome: [searchTerm] } },
         ];
         if (where.tags) {
           // Both tags filter + search: use AND to combine
-          where.AND = [
-            { tags: where.tags },
-            { OR: searchOR },
-          ];
+          where.AND = [{ tags: where.tags }, { OR: searchOR }];
           delete where.tags;
         } else {
           where.OR = searchOR;
@@ -92,15 +98,15 @@ export class DiscussionsService {
       }
     }
 
-    let orderBy: any = { createdAt: 'desc' };
-    if (query.sort === 'oldest') orderBy = { createdAt: 'asc' };
-    if (query.sort === 'popular') orderBy = { views: 'desc' };
-    if (query.sort === 'most-voted') orderBy = { upvotes: 'desc' }; // approximate
-    if (query.sort === 'most-commented') orderBy = { commentCount: 'desc' };
+    let orderBy: any = { createdAt: "desc" };
+    if (query.sort === "oldest") orderBy = { createdAt: "asc" };
+    if (query.sort === "popular") orderBy = { views: "desc" };
+    if (query.sort === "most-voted") orderBy = { upvotes: "desc" }; // approximate
+    if (query.sort === "most-commented") orderBy = { commentCount: "desc" };
 
-    if (query.sort === 'unsolved') {
+    if (query.sort === "unsolved") {
       where.isSolved = false;
-      orderBy = { createdAt: 'desc' };
+      orderBy = { createdAt: "desc" };
     }
 
     const [discussions, total] = await Promise.all([
@@ -120,7 +126,9 @@ export class DiscussionsService {
   }
 
   async getStats() {
-    const totalPosts = await this.prisma.discussion.count({ where: { isHidden: false } });
+    const totalPosts = await this.prisma.discussion.count({
+      where: { isHidden: false },
+    });
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -131,7 +139,7 @@ export class DiscussionsService {
         isHidden: false,
       },
       select: { authorId: true },
-      distinct: ['authorId'],
+      distinct: ["authorId"],
     });
 
     const activeUsers = recentPosts.length;
@@ -154,28 +162,39 @@ export class DiscussionsService {
         { $unwind: "$tags" },
         { $group: { _id: "$tags", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 10 }
-      ]
+        { $limit: 10 },
+      ],
     });
 
-    return Array.isArray(result) ? result.map((r: any) => ({ tag: r._id, count: r.count })) : [];
+    return Array.isArray(result)
+      ? result.map((r: any) => ({ tag: r._id, count: r.count }))
+      : [];
   }
 
   async findOneDiscussion(id: string) {
     const discussion = await this.prisma.discussion.findUnique({
       where: { id },
       include: {
-        author: { select: { id: true, username: true, profileImage: true, level: true } },
+        author: {
+          select: { id: true, username: true, profileImage: true, level: true },
+        },
         comments: {
           where: { isHidden: false },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
           include: {
-            author: { select: { id: true, username: true, profileImage: true, level: true } },
+            author: {
+              select: {
+                id: true,
+                username: true,
+                profileImage: true,
+                level: true,
+              },
+            },
           },
         },
       },
     });
-    if (!discussion) throw new NotFoundException('Discussion not found');
+    if (!discussion) throw new NotFoundException("Discussion not found");
 
     // Increment views
     await this.prisma.discussion.update({
@@ -193,7 +212,9 @@ export class DiscussionsService {
     for (const comment of discussion.comments) {
       const commentWithReplies = commentsMap.get(comment.id);
       if (comment.parentCommentId && commentsMap.has(comment.parentCommentId)) {
-        commentsMap.get(comment.parentCommentId).replies.push(commentWithReplies);
+        commentsMap
+          .get(comment.parentCommentId)
+          .replies.push(commentWithReplies);
       } else {
         tree.push(commentWithReplies);
       }
@@ -202,11 +223,18 @@ export class DiscussionsService {
     return { ...discussion, comments: tree };
   }
 
-  async updateDiscussion(id: string, userId: string, dto: UpdateDiscussionDto, userRole?: string) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id } });
-    if (!discussion) throw new NotFoundException('Discussion not found');
+  async updateDiscussion(
+    id: string,
+    userId: string,
+    dto: UpdateDiscussionDto,
+    userRole?: string,
+  ) {
+    const discussion = await this.prisma.discussion.findUnique({
+      where: { id },
+    });
+    if (!discussion) throw new NotFoundException("Discussion not found");
     if (discussion.authorId !== userId && !this.canModerate(userRole)) {
-      throw new ForbiddenException('Not the author');
+      throw new ForbiddenException("Not the author");
     }
 
     // Save the current state as a revision before applying the update
@@ -230,12 +258,14 @@ export class DiscussionsService {
   }
 
   async getRevisions(discussionId: string) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id: discussionId } });
-    if (!discussion) throw new NotFoundException('Discussion not found');
+    const discussion = await this.prisma.discussion.findUnique({
+      where: { id: discussionId },
+    });
+    if (!discussion) throw new NotFoundException("Discussion not found");
 
     const revisions = await this.prisma.discussionRevision.findMany({
       where: { discussionId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         editor: { select: { id: true, username: true, profileImage: true } },
       },
@@ -245,10 +275,12 @@ export class DiscussionsService {
   }
 
   async deleteDiscussion(id: string, userId: string, userRole?: string) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id } });
-    if (!discussion) throw new NotFoundException('Discussion not found');
+    const discussion = await this.prisma.discussion.findUnique({
+      where: { id },
+    });
+    if (!discussion) throw new NotFoundException("Discussion not found");
     if (discussion.authorId !== userId && !this.canModerate(userRole)) {
-      throw new ForbiddenException('Not the author');
+      throw new ForbiddenException("Not the author");
     }
 
     // Delete all associated comments
@@ -256,34 +288,49 @@ export class DiscussionsService {
     return this.prisma.discussion.delete({ where: { id } });
   }
 
-  async voteDiscussion(id: string, userId: string, type: 'upvote' | 'downvote') {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id } });
-    if (!discussion) throw new NotFoundException('Discussion not found');
-    if (discussion.authorId === userId) throw new ForbiddenException('Cannot vote on your own discussion');
+  async voteDiscussion(
+    id: string,
+    userId: string,
+    type: "upvote" | "downvote",
+  ) {
+    const discussion = await this.prisma.discussion.findUnique({
+      where: { id },
+    });
+    if (!discussion) throw new NotFoundException("Discussion not found");
+    if (discussion.authorId === userId)
+      throw new ForbiddenException("Cannot vote on your own discussion");
 
     const hasUpvoted = discussion.upvotes.includes(userId);
     const hasDownvoted = discussion.downvotes.includes(userId);
 
     const updateData: any = {};
 
-    if (type === 'upvote') {
+    if (type === "upvote") {
       if (hasUpvoted) {
         // Remove upvote (toggle off)
-        updateData.upvotes = { set: discussion.upvotes.filter(u => u !== userId) };
+        updateData.upvotes = {
+          set: discussion.upvotes.filter((u) => u !== userId),
+        };
       } else {
         // Add upvote, remove downvote if present
         updateData.upvotes = { push: userId };
         if (hasDownvoted) {
-          updateData.downvotes = { set: discussion.downvotes.filter(d => d !== userId) };
-        } 
+          updateData.downvotes = {
+            set: discussion.downvotes.filter((d) => d !== userId),
+          };
+        }
       }
     } else {
       if (hasDownvoted) {
-        updateData.downvotes = { set: discussion.downvotes.filter(d => d !== userId) };
+        updateData.downvotes = {
+          set: discussion.downvotes.filter((d) => d !== userId),
+        };
       } else {
         updateData.downvotes = { push: userId };
         if (hasUpvoted) {
-          updateData.upvotes = { set: discussion.upvotes.filter(u => u !== userId) };
+          updateData.upvotes = {
+            set: discussion.upvotes.filter((u) => u !== userId),
+          };
         }
       }
     }
@@ -293,18 +340,18 @@ export class DiscussionsService {
       data: updateData,
     });
 
-    if (type === 'upvote' && !hasUpvoted) {
+    if (type === "upvote" && !hasUpvoted) {
       // Create notification via new emitter
       await this.notificationEmitter.emit({
         userId: discussion.authorId,
         type: NotificationType.DISCUSSION_VOTE,
         category: NotificationCategory.DISCUSSION,
         priority: NotificationPriority.LOW,
-        title: 'Your post got an upvote 👍',
+        title: "Your post got an upvote 👍",
         message: `Someone upvoted your discussion: "${discussion.title}"`,
         actionUrl: `/discussion/${discussion.id}`,
         entityId: discussion.id,
-        entityType: 'Discussion',
+        entityType: "Discussion",
         senderId: userId,
       });
     }
@@ -312,14 +359,21 @@ export class DiscussionsService {
     return {
       upvotes: updated.upvotes.length,
       downvotes: updated.downvotes.length,
-      userVote: updated.upvotes.includes(userId) ? 'upvote' : updated.downvotes.includes(userId) ? 'downvote' : null,
+      userVote: updated.upvotes.includes(userId)
+        ? "upvote"
+        : updated.downvotes.includes(userId)
+          ? "downvote"
+          : null,
     };
   }
 
   async toggleSolved(id: string, userId: string) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id } });
-    if (!discussion) throw new NotFoundException('Discussion not found');
-    if (discussion.authorId !== userId) throw new ForbiddenException('Not the author');
+    const discussion = await this.prisma.discussion.findUnique({
+      where: { id },
+    });
+    if (!discussion) throw new NotFoundException("Discussion not found");
+    if (discussion.authorId !== userId)
+      throw new ForbiddenException("Not the author");
 
     return this.prisma.discussion.update({
       where: { id },
@@ -333,8 +387,11 @@ export class DiscussionsService {
       include: { discussion: true },
     });
 
-    if (!comment) throw new NotFoundException('Comment not found');
-    if (comment.discussion.authorId !== userId) throw new ForbiddenException('Only the post author can mark best answers');
+    if (!comment) throw new NotFoundException("Comment not found");
+    if (comment.discussion.authorId !== userId)
+      throw new ForbiddenException(
+        "Only the post author can mark best answers",
+      );
 
     const isCurrentlyBest = comment.isBestAnswer;
     const discussionId = comment.discussionId;
@@ -372,11 +429,11 @@ export class DiscussionsService {
         type: NotificationType.DISCUSSION_REPLY,
         category: NotificationCategory.DISCUSSION,
         priority: NotificationPriority.MEDIUM,
-        title: '🏆 Your answer was marked as Best Answer!',
+        title: "🏆 Your answer was marked as Best Answer!",
         message: `Congrats! Your reply was selected as the best answer.`,
         actionUrl: `/discussion/${comment.discussionId}`,
         entityId: comment.id,
-        entityType: 'Comment',
+        entityType: "Comment",
         senderId: userId,
       });
     }
@@ -390,15 +447,15 @@ export class DiscussionsService {
   async getMyPosts(userId: string, status?: string) {
     const where: any = { authorId: userId };
 
-    if (status === 'unsolved') {
+    if (status === "unsolved") {
       where.isSolved = false;
-    } else if (status === 'solved') {
+    } else if (status === "solved") {
       where.isSolved = true;
     }
 
     return this.prisma.discussion.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         author: { select: { id: true, username: true, profileImage: true } },
       },
@@ -406,8 +463,10 @@ export class DiscussionsService {
   }
 
   async flagDiscussion(id: string, userId: string) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id } });
-    if (!discussion) throw new NotFoundException('Discussion not found');
+    const discussion = await this.prisma.discussion.findUnique({
+      where: { id },
+    });
+    if (!discussion) throw new NotFoundException("Discussion not found");
 
     // Check if already flagged by this user
     if (discussion.flags.includes(userId)) {
@@ -423,12 +482,18 @@ export class DiscussionsService {
       },
     });
 
-    return { flagged: true, flagCount: updated.flags.length, isHidden: updated.isHidden };
+    return {
+      flagged: true,
+      flagCount: updated.flags.length,
+      isHidden: updated.isHidden,
+    };
   }
 
   async flagComment(commentId: string, userId: string) {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
-    if (!comment) throw new NotFoundException('Comment not found');
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+    if (!comment) throw new NotFoundException("Comment not found");
 
     if (comment.flags.includes(userId)) {
       return { flagged: true, flagCount: comment.flags.length };
@@ -442,20 +507,35 @@ export class DiscussionsService {
       },
     });
 
-    return { flagged: true, flagCount: updated.flags.length, isHidden: updated.isHidden };
+    return {
+      flagged: true,
+      flagCount: updated.flags.length,
+      isHidden: updated.isHidden,
+    };
   }
 
   // ─── Comments ──────────────────────────────────
-  async createComment(discussionId: string, userId: string, dto: CreateCommentDto) {
-    const discussion = await this.prisma.discussion.findUnique({ where: { id: discussionId } });
-    if (!discussion) throw new NotFoundException('Discussion not found');
+  async createComment(
+    discussionId: string,
+    userId: string,
+    dto: CreateCommentDto,
+  ) {
+    const discussion = await this.prisma.discussion.findUnique({
+      where: { id: discussionId },
+    });
+    if (!discussion) throw new NotFoundException("Discussion not found");
 
     let parentComment: any = null;
     if (dto.parentCommentId) {
-      parentComment = await this.prisma.comment.findUnique({ where: { id: dto.parentCommentId } });
-      if (!parentComment) throw new NotFoundException('Parent comment not found');
+      parentComment = await this.prisma.comment.findUnique({
+        where: { id: dto.parentCommentId },
+      });
+      if (!parentComment)
+        throw new NotFoundException("Parent comment not found");
       if (parentComment.parentCommentId) {
-        throw new BadRequestException('Maximum comment depth is 2 (only one level of replies)');
+        throw new BadRequestException(
+          "Maximum comment depth is 2 (only one level of replies)",
+        );
       }
     }
 
@@ -467,7 +547,9 @@ export class DiscussionsService {
         parentCommentId: dto.parentCommentId,
       },
       include: {
-        author: { select: { id: true, username: true, profileImage: true, level: true } },
+        author: {
+          select: { id: true, username: true, profileImage: true, level: true },
+        },
       },
     });
 
@@ -478,34 +560,50 @@ export class DiscussionsService {
     });
 
     // Create notifications via new emitter
-    if (dto.parentCommentId && parentComment && parentComment.authorId !== userId) {
-      const commenter = await this.prisma.user.findUnique({ where: { id: userId }, select: { username: true, profileImage: true } });
+    if (
+      dto.parentCommentId &&
+      parentComment &&
+      parentComment.authorId !== userId
+    ) {
+      const commenter = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true, profileImage: true },
+      });
       await this.notificationEmitter.emit({
         userId: parentComment.authorId,
         type: NotificationType.DISCUSSION_REPLY,
         category: NotificationCategory.DISCUSSION,
         priority: NotificationPriority.MEDIUM,
-        title: `${commenter?.username ?? 'Someone'} replied to your comment`,
-        message: comment.content.length > 80 ? comment.content.slice(0, 80) + '…' : comment.content,
+        title: `${commenter?.username ?? "Someone"} replied to your comment`,
+        message:
+          comment.content.length > 80
+            ? comment.content.slice(0, 80) + "…"
+            : comment.content,
         actionUrl: `/discussion/${discussionId}#comment-${comment.id}`,
         entityId: comment.id,
-        entityType: 'Comment',
+        entityType: "Comment",
         senderId: userId,
         senderName: commenter?.username,
         senderPhoto: commenter?.profileImage ?? undefined,
       });
     } else if (!dto.parentCommentId && discussion.authorId !== userId) {
-      const commenter = await this.prisma.user.findUnique({ where: { id: userId }, select: { username: true, profileImage: true } });
+      const commenter = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true, profileImage: true },
+      });
       await this.notificationEmitter.emit({
         userId: discussion.authorId,
         type: NotificationType.DISCUSSION_REPLY,
         category: NotificationCategory.DISCUSSION,
         priority: NotificationPriority.MEDIUM,
-        title: `${commenter?.username ?? 'Someone'} commented on your post`,
-        message: comment.content.length > 80 ? comment.content.slice(0, 80) + '…' : comment.content,
+        title: `${commenter?.username ?? "Someone"} commented on your post`,
+        message:
+          comment.content.length > 80
+            ? comment.content.slice(0, 80) + "…"
+            : comment.content,
         actionUrl: `/discussion/${discussionId}#comment-${comment.id}`,
         entityId: discussionId,
-        entityType: 'Discussion',
+        entityType: "Discussion",
         senderId: userId,
         senderName: commenter?.username,
         senderPhoto: commenter?.profileImage ?? undefined,
@@ -518,11 +616,18 @@ export class DiscussionsService {
     return comment;
   }
 
-  async updateComment(commentId: string, userId: string, dto: UpdateCommentDto, userRole?: string) {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
-    if (!comment) throw new NotFoundException('Comment not found');
+  async updateComment(
+    commentId: string,
+    userId: string,
+    dto: UpdateCommentDto,
+    userRole?: string,
+  ) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+    if (!comment) throw new NotFoundException("Comment not found");
     if (comment.authorId !== userId && !this.canModerate(userRole)) {
-      throw new ForbiddenException('Not the author');
+      throw new ForbiddenException("Not the author");
     }
 
     return this.prisma.comment.update({
@@ -535,10 +640,12 @@ export class DiscussionsService {
   }
 
   async deleteComment(commentId: string, userId: string, userRole?: string) {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
-    if (!comment) throw new NotFoundException('Comment not found');
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+    if (!comment) throw new NotFoundException("Comment not found");
     if (comment.authorId !== userId && !this.canModerate(userRole)) {
-      throw new ForbiddenException('Not the author');
+      throw new ForbiddenException("Not the author");
     }
 
     // Count nested replies
@@ -547,7 +654,9 @@ export class DiscussionsService {
     });
 
     // Delete nested replies
-    await this.prisma.comment.deleteMany({ where: { parentCommentId: commentId } });
+    await this.prisma.comment.deleteMany({
+      where: { parentCommentId: commentId },
+    });
     // Delete the comment
     await this.prisma.comment.delete({ where: { id: commentId } });
 
@@ -560,32 +669,47 @@ export class DiscussionsService {
     return { deleted: true };
   }
 
-  async voteComment(commentId: string, userId: string, type: 'upvote' | 'downvote') {
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
-    if (!comment) throw new NotFoundException('Comment not found');
-    if (comment.authorId === userId) throw new ForbiddenException('Cannot vote on your own comment');
+  async voteComment(
+    commentId: string,
+    userId: string,
+    type: "upvote" | "downvote",
+  ) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+    if (!comment) throw new NotFoundException("Comment not found");
+    if (comment.authorId === userId)
+      throw new ForbiddenException("Cannot vote on your own comment");
 
     const hasUpvoted = comment.upvotes.includes(userId);
     const hasDownvoted = comment.downvotes.includes(userId);
 
     const updateData: any = {};
 
-    if (type === 'upvote') {
+    if (type === "upvote") {
       if (hasUpvoted) {
-        updateData.upvotes = { set: comment.upvotes.filter(u => u !== userId) };
+        updateData.upvotes = {
+          set: comment.upvotes.filter((u) => u !== userId),
+        };
       } else {
         updateData.upvotes = { push: userId };
         if (hasDownvoted) {
-          updateData.downvotes = { set: comment.downvotes.filter(d => d !== userId) };
+          updateData.downvotes = {
+            set: comment.downvotes.filter((d) => d !== userId),
+          };
         }
       }
     } else {
       if (hasDownvoted) {
-        updateData.downvotes = { set: comment.downvotes.filter(d => d !== userId) };
+        updateData.downvotes = {
+          set: comment.downvotes.filter((d) => d !== userId),
+        };
       } else {
         updateData.downvotes = { push: userId };
         if (hasUpvoted) {
-          updateData.upvotes = { set: comment.upvotes.filter(u => u !== userId) };
+          updateData.upvotes = {
+            set: comment.upvotes.filter((u) => u !== userId),
+          };
         }
       }
     }
@@ -595,17 +719,20 @@ export class DiscussionsService {
       data: updateData,
     });
 
-    if (type === 'upvote' && !hasUpvoted) {
+    if (type === "upvote" && !hasUpvoted) {
       await this.notificationEmitter.emit({
         userId: comment.authorId,
         type: NotificationType.DISCUSSION_VOTE,
         category: NotificationCategory.DISCUSSION,
         priority: NotificationPriority.LOW,
-        title: 'Your comment got an upvote 👍',
-        message: comment.content.length > 80 ? comment.content.slice(0, 80) + '…' : comment.content,
+        title: "Your comment got an upvote 👍",
+        message:
+          comment.content.length > 80
+            ? comment.content.slice(0, 80) + "…"
+            : comment.content,
         actionUrl: `/discussion/${comment.discussionId}#comment-${comment.id}`,
         entityId: comment.id,
-        entityType: 'Comment',
+        entityType: "Comment",
         senderId: userId,
       });
     }
@@ -613,7 +740,11 @@ export class DiscussionsService {
     return {
       upvotes: updated.upvotes.length,
       downvotes: updated.downvotes.length,
-      userVote: updated.upvotes.includes(userId) ? 'upvote' : updated.downvotes.includes(userId) ? 'downvote' : null,
+      userVote: updated.upvotes.includes(userId)
+        ? "upvote"
+        : updated.downvotes.includes(userId)
+          ? "downvote"
+          : null,
     };
   }
 }

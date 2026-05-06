@@ -1,14 +1,14 @@
-import { IsString, IsEnum, IsOptional, IsInt } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsEnum, IsOptional, IsInt } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateSubmissionDto {
   @ApiProperty()
   @IsString()
   challengeId: string;
 
-  @ApiProperty({ enum: ['CODE', 'CANVAS'] })
-  @IsEnum(['CODE', 'CANVAS'] as const)
-  kind: 'CODE' | 'CANVAS';
+  @ApiProperty({ enum: ["CODE", "CANVAS"] })
+  @IsEnum(["CODE", "CANVAS"] as const)
+  kind: "CODE" | "CANVAS";
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -40,9 +40,9 @@ export class SaveDraftDto {
   @IsString()
   challengeId: string;
 
-  @ApiProperty({ enum: ['CANVAS'] })
-  @IsEnum(['CANVAS'] as const)
-  kind: 'CANVAS';
+  @ApiProperty({ enum: ["CANVAS"] })
+  @IsEnum(["CANVAS"] as const)
+  kind: "CANVAS";
 
   @ApiProperty()
   canvasJson: any;
@@ -63,9 +63,9 @@ export class CreateCanvasSubmissionDto {
   @IsString()
   challengeId: string;
 
-  @ApiProperty({ enum: ['CANVAS'] })
-  @IsEnum(['CANVAS'] as const)
-  kind: 'CANVAS';
+  @ApiProperty({ enum: ["CANVAS"] })
+  @IsEnum(["CANVAS"] as const)
+  kind: "CANVAS";
 
   @ApiProperty()
   @IsString()

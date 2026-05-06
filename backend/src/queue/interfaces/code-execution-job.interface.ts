@@ -8,7 +8,7 @@ export interface CodeExecutionJob {
     input: string;
     expectedOutput: string;
   }[];
-  context: 'solo' | 'duel' | 'hackathon';
+  context: "solo" | "duel" | "hackathon";
   duelId?: string;
   hackathonId?: string;
   hackathonTeamId?: string;

@@ -1,5 +1,11 @@
-import { IsString, IsEnum, IsArray, IsOptional, IsObject } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsString,
+  IsEnum,
+  IsArray,
+  IsOptional,
+  IsObject,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class TestDto {
   @ApiProperty()
@@ -16,17 +22,17 @@ export class TestDto {
 }
 
 export class CreateCodeChallengeDto {
-  @ApiProperty({ example: 'Two Sum' })
+  @ApiProperty({ example: "Two Sum" })
   @IsString()
   title: string;
 
-  @ApiProperty({ enum: ['CODE'] })
-  @IsEnum(['CODE'] as const)
-  kind: 'CODE';
+  @ApiProperty({ enum: ["CODE"] })
+  @IsEnum(["CODE"] as const)
+  kind: "CODE";
 
-  @ApiProperty({ enum: ['easy', 'medium', 'hard'] })
-  @IsEnum(['easy', 'medium', 'hard'] as const)
-  difficulty: 'easy' | 'medium' | 'hard';
+  @ApiProperty({ enum: ["easy", "medium", "hard"] })
+  @IsEnum(["easy", "medium", "hard"] as const)
+  difficulty: "easy" | "medium" | "hard";
 
   @ApiProperty({ type: [String] })
   @IsArray()
@@ -37,10 +43,10 @@ export class CreateCodeChallengeDto {
   @IsString()
   statementMd: string;
 
-  @ApiPropertyOptional({ enum: ['draft', 'published', 'archived'] })
+  @ApiPropertyOptional({ enum: ["draft", "published", "archived"] })
   @IsOptional()
-  @IsEnum(['draft', 'published', 'archived'] as const)
-  status?: 'draft' | 'published' | 'archived';
+  @IsEnum(["draft", "published", "archived"] as const)
+  status?: "draft" | "published" | "archived";
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -66,21 +72,21 @@ export class CreateCodeChallengeDto {
 }
 
 export class CreateCanvasChallengeDto {
-  @ApiProperty({ example: 'Pricing Table' })
+  @ApiProperty({ example: "Pricing Table" })
   @IsString()
   title: string;
 
-  @ApiProperty({ enum: ['CANVAS'] })
-  @IsEnum(['CANVAS'] as const)
-  kind: 'CANVAS';
+  @ApiProperty({ enum: ["CANVAS"] })
+  @IsEnum(["CANVAS"] as const)
+  kind: "CANVAS";
 
   @ApiProperty()
   @IsString()
   category: string;
 
-  @ApiProperty({ enum: ['easy', 'medium', 'hard'] })
-  @IsEnum(['easy', 'medium', 'hard'] as const)
-  difficulty: 'easy' | 'medium' | 'hard';
+  @ApiProperty({ enum: ["easy", "medium", "hard"] })
+  @IsEnum(["easy", "medium", "hard"] as const)
+  difficulty: "easy" | "medium" | "hard";
 
   @ApiProperty()
   @IsString()
@@ -108,19 +114,22 @@ export class CreateCanvasChallengeDto {
   @IsString({ each: true })
   hints?: string[];
 
-  @ApiPropertyOptional({ enum: ['draft', 'published', 'archived'] })
+  @ApiPropertyOptional({ enum: ["draft", "published", "archived"] })
   @IsOptional()
-  @IsEnum(['draft', 'published', 'archived'] as const)
-  status?: 'draft' | 'published' | 'archived';
+  @IsEnum(["draft", "published", "archived"] as const)
+  status?: "draft" | "published" | "archived";
 }
 
 export class GenerateChallengeDraftDto {
-  @ApiProperty({ example: 'Create a beginner-friendly coding challenge about arrays and loops' })
+  @ApiProperty({
+    example:
+      "Create a beginner-friendly coding challenge about arrays and loops",
+  })
   @IsString()
   prompt: string;
 
-  @ApiPropertyOptional({ enum: ['CODE', 'CANVAS'] })
+  @ApiPropertyOptional({ enum: ["CODE", "CANVAS"] })
   @IsOptional()
-  @IsEnum(['CODE', 'CANVAS'] as const)
-  kind?: 'CODE' | 'CANVAS';
+  @IsEnum(["CODE", "CANVAS"] as const)
+  kind?: "CODE" | "CANVAS";
 }

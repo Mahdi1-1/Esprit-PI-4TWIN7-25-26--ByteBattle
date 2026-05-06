@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class HackathonAnnouncementService {
@@ -26,7 +26,7 @@ export class HackathonAnnouncementService {
   async getAnnouncements(hackathonId: string) {
     return this.prisma.hackathonAnnouncement.findMany({
       where: { hackathonId },
-      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
     });
   }
 
@@ -35,7 +35,7 @@ export class HackathonAnnouncementService {
     const ann = await this.prisma.hackathonAnnouncement.findUnique({
       where: { id: announcementId },
     });
-    if (!ann) throw new NotFoundException('Announcement not found');
+    if (!ann) throw new NotFoundException("Announcement not found");
 
     return this.prisma.hackathonAnnouncement.update({
       where: { id: announcementId },

@@ -1,5 +1,5 @@
-import { IsString, IsOptional } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateReportDto {
   @ApiProperty()
@@ -20,22 +20,22 @@ export class CreateReportDto {
 }
 
 export class UpdateReportStatusDto {
-  @ApiProperty({ enum: ['open', 'reviewed', 'resolved', 'dismissed'] })
+  @ApiProperty({ enum: ["open", "reviewed", "resolved", "dismissed"] })
   @IsString()
   status: string;
 }
 
 export class UpdateCompanyVerificationDto {
-  @ApiPropertyOptional({ description: 'Mark the company as verified.' })
+  @ApiPropertyOptional({ description: "Mark the company as verified." })
   @IsOptional()
   verified?: boolean;
 
-  @ApiPropertyOptional({ description: 'Administrative company status.' })
+  @ApiPropertyOptional({ description: "Administrative company status." })
   @IsOptional()
   @IsString()
   status?: string;
 
-  @ApiPropertyOptional({ description: 'Message sent to the company owner.' })
+  @ApiPropertyOptional({ description: "Message sent to the company owner." })
   @IsOptional()
   @IsString()
   message?: string;

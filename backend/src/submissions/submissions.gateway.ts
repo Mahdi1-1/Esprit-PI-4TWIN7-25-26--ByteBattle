@@ -6,17 +6,19 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+import { Logger } from "@nestjs/common";
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: "*",
   },
-  namespace: 'submissions',
+  namespace: "submissions",
 })
-export class SubmissionsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class SubmissionsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -30,7 +32,7 @@ export class SubmissionsGateway implements OnGatewayConnection, OnGatewayDisconn
     this.logger.log(`Client disconnected from submissions: ${client.id}`);
   }
 
-  @SubscribeMessage('subscribe_user')
+  @SubscribeMessage("subscribe_user")
   handleSubscribeUser(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { userId: string },
@@ -43,6 +45,6 @@ export class SubmissionsGateway implements OnGatewayConnection, OnGatewayDisconn
   }
 
   emitSubmissionStatus(userId: string, data: any) {
-    this.server.to(`user:${userId}`).emit('submission_status', data);
+    this.server.to(`user:${userId}`).emit("submission_status", data);
   }
 }

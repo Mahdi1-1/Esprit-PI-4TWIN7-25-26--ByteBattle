@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { QueueService } from '../queue/queue.service';
-import { RunCodeDto } from './dto/create-submission.dto';
-import { AiService } from '../ai/ai.service';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { QueueService } from "../queue/queue.service";
+import { RunCodeDto } from "./dto/create-submission.dto";
+import { AiService } from "../ai/ai.service";
 
 @Injectable()
 export class SubmissionsService {
@@ -12,45 +17,48 @@ export class SubmissionsService {
     private prisma: PrismaService,
     private queueService: QueueService,
     private aiService: AiService,
-  ) { }
+  ) {}
 
   async create(userId: string, dto: any) {
     // Check challenge exists
     const challengeId = dto.challengeId || dto.problemId;
 
-    if (!challengeId) throw new NotFoundException('Challenge ID not provided');
+    if (!challengeId) throw new NotFoundException("Challenge ID not provided");
 
     const challenge = await this.prisma.challenge.findUnique({
       where: { id: challengeId },
     });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (!challenge) throw new NotFoundException("Challenge not found");
 
     const submission = await this.prisma.submission.create({
       data: {
         userId,
         challengeId: challengeId,
         kind: dto.kind as any,
-        context: dto.context || 'solo',
+        context: dto.context || "solo",
         language: dto.language,
         code: dto.code,
         canvasJson: dto.canvasJson,
         snapshotUrl: dto.snapshotUrl,
-        verdict: 'queued',
+        verdict: "queued",
         score: 0,
       },
     });
 
     // For code submissions, enqueue for background execution
-    if (dto.kind === 'CODE' && dto.code) {
-      const tests = challenge.tests as { input: string; expectedOutput: string }[] || [];
-      
+    if (dto.kind === "CODE" && dto.code) {
+      const tests =
+        (challenge.tests as { input: string; expectedOutput: string }[]) || [];
+
       // If no test cases defined, return a default pass immediately
       if (tests.length === 0) {
-        this.logger.warn(`Challenge ${challenge.id} has no test cases — auto-accepting submission`);
+        this.logger.warn(
+          `Challenge ${challenge.id} has no test cases — auto-accepting submission`,
+        );
         return this.prisma.submission.update({
           where: { id: submission.id },
           data: {
-            verdict: 'AC',
+            verdict: "AC",
             score: 100,
             testsPassed: 0,
             testsTotal: 0,
@@ -65,9 +73,9 @@ export class SubmissionsService {
         userId,
         challengeId: challenge.id,
         code: dto.code,
-        language: dto.language || 'javascript',
+        language: dto.language || "javascript",
         tests,
-        context: dto.context || 'solo',
+        context: dto.context || "solo",
         duelId: dto.duelId,
       });
 
@@ -93,10 +101,11 @@ export class SubmissionsService {
     });
 
     if (!challenge) {
-      throw new NotFoundException('Challenge not found');
+      throw new NotFoundException("Challenge not found");
     }
 
-    const tests = challenge.tests as { input: string; expectedOutput: string }[] || [];
+    const tests =
+      (challenge.tests as { input: string; expectedOutput: string }[]) || [];
 
     if (tests.length === 0) {
       this.logger.warn(`Challenge ${challenge.id} has no test cases`);
@@ -104,7 +113,7 @@ export class SubmissionsService {
         passed: 0,
         total: 0,
         results: [],
-        verdict: 'No tests available',
+        verdict: "No tests available",
         totalTimeMs: 0,
         maxMemMb: 0,
       };
@@ -123,27 +132,29 @@ export class SubmissionsService {
 
   async saveDraft(userId: string, dto: any) {
     const challengeId = dto.challengeId;
-    if (!challengeId) throw new NotFoundException('Challenge ID not provided');
+    if (!challengeId) throw new NotFoundException("Challenge ID not provided");
 
-    const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { id: challengeId },
+    });
+    if (!challenge) throw new NotFoundException("Challenge not found");
 
     const existingDraft = await this.prisma.submission.findFirst({
       where: {
         userId,
         challengeId,
-        kind: 'CANVAS',
-        verdict: 'draft',
+        kind: "CANVAS",
+        verdict: "draft",
       },
     });
 
     const payload: any = {
       userId,
       challengeId,
-      kind: 'CANVAS',
-      context: dto.context || 'solo',
-      language: dto.language || 'canvas',
-      verdict: 'draft',
+      kind: "CANVAS",
+      context: dto.context || "solo",
+      language: dto.language || "canvas",
+      verdict: "draft",
       score: dto.score ?? 0,
       canvasJson: dto.canvasJson,
       snapshotUrl: dto.snapshotUrl,
@@ -166,8 +177,8 @@ export class SubmissionsService {
       where: {
         userId,
         challengeId,
-        kind: 'CANVAS',
-        verdict: 'draft',
+        kind: "CANVAS",
+        verdict: "draft",
       },
       include: {
         challenge: true,
@@ -180,8 +191,8 @@ export class SubmissionsService {
       where: {
         userId,
         challengeId,
-        kind: 'CANVAS',
-        verdict: 'draft',
+        kind: "CANVAS",
+        verdict: "draft",
       },
     });
     if (!draft) {
@@ -214,7 +225,7 @@ export class SubmissionsService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           challenge: {
             select: { id: true, title: true, kind: true, difficulty: true },
@@ -237,11 +248,15 @@ export class SubmissionsService {
         aiReview: true,
       },
     });
-    if (!submission) throw new NotFoundException('Submission not found');
+    if (!submission) throw new NotFoundException("Submission not found");
 
     // Ownership check: only the owner or admin can view the full submission
-    if (requesterId && requesterRole !== 'admin' && submission.userId !== requesterId) {
-      throw new ForbiddenException('You can only view your own submissions');
+    if (
+      requesterId &&
+      requesterRole !== "admin" &&
+      submission.userId !== requesterId
+    ) {
+      throw new ForbiddenException("You can only view your own submissions");
     }
 
     return submission;
@@ -252,23 +267,23 @@ export class SubmissionsService {
       where: { id: submissionId },
       include: { challenge: true, aiReview: true },
     });
-    if (!submission) throw new NotFoundException('Submission not found');
+    if (!submission) throw new NotFoundException("Submission not found");
 
     if (submission.aiReview) {
       return submission.aiReview;
     }
 
     if (!submission.code || !submission.challenge) {
-      throw new Error('Code or challenge not found');
+      throw new Error("Code or challenge not found");
     }
 
     try {
       const startTime = Date.now();
       const review = await this.aiService.reviewCode({
         code: submission.code,
-        language: submission.language || 'javascript',
+        language: submission.language || "javascript",
         challengeTitle: submission.challenge.title,
-        challengeDescription: submission.challenge.descriptionMd || '',
+        challengeDescription: submission.challenge.descriptionMd || "",
       });
       const latencyMs = Date.now() - startTime;
 
@@ -290,7 +305,7 @@ export class SubmissionsService {
 
       return aiReview;
     } catch (error) {
-      this.logger.error('Failed to generate AI review:', error);
+      this.logger.error("Failed to generate AI review:", error);
       throw error;
     }
   }
@@ -317,7 +332,7 @@ export class SubmissionsService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           challenge: {
             select: { id: true, title: true, kind: true, difficulty: true },

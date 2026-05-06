@@ -1,8 +1,8 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata } from "@nestjs/common";
 
-export const ROLES_KEY = 'roles';
+export const ROLES_KEY = "roles";
 
-export type AppRole = 'user' | 'moderator' | 'admin';
+export type AppRole = "user" | "moderator" | "admin";
 
 /**
  * Specify the minimum role(s) required for this endpoint.

@@ -1,6 +1,11 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import Redis from "ioredis";
 
 @Injectable()
 export class CacheService implements OnModuleInit, OnModuleDestroy {
@@ -9,9 +14,10 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   private readonly redisEnabled: boolean;
 
   constructor(private configService: ConfigService) {
-    this.redisEnabled = this.configService.get<string>('REDIS_ENABLED', 'true') !== 'false';
+    this.redisEnabled =
+      this.configService.get<string>("REDIS_ENABLED", "true") !== "false";
     if (!this.redisEnabled) {
-      this.logger.warn('Redis is disabled. Cache operations will be no-op.');
+      this.logger.warn("Redis is disabled. Cache operations will be no-op.");
     }
   }
 
@@ -21,14 +27,14 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.redis = new Redis({
-      host: this.configService.get('REDIS_HOST', 'localhost'),
-      port: this.configService.get<number>('REDIS_PORT', 6379),
-      password: this.configService.get('REDIS_PASSWORD', ''),
+      host: this.configService.get("REDIS_HOST", "localhost"),
+      port: this.configService.get<number>("REDIS_PORT", 6379),
+      password: this.configService.get("REDIS_PASSWORD", ""),
       maxRetriesPerRequest: null,
     });
 
-    this.redis.on('error', (err) => {
-      this.logger.error('Redis connection error in CacheService', err);
+    this.redis.on("error", (err) => {
+      this.logger.error("Redis connection error in CacheService", err);
     });
   }
 
@@ -86,7 +92,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         count: 100,
       });
 
-      stream.on('data', async (keys) => {
+      stream.on("data", async (keys) => {
         if (keys.length) {
           const pipeline = redis.pipeline();
           keys.forEach((key: string) => pipeline.del(key));

@@ -1,4 +1,4 @@
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from "../prisma/prisma.service";
 
 export interface DuelStats {
   duelsTotal: number;
@@ -21,13 +21,13 @@ export async function computeDuelStats(
 ): Promise<DuelStats> {
   const [asP1, asP2, won] = await Promise.all([
     prisma.duel.count({
-      where: { player1Id: userId, status: 'completed' },
+      where: { player1Id: userId, status: "completed" },
     }),
     prisma.duel.count({
-      where: { player2Id: userId, status: 'completed' },
+      where: { player2Id: userId, status: "completed" },
     }),
     prisma.duel.count({
-      where: { winnerId: userId, status: 'completed' },
+      where: { winnerId: userId, status: "completed" },
     }),
   ]);
 
@@ -35,7 +35,8 @@ export async function computeDuelStats(
   const duelsWon = won;
   const duelsLost = duelsTotal - duelsWon;
   const played = duelsWon + duelsLost;
-  const winRate = played > 0 ? Number(((duelsWon / played) * 100).toFixed(1)) : 0;
+  const winRate =
+    played > 0 ? Number(((duelsWon / played) * 100).toFixed(1)) : 0;
 
   return { duelsTotal, duelsWon, duelsLost, winRate };
 }
@@ -53,11 +54,8 @@ export async function computeDuelStatsBatch(
   // One query to get all completed duels involving these users
   const duels = await prisma.duel.findMany({
     where: {
-      status: 'completed',
-      OR: [
-        { player1Id: { in: userIds } },
-        { player2Id: { in: userIds } },
-      ],
+      status: "completed",
+      OR: [{ player1Id: { in: userIds } }, { player2Id: { in: userIds } }],
     },
     select: {
       player1Id: true,
@@ -93,7 +91,8 @@ export async function computeDuelStatsBatch(
   // Compute win rates
   for (const s of statsMap.values()) {
     const played = s.duelsWon + s.duelsLost;
-    s.winRate = played > 0 ? Number(((s.duelsWon / played) * 100).toFixed(1)) : 0;
+    s.winRate =
+      played > 0 ? Number(((s.duelsWon / played) * 100).toFixed(1)) : 0;
   }
 
   return statsMap;

@@ -1,5 +1,11 @@
-import { IsString, IsOptional, IsArray, IsDateString, IsObject } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsDateString,
+  IsObject,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateHackathonDto {
   @ApiProperty()
@@ -35,7 +41,7 @@ export class CreateHackathonDto {
   @IsString()
   rulesMd?: string;
 
-  @ApiPropertyOptional({ enum: ['public', 'enterprise', 'invite-only'] })
+  @ApiPropertyOptional({ enum: ["public", "enterprise", "invite-only"] })
   @IsOptional()
   @IsString()
   scope?: string;
@@ -108,14 +114,25 @@ export class UpdateHackathonDto {
   @IsString()
   bannerUrl?: string;
 
-  @ApiPropertyOptional({ enum: ['public', 'enterprise', 'invite-only'] })
+  @ApiPropertyOptional({ enum: ["public", "enterprise", "invite-only"] })
   @IsOptional()
   @IsString()
   scope?: string;
 }
 
 export class TransitionStatusDto {
-  @ApiProperty({ enum: ['draft', 'lobby', 'checkin', 'active', 'frozen', 'ended', 'archived', 'cancelled'] })
+  @ApiProperty({
+    enum: [
+      "draft",
+      "lobby",
+      "checkin",
+      "active",
+      "frozen",
+      "ended",
+      "archived",
+      "cancelled",
+    ],
+  })
   @IsString()
   status: string;
 }

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateBadgeDto } from './dto/badge.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateBadgeDto } from "./dto/badge.dto";
 
 @Injectable()
 export class BadgesService {
@@ -11,12 +11,12 @@ export class BadgesService {
   }
 
   async findAll() {
-    return this.prisma.badge.findMany({ orderBy: { name: 'asc' } });
+    return this.prisma.badge.findMany({ orderBy: { name: "asc" } });
   }
 
   async findOne(id: string) {
     const badge = await this.prisma.badge.findUnique({ where: { id } });
-    if (!badge) throw new NotFoundException('Badge not found');
+    if (!badge) throw new NotFoundException("Badge not found");
     return badge;
   }
 

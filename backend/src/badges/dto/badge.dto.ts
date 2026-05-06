@@ -1,5 +1,5 @@
-import { IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateBadgeDto {
   @ApiProperty()
@@ -10,7 +10,7 @@ export class CreateBadgeDto {
   @IsString()
   key: string;
 
-  @ApiProperty({ enum: ['common', 'rare', 'epic', 'legendary'] })
+  @ApiProperty({ enum: ["common", "rare", "epic", "legendary"] })
   @IsString()
   rarity: string;
 

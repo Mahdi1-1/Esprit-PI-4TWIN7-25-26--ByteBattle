@@ -1,5 +1,12 @@
-import { IsString, IsArray, IsOptional, MaxLength, ArrayMaxSize, IsIn } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsString,
+  IsArray,
+  IsOptional,
+  MaxLength,
+  ArrayMaxSize,
+  IsIn,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateDiscussionDto {
   @ApiProperty({ maxLength: 200 })
@@ -12,9 +19,19 @@ export class CreateDiscussionDto {
   @MaxLength(10000)
   content: string;
 
-  @ApiProperty({ enum: ['general', 'help', 'algorithms', 'challenge', 'showcase', 'feedback'], default: 'general' })
+  @ApiProperty({
+    enum: [
+      "general",
+      "help",
+      "algorithms",
+      "challenge",
+      "showcase",
+      "feedback",
+    ],
+    default: "general",
+  })
   @IsString()
-  @IsIn(['general', 'help', 'algorithms', 'challenge', 'showcase', 'feedback'])
+  @IsIn(["general", "help", "algorithms", "challenge", "showcase", "feedback"])
   category: string;
 
   @ApiProperty({ type: [String], maxItems: 5 })
@@ -42,10 +59,19 @@ export class UpdateDiscussionDto {
   @MaxLength(10000)
   content?: string;
 
-  @ApiPropertyOptional({ enum: ['general', 'help', 'algorithms', 'challenge', 'showcase', 'feedback'] })
+  @ApiPropertyOptional({
+    enum: [
+      "general",
+      "help",
+      "algorithms",
+      "challenge",
+      "showcase",
+      "feedback",
+    ],
+  })
   @IsOptional()
   @IsString()
-  @IsIn(['general', 'help', 'algorithms', 'challenge', 'showcase', 'feedback'])
+  @IsIn(["general", "help", "algorithms", "challenge", "showcase", "feedback"])
   category?: string;
 
   @ApiPropertyOptional({ type: [String], maxItems: 5 })
@@ -61,7 +87,7 @@ export class CreateCommentDto {
   @IsString()
   content: string;
 
-  @ApiPropertyOptional({ description: 'Parent comment ID for nested replies' })
+  @ApiPropertyOptional({ description: "Parent comment ID for nested replies" })
   @IsOptional()
   @IsString()
   parentCommentId?: string;

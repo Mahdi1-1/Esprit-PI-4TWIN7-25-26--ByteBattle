@@ -3,11 +3,11 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { HackathonsService } from './hackathons.service';
-import { HackathonScoreboardService } from './hackathon-scoreboard.service';
-import { HackathonsGateway } from './hackathons.gateway';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { HackathonsService } from "./hackathons.service";
+import { HackathonScoreboardService } from "./hackathon-scoreboard.service";
+import { HackathonsGateway } from "./hackathons.gateway";
 
 /**
  * T019d — Scheduler for automatic hackathon lifecycle transitions.
@@ -21,7 +21,9 @@ import { HackathonsGateway } from './hackathons.gateway';
  * Uses a simple setInterval approach (no @nestjs/schedule dependency).
  */
 @Injectable()
-export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy {
+export class HackathonSchedulerService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(HackathonSchedulerService.name);
   private intervalRef: NodeJS.Timeout | null = null;
 
@@ -34,7 +36,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
 
   onModuleInit() {
     this.intervalRef = setInterval(() => this.tick(), 30_000);
-    this.logger.log('Hackathon scheduler started (30s interval)');
+    this.logger.log("Hackathon scheduler started (30s interval)");
   }
 
   onModuleDestroy() {
@@ -42,7 +44,7 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
       clearInterval(this.intervalRef);
       this.intervalRef = null;
     }
-    this.logger.log('Hackathon scheduler stopped');
+    this.logger.log("Hackathon scheduler stopped");
   }
 
   private async tick() {
@@ -53,80 +55,108 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
       // 1. lobby → checkin (30 min before startTime)
       const lobbyToCheckin = await this.prisma.hackathon.findMany({
         where: {
-          status: 'lobby',
+          status: "lobby",
           startTime: { lte: thirtyMinFromNow },
         },
         select: { id: true },
       });
       for (const h of lobbyToCheckin) {
         try {
-          await this.hackathonsService.transitionStatus(h.id, 'checkin', 'system');
-          this.gateway.emitStatusChange(h.id, 'checkin', 'lobby');
+          await this.hackathonsService.transitionStatus(
+            h.id,
+            "checkin",
+            "system",
+          );
+          this.gateway.emitStatusChange(h.id, "checkin", "lobby");
           this.logger.log(`Auto-transitioned hackathon ${h.id} to checkin`);
         } catch (err) {
-          this.logger.warn(`Failed auto-transition ${h.id} lobby→checkin: ${err.message}`);
+          this.logger.warn(
+            `Failed auto-transition ${h.id} lobby→checkin: ${err.message}`,
+          );
         }
       }
 
       // 2. checkin → active (at startTime)
       const checkinToActive = await this.prisma.hackathon.findMany({
         where: {
-          status: 'checkin',
+          status: "checkin",
           startTime: { lte: now },
         },
         select: { id: true },
       });
       for (const h of checkinToActive) {
         try {
-          await this.hackathonsService.transitionStatus(h.id, 'active', 'system');
+          await this.hackathonsService.transitionStatus(
+            h.id,
+            "active",
+            "system",
+          );
           // 🚀 Notify all connected clients to open the workspace
-          this.gateway.emitStatusChange(h.id, 'active', 'checkin');
-          this.logger.log(`Auto-transitioned hackathon ${h.id} to active — workspace open broadcast sent`);
+          this.gateway.emitStatusChange(h.id, "active", "checkin");
+          this.logger.log(
+            `Auto-transitioned hackathon ${h.id} to active — workspace open broadcast sent`,
+          );
         } catch (err) {
-          this.logger.warn(`Failed auto-transition ${h.id} checkin→active: ${err.message}`);
+          this.logger.warn(
+            `Failed auto-transition ${h.id} checkin→active: ${err.message}`,
+          );
         }
       }
 
       // 3. active → frozen (at freezeAt)
       const activeToFrozen = await this.prisma.hackathon.findMany({
         where: {
-          status: 'active',
+          status: "active",
           freezeAt: { lte: now, not: null },
         },
       });
       for (const h of activeToFrozen) {
         try {
-          await this.hackathonsService.transitionStatus(h.id, 'frozen', 'system');
+          await this.hackathonsService.transitionStatus(
+            h.id,
+            "frozen",
+            "system",
+          );
           await this.scoreboardService.freezeScoreboard(h.id);
-          this.gateway.emitStatusChange(h.id, 'frozen', 'active');
-          this.logger.log(`Auto-transitioned hackathon ${h.id} to frozen + cached scoreboard`);
+          this.gateway.emitStatusChange(h.id, "frozen", "active");
+          this.logger.log(
+            `Auto-transitioned hackathon ${h.id} to frozen + cached scoreboard`,
+          );
         } catch (err) {
-          this.logger.warn(`Failed auto-transition ${h.id} active→frozen: ${err.message}`);
+          this.logger.warn(
+            `Failed auto-transition ${h.id} active→frozen: ${err.message}`,
+          );
         }
       }
 
       // 4. frozen → ended (at endTime)
       const frozenToEnded = await this.prisma.hackathon.findMany({
         where: {
-          status: 'frozen',
+          status: "frozen",
           endTime: { lte: now },
         },
         select: { id: true },
       });
       for (const h of frozenToEnded) {
         try {
-          await this.hackathonsService.transitionStatus(h.id, 'ended', 'system');
-          this.gateway.emitStatusChange(h.id, 'ended', 'frozen');
+          await this.hackathonsService.transitionStatus(
+            h.id,
+            "ended",
+            "system",
+          );
+          this.gateway.emitStatusChange(h.id, "ended", "frozen");
           this.logger.log(`Auto-transitioned hackathon ${h.id} to ended`);
         } catch (err) {
-          this.logger.warn(`Failed auto-transition ${h.id} frozen→ended: ${err.message}`);
+          this.logger.warn(
+            `Failed auto-transition ${h.id} frozen→ended: ${err.message}`,
+          );
         }
       }
 
       // 5. active → ended (at endTime, if no freezeAt was set)
       const activeToEnded = await this.prisma.hackathon.findMany({
         where: {
-          status: 'active',
+          status: "active",
           endTime: { lte: now },
           freezeAt: null,
         },
@@ -134,15 +164,23 @@ export class HackathonSchedulerService implements OnModuleInit, OnModuleDestroy 
       });
       for (const h of activeToEnded) {
         try {
-          await this.hackathonsService.transitionStatus(h.id, 'ended', 'system');
-          this.gateway.emitStatusChange(h.id, 'ended', 'active');
-          this.logger.log(`Auto-transitioned hackathon ${h.id} to ended (no freeze)`);
+          await this.hackathonsService.transitionStatus(
+            h.id,
+            "ended",
+            "system",
+          );
+          this.gateway.emitStatusChange(h.id, "ended", "active");
+          this.logger.log(
+            `Auto-transitioned hackathon ${h.id} to ended (no freeze)`,
+          );
         } catch (err) {
-          this.logger.warn(`Failed auto-transition ${h.id} active→ended: ${err.message}`);
+          this.logger.warn(
+            `Failed auto-transition ${h.id} active→ended: ${err.message}`,
+          );
         }
       }
     } catch (err) {
-      this.logger.error('Scheduler tick failed', err);
+      this.logger.error("Scheduler tick failed", err);
     }
   }
 }

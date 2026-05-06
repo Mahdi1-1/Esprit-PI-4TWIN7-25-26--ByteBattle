@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { UpdateNotificationPreferenceDto } from './dto/notification-preference.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { UpdateNotificationPreferenceDto } from "./dto/notification-preference.dto";
 
 const DEFAULT_PREFERENCES = {
   hackathon: true,

@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 export interface PlagiarismPair {
   teamA: string;
@@ -21,8 +21,8 @@ export class HackathonPlagiarismService {
    */
   async checkPlagiarism(hackathonId: string, challengeId: string) {
     const submissions = await this.prisma.hackathonSubmission.findMany({
-      where: { hackathonId, challengeId, verdict: 'AC' },
-      orderBy: { submittedAt: 'asc' },
+      where: { hackathonId, challengeId, verdict: "AC" },
+      orderBy: { submittedAt: "asc" },
     });
 
     // Keep only earliest AC per team
@@ -38,7 +38,10 @@ export class HackathonPlagiarismService {
 
     for (let i = 0; i < uniqueSubs.length; i++) {
       for (let j = i + 1; j < uniqueSubs.length; j++) {
-        const similarity = this.jaccardSimilarity(uniqueSubs[i].code, uniqueSubs[j].code);
+        const similarity = this.jaccardSimilarity(
+          uniqueSubs[i].code,
+          uniqueSubs[j].code,
+        );
         if (similarity >= 0.8) {
           flaggedPairs.push({
             teamA: uniqueSubs[i].teamId,
@@ -85,9 +88,9 @@ export class HackathonPlagiarismService {
     // Normalize: lowercase, collapse whitespace, strip comments (simple)
     const normalized = code
       .toLowerCase()
-      .replace(/\/\/.*/g, '') // single-line comments
-      .replace(/\/\*[\s\S]*?\*\//g, '') // multi-line comments
-      .replace(/\s+/g, ' ')
+      .replace(/\/\/.*/g, "") // single-line comments
+      .replace(/\/\*[\s\S]*?\*\//g, "") // multi-line comments
+      .replace(/\s+/g, " ")
       .trim();
 
     const tokens = new Set<string>();

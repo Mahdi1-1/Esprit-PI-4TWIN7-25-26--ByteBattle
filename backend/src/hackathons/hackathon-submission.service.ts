@@ -3,10 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { QueueService } from '../queue/queue.service';
-import { SubmitCodeDto, RunCodeDto } from './dto/submission.dto';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { QueueService } from "../queue/queue.service";
+import { SubmitCodeDto, RunCodeDto } from "./dto/submission.dto";
 
 @Injectable()
 export class HackathonSubmissionService {
@@ -27,17 +27,23 @@ export class HackathonSubmissionService {
     userId: string,
     dto: SubmitCodeDto,
   ) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
-    if (!['active', 'frozen'].includes(hackathon.status)) {
-      throw new BadRequestException('Submissions only allowed during active or frozen phases');
+    if (!["active", "frozen"].includes(hackathon.status)) {
+      throw new BadRequestException(
+        "Submissions only allowed during active or frozen phases",
+      );
     }
 
-    const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
-    if (!team) throw new NotFoundException('Team not found');
+    const team = await this.prisma.hackathonTeam.findUnique({
+      where: { id: teamId },
+    });
+    if (!team) throw new NotFoundException("Team not found");
     if (team.isDisqualified) {
-      throw new BadRequestException('Your team has been disqualified');
+      throw new BadRequestException("Your team has been disqualified");
     }
 
     // Q7: Block re-submission to already-solved problems (READ-ONLY once AC)
@@ -46,18 +52,20 @@ export class HackathonSubmissionService {
         hackathonId,
         teamId,
         challengeId: dto.challengeId,
-        verdict: 'AC',
+        verdict: "AC",
       },
     });
     if (existingAC) {
-      throw new BadRequestException('This problem is already solved. No re-submissions allowed.');
+      throw new BadRequestException(
+        "This problem is already solved. No re-submissions allowed.",
+      );
     }
 
     // Q1: Enforce sequential problem order server-side
     const challengeIds = hackathon.challengeIds || [];
     const challengeIndex = challengeIds.indexOf(dto.challengeId);
     if (challengeIndex === -1) {
-      throw new BadRequestException('Challenge is not part of this hackathon');
+      throw new BadRequestException("Challenge is not part of this hackathon");
     }
 
     if (challengeIndex > 0) {
@@ -68,15 +76,19 @@ export class HackathonSubmissionService {
           hackathonId,
           teamId,
           challengeId: { in: precedingIds },
-          verdict: 'AC',
+          verdict: "AC",
         },
-        distinct: ['challengeId'],
+        distinct: ["challengeId"],
         select: { challengeId: true },
       });
       const solvedSet = new Set(solvedPreceding.map((s) => s.challengeId));
-      const allPrecedingSolved = precedingIds.every((cId) => solvedSet.has(cId));
+      const allPrecedingSolved = precedingIds.every((cId) =>
+        solvedSet.has(cId),
+      );
       if (!allPrecedingSolved) {
-        throw new BadRequestException('You must solve the previous problems first before submitting to this one.');
+        throw new BadRequestException(
+          "You must solve the previous problems first before submitting to this one.",
+        );
       }
     }
 
@@ -89,12 +101,15 @@ export class HackathonSubmissionService {
         challengeId: dto.challengeId,
         submittedAt: { gte: oneMinuteAgo },
       },
-      orderBy: { submittedAt: 'desc' },
+      orderBy: { submittedAt: "desc" },
     });
 
     if (recentSubmission) {
       const retryAfter = Math.ceil(
-        (new Date(recentSubmission.submittedAt).getTime() + 60_000 - Date.now()) / 1000,
+        (new Date(recentSubmission.submittedAt).getTime() +
+          60_000 -
+          Date.now()) /
+          1000,
       );
       throw new BadRequestException(
         `Rate limited. Please wait ${retryAfter} seconds before submitting again for this problem.`,
@@ -111,9 +126,10 @@ export class HackathonSubmissionService {
     const challenge = await this.prisma.challenge.findUnique({
       where: { id: dto.challengeId },
     });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (!challenge) throw new NotFoundException("Challenge not found");
 
-    const tests = (challenge.tests as { input: string; expectedOutput: string }[]) || [];
+    const tests =
+      (challenge.tests as { input: string; expectedOutput: string }[]) || [];
 
     // Create submission record
     const submission = await this.prisma.hackathonSubmission.create({
@@ -124,7 +140,7 @@ export class HackathonSubmissionService {
         userId,
         code: dto.code,
         language: dto.language,
-        verdict: 'queued',
+        verdict: "queued",
         testsPassed: 0,
         testsTotal: tests.length,
         attemptNumber,
@@ -134,10 +150,18 @@ export class HackathonSubmissionService {
 
     // Enqueue for judge-worker
     if (tests.length === 0) {
-      this.logger.warn(`Challenge ${challenge.id} has no test cases — auto-accepting`);
+      this.logger.warn(
+        `Challenge ${challenge.id} has no test cases — auto-accepting`,
+      );
       return this.prisma.hackathonSubmission.update({
         where: { id: submission.id },
-        data: { verdict: 'AC', testsPassed: 0, testsTotal: 0, timeMs: 0, memMb: 0 },
+        data: {
+          verdict: "AC",
+          testsPassed: 0,
+          testsTotal: 0,
+          timeMs: 0,
+          memMb: 0,
+        },
       });
     }
 
@@ -148,7 +172,7 @@ export class HackathonSubmissionService {
       code: dto.code,
       language: dto.language,
       tests,
-      context: 'hackathon',
+      context: "hackathon",
       hackathonId,
       hackathonTeamId: teamId,
     });
@@ -164,22 +188,32 @@ export class HackathonSubmissionService {
   // ────────────────────────────────────────────────────────
 
   async runCode(hackathonId: string, userId: string, dto: RunCodeDto) {
-    const hackathon = await this.prisma.hackathon.findUnique({ where: { id: hackathonId } });
-    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    const hackathon = await this.prisma.hackathon.findUnique({
+      where: { id: hackathonId },
+    });
+    if (!hackathon) throw new NotFoundException("Hackathon not found");
 
-    if (!['active', 'frozen'].includes(hackathon.status)) {
-      throw new BadRequestException('Run is only allowed during active or frozen phases');
+    if (!["active", "frozen"].includes(hackathon.status)) {
+      throw new BadRequestException(
+        "Run is only allowed during active or frozen phases",
+      );
     }
 
     const challenge = await this.prisma.challenge.findUnique({
       where: { id: dto.challengeId },
     });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (!challenge) throw new NotFoundException("Challenge not found");
 
-    const tests = (challenge.tests as { input: string; expectedOutput: string }[]) || [];
+    const tests =
+      (challenge.tests as { input: string; expectedOutput: string }[]) || [];
 
     if (tests.length === 0) {
-      return { passed: 0, total: 0, results: [], verdict: 'No tests available' };
+      return {
+        passed: 0,
+        total: 0,
+        results: [],
+        verdict: "No tests available",
+      };
     }
 
     return this.queueService.addEvaluateCodeJob({
@@ -207,7 +241,7 @@ export class HackathonSubmissionService {
     });
     if (!submission) return;
 
-    const isAccepted = verdict === 'AC';
+    const isAccepted = verdict === "AC";
 
     // Compute penalty if AC
     let penaltyMinutes = 0;
@@ -226,7 +260,7 @@ export class HackathonSubmissionService {
             hackathonId: submission.hackathonId,
             teamId: submission.teamId,
             challengeId: submission.challengeId,
-            verdict: { not: 'AC' },
+            verdict: { not: "AC" },
             id: { not: submissionId },
           },
         });
@@ -241,7 +275,7 @@ export class HackathonSubmissionService {
         where: {
           hackathonId: submission.hackathonId,
           challengeId: submission.challengeId,
-          verdict: 'AC',
+          verdict: "AC",
           id: { not: submissionId },
         },
       });
@@ -269,9 +303,9 @@ export class HackathonSubmissionService {
         where: {
           hackathonId: submission.hackathonId,
           teamId: submission.teamId,
-          verdict: 'AC',
+          verdict: "AC",
         },
-        distinct: ['challengeId'],
+        distinct: ["challengeId"],
         select: { challengeId: true },
       });
 
@@ -283,9 +317,9 @@ export class HackathonSubmissionService {
             hackathonId: submission.hackathonId,
             teamId: submission.teamId,
             challengeId,
-            verdict: 'AC',
+            verdict: "AC",
           },
-          orderBy: { submittedAt: 'asc' },
+          orderBy: { submittedAt: "asc" },
         });
         if (earliestAC) totalPenalty += earliestAC.penaltyMinutes;
       }
@@ -315,14 +349,15 @@ export class HackathonSubmissionService {
     const challenge = await this.prisma.challenge.findUnique({
       where: { id: challengeId },
     });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (!challenge) throw new NotFoundException("Challenge not found");
 
-    const tests = (challenge.tests as { input: string; expectedOutput: string }[]) || [];
+    const tests =
+      (challenge.tests as { input: string; expectedOutput: string }[]) || [];
 
     for (const sub of submissions) {
       await this.prisma.hackathonSubmission.update({
         where: { id: sub.id },
-        data: { verdict: 'rejudging' },
+        data: { verdict: "rejudging" },
       });
 
       await this.queueService.addCodeExecutionJob({
@@ -332,7 +367,7 @@ export class HackathonSubmissionService {
         code: sub.code,
         language: sub.language,
         tests,
-        context: 'hackathon',
+        context: "hackathon",
         hackathonId,
         hackathonTeamId: sub.teamId,
         isRejudge: true,
@@ -353,11 +388,12 @@ export class HackathonSubmissionService {
       });
       if (!challenge) continue;
 
-      const tests = (challenge.tests as { input: string; expectedOutput: string }[]) || [];
+      const tests =
+        (challenge.tests as { input: string; expectedOutput: string }[]) || [];
 
       await this.prisma.hackathonSubmission.update({
         where: { id: sub.id },
-        data: { verdict: 'rejudging' },
+        data: { verdict: "rejudging" },
       });
 
       await this.queueService.addCodeExecutionJob({
@@ -367,7 +403,7 @@ export class HackathonSubmissionService {
         code: sub.code,
         language: sub.language,
         tests,
-        context: 'hackathon',
+        context: "hackathon",
         hackathonId,
         hackathonTeamId: teamId,
         isRejudge: true,
@@ -381,13 +417,17 @@ export class HackathonSubmissionService {
   // Query helpers
   // ────────────────────────────────────────────────────────
 
-  async getTeamSubmissions(hackathonId: string, teamId: string, challengeId?: string) {
+  async getTeamSubmissions(
+    hackathonId: string,
+    teamId: string,
+    challengeId?: string,
+  ) {
     const where: any = { hackathonId, teamId };
     if (challengeId) where.challengeId = challengeId;
 
     return this.prisma.hackathonSubmission.findMany({
       where,
-      orderBy: { submittedAt: 'desc' },
+      orderBy: { submittedAt: "desc" },
     });
   }
 }

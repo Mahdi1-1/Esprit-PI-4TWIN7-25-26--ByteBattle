@@ -2,9 +2,9 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { SendMessageDto } from './dto/chat.dto';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { SendMessageDto } from "./dto/chat.dto";
 
 @Injectable()
 export class HackathonChatService {
@@ -18,11 +18,13 @@ export class HackathonChatService {
     dto: SendMessageDto,
   ) {
     // Validate team membership
-    const team = await this.prisma.hackathonTeam.findUnique({ where: { id: teamId } });
-    if (!team) throw new NotFoundException('Team not found');
+    const team = await this.prisma.hackathonTeam.findUnique({
+      where: { id: teamId },
+    });
+    if (!team) throw new NotFoundException("Team not found");
 
     const isMember = team.members.some((m) => m.userId === userId);
-    if (!isMember) throw new ForbiddenException('Not a member of this team');
+    if (!isMember) throw new ForbiddenException("Not a member of this team");
 
     const message = await this.prisma.hackathonMessage.create({
       data: {
@@ -41,7 +43,7 @@ export class HackathonChatService {
       select: { username: true },
     });
 
-    return { ...message, username: user?.username || 'Unknown' };
+    return { ...message, username: user?.username || "Unknown" };
   }
 
   // T040 — Get messages with cursor-based pagination
@@ -59,7 +61,7 @@ export class HackathonChatService {
 
     const messages = await this.prisma.hackathonMessage.findMany({
       where,
-      orderBy: { sentAt: 'desc' },
+      orderBy: { sentAt: "desc" },
       take: limit,
     });
 
@@ -75,7 +77,7 @@ export class HackathonChatService {
 
     return messages.map((m) => ({
       ...m,
-      username: usernameMap.get(m.userId) || 'Unknown',
+      username: usernameMap.get(m.userId) || "Unknown",
     }));
   }
 }

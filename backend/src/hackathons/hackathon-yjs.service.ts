@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class HackathonYjsService {
@@ -94,7 +94,7 @@ export class HackathonYjsService {
   /** Flush all pending snapshots (called on module destroy) */
   async flushAll() {
     for (const [key] of this.pendingSnapshots) {
-      const [hackathonId, teamId, challengeId] = key.split(':');
+      const [hackathonId, teamId, challengeId] = key.split(":");
       await this.persistSnapshot(hackathonId, teamId, challengeId);
     }
     for (const timer of this.debounceTimers.values()) {
