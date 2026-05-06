@@ -3,13 +3,9 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { TeamsService } from "./teams.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationEmitterService } from "../notifications/notification-emitter.service";
-import { NotificationType, NotificationCategory, NotificationPriority } from "../notifications/notification.constants";
-import { TeamResponseDto } from "./dto/team-response.dto";
 
 describe("TeamsService", () => {
   let service: TeamsService;
-  let prisma: PrismaService;
-  let notificationEmitter: NotificationEmitterService;
 
   const mockPrisma = {
     userTeam: {
@@ -79,8 +75,6 @@ describe("TeamsService", () => {
     }).compile();
 
     service = module.get<TeamsService>(TeamsService);
-    prisma = module.get<PrismaService>(PrismaService);
-    notificationEmitter = module.get<NotificationEmitterService>(NotificationEmitterService);
   });
 
   describe("createTeam", () => {
@@ -88,7 +82,9 @@ describe("TeamsService", () => {
       const dto = { name: "New Team" };
       mockPrisma.userTeam.findFirst.mockResolvedValue(null);
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.userTeam.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+      mockPrisma.userTeam.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
       mockPrisma.userTeam.create.mockResolvedValue({
         ...mockTeam,
         id: "team-new",
@@ -106,34 +102,44 @@ describe("TeamsService", () => {
     it("should throw BadRequestException when name is empty", async () => {
       const dto = { name: "   " };
 
-      await expect(service.createTeam("user-1", dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createTeam("user-1", dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException when team name already exists", async () => {
       const dto = { name: "Test Team" };
       mockPrisma.userTeam.findFirst.mockResolvedValue(mockTeam);
 
-      await expect(service.createTeam("user-1", dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createTeam("user-1", dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe("getMyTeams", () => {
     it("should return teams for the current user", async () => {
-      mockPrisma.$runCommandRaw.mockResolvedValue({ cursor: { firstBatch: [] } });
+      mockPrisma.$runCommandRaw.mockResolvedValue({
+        cursor: { firstBatch: [] },
+      });
       mockPrisma.userTeam.findMany.mockResolvedValue([mockTeam]);
       mockPrisma.hackathonTeam.findMany.mockResolvedValue([]);
 
-      jest.spyOn(service as any, "toDto").mockImplementation(async (raw: any, userId: string, hackathonIds = []) => ({
-        id: raw.id || "team-1",
-        name: raw.name || "Test Team",
-        ownerId: raw.ownerId || "user-1",
-        joinCode: raw.joinCode || "ABC123",
-        members: raw.members || [],
-        joinRequests: raw.joinRequests || [],
-        registeredHackathonIds: hackathonIds,
-        createdAt: raw.createdAt || new Date(),
-        updatedAt: raw.updatedAt || new Date(),
-      }));
+      jest
+        .spyOn(service as any, "toDto")
+        .mockImplementation(
+          async (raw: any, userId: string, hackathonIds = []) => ({
+            id: raw.id || "team-1",
+            name: raw.name || "Test Team",
+            ownerId: raw.ownerId || "user-1",
+            joinCode: raw.joinCode || "ABC123",
+            members: raw.members || [],
+            joinRequests: raw.joinRequests || [],
+            registeredHackathonIds: hackathonIds,
+            createdAt: raw.createdAt || new Date(),
+            updatedAt: raw.updatedAt || new Date(),
+          }),
+        );
 
       const result = await service.getMyTeams("user-1");
 
@@ -144,21 +150,27 @@ describe("TeamsService", () => {
 
   describe("getAllTeams", () => {
     it("should return all teams", async () => {
-      mockPrisma.$runCommandRaw.mockResolvedValue({ cursor: { firstBatch: [] } });
+      mockPrisma.$runCommandRaw.mockResolvedValue({
+        cursor: { firstBatch: [] },
+      });
       mockPrisma.userTeam.findMany.mockResolvedValue([mockTeam]);
       mockPrisma.hackathonTeam.findMany.mockResolvedValue([]);
 
-      jest.spyOn(service as any, "toDto").mockImplementation(async (raw: any, userId: string, hackathonIds = []) => ({
-        id: raw.id || "team-1",
-        name: raw.name || "Test Team",
-        ownerId: raw.ownerId || "user-1",
-        joinCode: raw.joinCode || "ABC123",
-        members: raw.members || [],
-        joinRequests: raw.joinRequests || [],
-        registeredHackathonIds: hackathonIds,
-        createdAt: raw.createdAt || new Date(),
-        updatedAt: raw.updatedAt || new Date(),
-      }));
+      jest
+        .spyOn(service as any, "toDto")
+        .mockImplementation(
+          async (raw: any, userId: string, hackathonIds = []) => ({
+            id: raw.id || "team-1",
+            name: raw.name || "Test Team",
+            ownerId: raw.ownerId || "user-1",
+            joinCode: raw.joinCode || "ABC123",
+            members: raw.members || [],
+            joinRequests: raw.joinRequests || [],
+            registeredHackathonIds: hackathonIds,
+            createdAt: raw.createdAt || new Date(),
+            updatedAt: raw.updatedAt || new Date(),
+          }),
+        );
 
       const result = await service.getAllTeams("user-1");
 
@@ -172,17 +184,21 @@ describe("TeamsService", () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
       mockPrisma.hackathonTeam.findMany.mockResolvedValue([]);
 
-      jest.spyOn(service as any, "toDto").mockImplementation(async (raw: any, userId: string, hackathonIds = []) => ({
-        id: raw.id || "team-1",
-        name: raw.name || "Test Team",
-        ownerId: raw.ownerId || "user-1",
-        joinCode: raw.joinCode || "ABC123",
-        members: raw.members || [],
-        joinRequests: raw.joinRequests || [],
-        registeredHackathonIds: hackathonIds,
-        createdAt: raw.createdAt || new Date(),
-        updatedAt: raw.updatedAt || new Date(),
-      }));
+      jest
+        .spyOn(service as any, "toDto")
+        .mockImplementation(
+          async (raw: any, userId: string, hackathonIds = []) => ({
+            id: raw.id || "team-1",
+            name: raw.name || "Test Team",
+            ownerId: raw.ownerId || "user-1",
+            joinCode: raw.joinCode || "ABC123",
+            members: raw.members || [],
+            joinRequests: raw.joinRequests || [],
+            registeredHackathonIds: hackathonIds,
+            createdAt: raw.createdAt || new Date(),
+            updatedAt: raw.updatedAt || new Date(),
+          }),
+        );
 
       const result = await service.getTeamById("team-1", "user-1");
 
@@ -193,19 +209,30 @@ describe("TeamsService", () => {
     it("should throw NotFoundException when team not found", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(null);
 
-      await expect(service.getTeamById("nonexistent", "user-1")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getTeamById("nonexistent", "user-1"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe("inviteMember", () => {
     it("should invite a member successfully", async () => {
       const dto = { username: "newmember" };
-      const targetUser = { id: "user-2", username: "newmember", profileImage: null };
+      const targetUser = {
+        id: "user-2",
+        username: "newmember",
+        profileImage: null,
+      };
       const updatedTeam = {
         ...mockTeam,
         members: [
           mockTeam.members[0],
-          { userId: "user-2", username: "newmember", role: "member", joinedAt: new Date() },
+          {
+            userId: "user-2",
+            username: "newmember",
+            role: "member",
+            joinedAt: new Date(),
+          },
         ],
       };
 
@@ -214,7 +241,9 @@ describe("TeamsService", () => {
       mockPrisma.userTeam.update.mockResolvedValue(updatedTeam);
       mockNotificationEmitter.emit.mockResolvedValue(undefined);
 
-      jest.spyOn(service as any, "toDto").mockImplementation(async (raw) => raw);
+      jest
+        .spyOn(service as any, "toDto")
+        .mockImplementation(async (raw) => raw);
 
       const result = await service.inviteMember("team-1", "user-1", dto);
 
@@ -225,48 +254,94 @@ describe("TeamsService", () => {
     it("should throw BadRequestException when username is empty", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.inviteMember("team-1", "user-1", { username: "   " })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.inviteMember("team-1", "user-1", { username: "   " }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw NotFoundException when user not found", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.inviteMember("team-1", "user-1", { username: "nonexistent" })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.inviteMember("team-1", "user-1", { username: "nonexistent" }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("should throw BadRequestException when user is already a member", async () => {
       const teamWithMember = {
         ...mockTeam,
         members: [
-          { userId: "user-1", username: "testuser", role: "captain", joinedAt: new Date() },
-          { userId: "user-2", username: "newmember", role: "member", joinedAt: new Date() },
+          {
+            userId: "user-1",
+            username: "testuser",
+            role: "captain",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-2",
+            username: "newmember",
+            role: "member",
+            joinedAt: new Date(),
+          },
         ],
       };
-      const targetUser = { id: "user-2", username: "newmember", profileImage: null };
+      const targetUser = {
+        id: "user-2",
+        username: "newmember",
+        profileImage: null,
+      };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(teamWithMember);
       mockPrisma.user.findUnique.mockResolvedValue(targetUser);
 
-      await expect(service.inviteMember("team-1", "user-1", { username: "newmember" })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.inviteMember("team-1", "user-1", { username: "newmember" }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw BadRequestException when team is full", async () => {
       const fullTeam = {
         ...mockTeam,
         members: [
-          { userId: "user-1", username: "testuser", role: "captain", joinedAt: new Date() },
-          { userId: "user-2", username: "member2", role: "member", joinedAt: new Date() },
-          { userId: "user-3", username: "member3", role: "member", joinedAt: new Date() },
-          { userId: "user-4", username: "member4", role: "member", joinedAt: new Date() },
+          {
+            userId: "user-1",
+            username: "testuser",
+            role: "captain",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-2",
+            username: "member2",
+            role: "member",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-3",
+            username: "member3",
+            role: "member",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-4",
+            username: "member4",
+            role: "member",
+            joinedAt: new Date(),
+          },
         ],
       };
-      const targetUser = { id: "user-5", username: "newmember", profileImage: null };
+      const targetUser = {
+        id: "user-5",
+        username: "newmember",
+        profileImage: null,
+      };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(fullTeam);
       mockPrisma.user.findUnique.mockResolvedValue(targetUser);
 
-      await expect(service.inviteMember("team-1", "user-1", { username: "newmember" })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.inviteMember("team-1", "user-1", { username: "newmember" }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -275,8 +350,18 @@ describe("TeamsService", () => {
       const teamWithMembers = {
         ...mockTeam,
         members: [
-          { userId: "user-1", username: "testuser", role: "captain", joinedAt: new Date() },
-          { userId: "user-2", username: "member2", role: "member", joinedAt: new Date() },
+          {
+            userId: "user-1",
+            username: "testuser",
+            role: "captain",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-2",
+            username: "member2",
+            role: "member",
+            joinedAt: new Date(),
+          },
         ],
       };
       const updatedTeam = {
@@ -297,13 +382,17 @@ describe("TeamsService", () => {
     it("should throw BadRequestException when owner tries to remove themselves", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.removeMember("team-1", "user-1", "user-1")).rejects.toThrow(BadRequestException);
+      await expect(
+        service.removeMember("team-1", "user-1", "user-1"),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw NotFoundException when member not found", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.removeMember("team-1", "user-1", "user-999")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.removeMember("team-1", "user-1", "user-999"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -312,8 +401,18 @@ describe("TeamsService", () => {
       const teamWithMembers = {
         ...mockTeam,
         members: [
-          { userId: "user-1", username: "testuser", role: "captain", joinedAt: new Date() },
-          { userId: "user-2", username: "member2", role: "member", joinedAt: new Date() },
+          {
+            userId: "user-1",
+            username: "testuser",
+            role: "captain",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-2",
+            username: "member2",
+            role: "member",
+            joinedAt: new Date(),
+          },
         ],
       };
       const updatedTeam = {
@@ -345,20 +444,34 @@ describe("TeamsService", () => {
       const teamWithMembers = {
         ...mockTeam,
         members: [
-          { userId: "user-1", username: "testuser", role: "captain", joinedAt: new Date() },
-          { userId: "user-2", username: "member2", role: "member", joinedAt: new Date() },
+          {
+            userId: "user-1",
+            username: "testuser",
+            role: "captain",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-2",
+            username: "member2",
+            role: "member",
+            joinedAt: new Date(),
+          },
         ],
       };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(teamWithMembers);
 
-      await expect(service.leaveTeam("team-1", "user-1")).rejects.toThrow(BadRequestException);
+      await expect(service.leaveTeam("team-1", "user-1")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException when user is not a member", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.leaveTeam("team-1", "user-999")).rejects.toThrow(BadRequestException);
+      await expect(service.leaveTeam("team-1", "user-999")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -376,14 +489,18 @@ describe("TeamsService", () => {
     it("should throw BadRequestException when non-captain tries to delete", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.deleteTeam("team-1", "user-999")).rejects.toThrow(BadRequestException);
+      await expect(service.deleteTeam("team-1", "user-999")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe("requestJoinByCode", () => {
     it("should find team and request to join", async () => {
       mockPrisma.userTeam.findFirst.mockResolvedValue(mockTeam);
-      jest.spyOn(service, "requestToJoin").mockResolvedValue({ message: "Join request sent" });
+      jest
+        .spyOn(service, "requestToJoin")
+        .mockResolvedValue({ message: "Join request sent" });
 
       const result = await service.requestJoinByCode("user-2", "ABC123");
 
@@ -393,7 +510,9 @@ describe("TeamsService", () => {
     it("should throw NotFoundException when team code not found", async () => {
       mockPrisma.userTeam.findFirst.mockResolvedValue(null);
 
-      await expect(service.requestJoinByCode("user-2", "INVALID")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.requestJoinByCode("user-2", "INVALID"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -402,12 +521,21 @@ describe("TeamsService", () => {
       const updatedTeam = {
         ...mockTeam,
         joinRequests: [
-          { userId: "user-2", username: "newuser", requestedAt: new Date(), status: "pending" },
+          {
+            userId: "user-2",
+            username: "newuser",
+            requestedAt: new Date(),
+            status: "pending",
+          },
         ],
       };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "user-2", username: "newuser", profileImage: null });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-2",
+        username: "newuser",
+        profileImage: null,
+      });
       mockPrisma.userTeam.update.mockResolvedValue(updatedTeam);
       mockNotificationEmitter.emit.mockResolvedValue(undefined);
 
@@ -419,20 +547,29 @@ describe("TeamsService", () => {
     it("should throw BadRequestException when already a member", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.requestToJoin("team-1", "user-1")).rejects.toThrow(BadRequestException);
+      await expect(service.requestToJoin("team-1", "user-1")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException when pending request already exists", async () => {
       const teamWithRequest = {
         ...mockTeam,
         joinRequests: [
-          { userId: "user-2", username: "newuser", requestedAt: new Date(), status: "pending" },
+          {
+            userId: "user-2",
+            username: "newuser",
+            requestedAt: new Date(),
+            status: "pending",
+          },
         ],
       };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(teamWithRequest);
 
-      await expect(service.requestToJoin("team-1", "user-2")).rejects.toThrow(BadRequestException);
+      await expect(service.requestToJoin("team-1", "user-2")).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -441,12 +578,21 @@ describe("TeamsService", () => {
       const teamWithRequests = {
         ...mockTeam,
         joinRequests: [
-          { userId: "user-2", username: "newuser", requestedAt: new Date(), status: "pending" },
+          {
+            userId: "user-2",
+            username: "newuser",
+            requestedAt: new Date(),
+            status: "pending",
+          },
         ],
       };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(teamWithRequests);
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "user-2", username: "newuser", profileImage: null });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-2",
+        username: "newuser",
+        profileImage: null,
+      });
 
       const result = await service.getPendingRequests("team-1", "user-1");
 
@@ -456,7 +602,9 @@ describe("TeamsService", () => {
     it("should throw BadRequestException when non-captain tries to view requests", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.getPendingRequests("team-1", "user-999")).rejects.toThrow(BadRequestException);
+      await expect(
+        service.getPendingRequests("team-1", "user-999"),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -465,25 +613,43 @@ describe("TeamsService", () => {
       const teamWithRequest = {
         ...mockTeam,
         joinRequests: [
-          { userId: "user-2", username: "newuser", requestedAt: new Date(), status: "pending" },
+          {
+            userId: "user-2",
+            username: "newuser",
+            requestedAt: new Date(),
+            status: "pending",
+          },
         ],
       };
       const updatedTeam = {
         ...teamWithRequest,
         members: [
           ...teamWithRequest.members,
-          { userId: "user-2", username: "newuser", role: "member", joinedAt: new Date() },
+          {
+            userId: "user-2",
+            username: "newuser",
+            role: "member",
+            joinedAt: new Date(),
+          },
         ],
         joinRequests: [],
       };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(teamWithRequest);
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "user-2", username: "newuser", profileImage: null });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-2",
+        username: "newuser",
+        profileImage: null,
+      });
       mockPrisma.userTeam.update.mockResolvedValue(updatedTeam);
       mockPrisma.hackathonTeam.findMany.mockResolvedValue([]);
       mockNotificationEmitter.emit.mockResolvedValue(undefined);
 
-      const result = await service.approveJoinRequest("team-1", "user-1", "user-2");
+      const result = await service.approveJoinRequest(
+        "team-1",
+        "user-1",
+        "user-2",
+      );
 
       expect(result).toBeDefined();
     });
@@ -491,27 +657,60 @@ describe("TeamsService", () => {
     it("should throw NotFoundException when no pending request found", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.approveJoinRequest("team-1", "user-1", "user-2")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.approveJoinRequest("team-1", "user-1", "user-2"),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("should throw BadRequestException when team is full", async () => {
       const fullTeam = {
         ...mockTeam,
         members: [
-          { userId: "user-1", username: "testuser", role: "captain", joinedAt: new Date() },
-          { userId: "user-2", username: "member2", role: "member", joinedAt: new Date() },
-          { userId: "user-3", username: "member3", role: "member", joinedAt: new Date() },
-          { userId: "user-4", username: "member4", role: "member", joinedAt: new Date() },
+          {
+            userId: "user-1",
+            username: "testuser",
+            role: "captain",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-2",
+            username: "member2",
+            role: "member",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-3",
+            username: "member3",
+            role: "member",
+            joinedAt: new Date(),
+          },
+          {
+            userId: "user-4",
+            username: "member4",
+            role: "member",
+            joinedAt: new Date(),
+          },
         ],
         joinRequests: [
-          { userId: "user-5", username: "newuser", requestedAt: new Date(), status: "pending" },
+          {
+            userId: "user-5",
+            username: "newuser",
+            requestedAt: new Date(),
+            status: "pending",
+          },
         ],
       };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(fullTeam);
-      mockPrisma.user.findUnique.mockResolvedValue({ id: "user-5", username: "newuser", profileImage: null });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-5",
+        username: "newuser",
+        profileImage: null,
+      });
 
-      await expect(service.approveJoinRequest("team-1", "user-1", "user-5")).rejects.toThrow(BadRequestException);
+      await expect(
+        service.approveJoinRequest("team-1", "user-1", "user-5"),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -520,7 +719,12 @@ describe("TeamsService", () => {
       const teamWithRequest = {
         ...mockTeam,
         joinRequests: [
-          { userId: "user-2", username: "newuser", requestedAt: new Date(), status: "pending" },
+          {
+            userId: "user-2",
+            username: "newuser",
+            requestedAt: new Date(),
+            status: "pending",
+          },
         ],
       };
       const updatedTeam = {
@@ -532,7 +736,11 @@ describe("TeamsService", () => {
       mockPrisma.userTeam.update.mockResolvedValue(updatedTeam);
       mockNotificationEmitter.emit.mockResolvedValue(undefined);
 
-      const result = await service.rejectJoinRequest("team-1", "user-1", "user-2");
+      const result = await service.rejectJoinRequest(
+        "team-1",
+        "user-1",
+        "user-2",
+      );
 
       expect(result).toEqual({ message: "Join request rejected" });
     });
@@ -540,7 +748,9 @@ describe("TeamsService", () => {
     it("should throw NotFoundException when no pending request found", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
 
-      await expect(service.rejectJoinRequest("team-1", "user-1", "user-2")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.rejectJoinRequest("team-1", "user-1", "user-2"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -553,7 +763,11 @@ describe("TeamsService", () => {
         scope: "open",
         teamPolicy: { minSize: 1, maxSize: 4 },
       };
-      const registration = { id: "reg-1", hackathonId: "hack-1", name: "Test Team" };
+      const registration = {
+        id: "reg-1",
+        hackathonId: "hack-1",
+        name: "Test Team",
+      };
 
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
       mockPrisma.hackathon.findUnique.mockResolvedValue(hackathon);
@@ -561,7 +775,11 @@ describe("TeamsService", () => {
       mockPrisma.hackathonTeam.create.mockResolvedValue(registration);
       mockNotificationEmitter.emit.mockResolvedValue(undefined);
 
-      const result = await service.registerToHackathon("team-1", "hack-1", "user-1");
+      const result = await service.registerToHackathon(
+        "team-1",
+        "hack-1",
+        "user-1",
+      );
 
       expect(result).toBeDefined();
       expect(result.hackathonId).toBe("hack-1");
@@ -571,21 +789,35 @@ describe("TeamsService", () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
       mockPrisma.hackathon.findUnique.mockResolvedValue(null);
 
-      await expect(service.registerToHackathon("team-1", "hack-1", "user-1")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.registerToHackathon("team-1", "hack-1", "user-1"),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("should throw BadRequestException when non-captain tries to register", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
-      mockPrisma.hackathon.findUnique.mockResolvedValue({ id: "hack-1", status: "lobby", scope: "open" });
+      mockPrisma.hackathon.findUnique.mockResolvedValue({
+        id: "hack-1",
+        status: "lobby",
+        scope: "open",
+      });
 
-      await expect(service.registerToHackathon("team-1", "hack-1", "user-999")).rejects.toThrow(BadRequestException);
+      await expect(
+        service.registerToHackathon("team-1", "hack-1", "user-999"),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw BadRequestException when hackathon registration is closed", async () => {
       mockPrisma.userTeam.findUnique.mockResolvedValue(mockTeam);
-      mockPrisma.hackathon.findUnique.mockResolvedValue({ id: "hack-1", status: "completed", scope: "open" });
+      mockPrisma.hackathon.findUnique.mockResolvedValue({
+        id: "hack-1",
+        status: "completed",
+        scope: "open",
+      });
 
-      await expect(service.registerToHackathon("team-1", "hack-1", "user-1")).rejects.toThrow(BadRequestException);
+      await expect(
+        service.registerToHackathon("team-1", "hack-1", "user-1"),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

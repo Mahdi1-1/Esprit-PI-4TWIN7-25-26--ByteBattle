@@ -1,6 +1,7 @@
 import { QueueService } from "./queue.service";
 
-const handlers = new Map<string, Function>();
+type QueueEventHandler = (payload: any) => any;
+const handlers = new Map<string, QueueEventHandler>();
 let mockQueueEvents: { on: jest.Mock; close: jest.Mock };
 
 jest.mock("bullmq", () => ({
@@ -33,7 +34,7 @@ describe("QueueService", () => {
   beforeEach(() => {
     handlers.clear();
     mockQueueEvents = {
-      on: jest.fn((event: string, handler: Function) => {
+      on: jest.fn((event: string, handler: QueueEventHandler) => {
         handlers.set(event, handler);
         return mockQueueEvents;
       }),
