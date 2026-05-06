@@ -79,6 +79,7 @@
         "dev": "vite",
         "build": "vite build",
         "test": "vitest",
-        "test:run": "vitest run"
+        "test:run": "vitest run",
+        "test:ci": "vitest run --coverage"
     }
 }

@@ -28,7 +28,12 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('judge-worker') {
-                    sh 'pnpm exec jest --coverage --passWithNoTests'
+                    sh 'pnpm run test:ci'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'judge-worker/reports/junit/junit.xml'
                 }
             }
         }

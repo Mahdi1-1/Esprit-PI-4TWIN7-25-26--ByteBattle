@@ -14,9 +14,12 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/setupTests.ts'],
+    reporters: process.env.CI ? ['default', 'junit'] : ['default'],
+    outputFile: process.env.CI ? { junit: './reports/junit/junit.xml' } : undefined,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      reporter: ['text', 'html', 'lcov'],
+      exclude: ['build/**', 'dist/**', 'node_modules/**', 'src/**/*.test.*', 'src/setupTests.ts'],
     },
   },
 });
